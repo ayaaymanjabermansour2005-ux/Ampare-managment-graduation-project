@@ -1,0 +1,1 @@
+const t=new WeakMap,c={mounted(e,n){e.classList.add("reveal");const o=typeof n.value=="number"?n.value:0;o>0&&(e.style.transitionDelay=`${o}ms`);const s=new IntersectionObserver(a=>{a.forEach(r=>{r.isIntersecting&&(e.classList.add("in"),s.unobserve(e))})},{threshold:.1});s.observe(e),t.set(e,s)},unmounted(e){t.get(e)?.disconnect(),t.delete(e)}};export{c as v};

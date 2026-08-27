@@ -1,0 +1,2998 @@
+<script setup>
+import { reactive, ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import Chart from "chart.js/auto";
+import { Doughnut, Pie } from "vue-chartjs";
+import { useAdminSubscribers } from "@/composables/useAdminSubscribers";
+import { useAdminSubscriptionsData } from "@/composables/useAdminSubscriptionsData";
+import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
+import { vReveal } from "@/directives/reveal";
+import { vCountUp } from "@/directives/countUp";
+import userService from "@/services/userService";
+import activityLogService from "@/services/activityLogService";
+import { useToastStore } from "@/stores/toast";
+import TransferSubscriptionModal from "@/components/admin/TransferSubscriptionModal.vue";
+import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
+import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
+import AppIcon from "@/components/ui/AppIcon.vue";
+
+
+const { t, locale } = useI18n();
+const { can } = usePermissions();
+const route = useRoute();
+const router = useRouter();
+const { confirm } = useConfirm();
+const toast = useToastStore();
+
+/* ==========================================================================
+ * ====================  بيانات تبويب: المشتركون (subscribers)  ============
+ * ========================================================================== */
+const {
+  subscribers,
+  pagination,
+  isLoading,
+  error,
+  searchTerm,
+  subscriptionFilter,
+  fetchSubscribers,
+  onSubscriptionFilterChange,
+  isSaving,
+  saveError,
+  updateSubscriber,
+  deletingId,
+  deleteError,
+  deleteSubscriber,
+  unlockSubscriber,
+  stats,
+  isLoadingStats,
+  fetchStats,
+  // ملاحظة: الأسماء التالية مفترَضة ولازم تكون موجودة بالـ composable (useAdminSubscribers)
+  // عشان الميزات الجديدة تشتغل فعليًا من السيرفر. لو مش موجودة حاليًا، الأزرار
+  // المرتبطة فيها رح تظهر تنبيه بالكونسول بدل ما تكسر الصفحة.
+  createSubscriber,
+  isCreating,
+  createError,
+} = useAdminSubscribers();
+
+
+/* ==========================================================================
+ * ==================  التابات (المشتركون / الاشتراكات)  ===================
+ * ========================================================================== */
+const TABS = computed(() => [
+  { key: "subscribers", label: t("subscribers_page.breadcrumb"), icon: "fa-users" },
+  { key: "subscriptions", label: t("subscriptions_page.title"), icon: "fa-file-contract", badge: countOnPage("pending") },
+]);
+const activeTab = ref("subscribers");
+
+/* ==========================================================================
+ * ====================  بيانات تبويب: الاشتراكات (subscriptions)  =========
+ * ========================================================================== */
+/* ملاحظة تبعية: هاد الملف بيستخدم Chart.js لرسم بطاقات "نمو الاشتراكات"، "توزيع الحالات"،
+ * "حسب نوع الخطة" و"الاشتراكات المنتهية خلال الأسابيع القادمة" (نفس مكتبة نسخة الـ HTML الأصلية).
+ * لو المكتبة مش مضافة للمشروع بعد: npm install chart.js */
+
+
+/* ---------------- FE-01: بيانات CRUD الأساسية (قائمة/فلترة/بحث/صفحات، نموذج
+   الإضافة، وتغيير الحالة) منقولة لـ useAdminSubscriptionsData composable —
+   بدل نداء subscriptionService/generatorService/userService مباشرة من الـ
+   view. الإحصائيات/الرسوم/سجل النشاطات (view-only) بتضل هون. ---------------- */
+const {
+  subscriptions,
+  pagination: subscriptionPagination,
+  isLoading: isLoadingSubscriptions,
+  error: subscriptionsError,
+  statusFilter,
+  searchTerm: subscriptionSearchTerm,
+  fetchSubscriptions,
+  applyFilter,
+  handleSearchInput: handleSubscriptionSearchInput,
+  exportUrl,
+  generatorsForForm,
+  isLoadingGeneratorsForForm,
+  fetchGeneratorsForForm,
+  subscriberSearchTerm,
+  subscriberSearchResults,
+  isSearchingSubscribers,
+  handleSubscriberSearchInput: searchSubscribers,
+  isSavingSubscription,
+  saveSubscriptionError,
+  createSubscription,
+  updatingStatusId,
+  statusUpdateError,
+  updateSubscriptionStatus,
+  contractUrl,
+  monthlyGrowth,
+  fetchMonthlyGrowth,
+  activityLog,
+  pushActivity,
+  fetchActivityLog,
+} = useAdminSubscriptionsData();
+
+const generatorFormOptions = computed(() =>
+  generatorsForForm.value.map((g) => ({ value: g.id, label: `${g.name} — ${g.location?.city ?? "-"}` })),
+);
+
+/* ---------------- تنسيق الحالة (بنفس منطق الألوان بباقي الصفحات) ----------------
+ * ملاحظة: "cancelled" ما إلها chip-* رسمي بنظام التصميم (بس chip-warning/success/info/danger
+ * موجودين ومستخدمين بصفحات تانية زي قراءات العدادات وأصحاب المولدات)، فمنستخدملها لون مخصّص
+ * عبر style بدل افتراض اسم كلاس مش موجود.
+ */
+const STATUS_META = {
+  pending: { key: "subscriptions_page.status_pending", chip: "chip-warning", color: "#FFC107" },
+  active: { key: "subscriptions_page.status_active", chip: "chip-success", color: "#28A745" },
+  suspended: { key: "subscriptions_page.status_suspended", chip: "chip-info", color: "#17A2B8" },
+  cancelled: { key: "subscriptions_page.status_cancelled", chip: null, color: "#9a9d97" },
+  rejected: { key: "subscriptions_page.status_rejected", chip: "chip-danger", color: "#D9534F" },
+};
+function subscriptionStatusLabel(status) {
+  const m = STATUS_META[status];
+  if (!m) return status;
+  return t(m.key);
+}
+function statusChip(status) {
+  return STATUS_META[status]?.chip ?? null;
+}
+function statusChipStyle(status) {
+  const m = STATUS_META[status];
+  if (!m || m.chip) return {};
+  return { color: m.color, background: m.color + "1A" };
+}
+
+/* ---------------- تنسيق نوع الخطة (نفس منطق نسخة الـ HTML) ---------------- */
+const PLAN_META = {
+  full: { key: "subscriptions_page.plan_full", cls: "plan-full", icon: "fa-circle-check" },
+  hours: { key: "subscriptions_page.plan_hours", cls: "plan-hours", icon: "fa-clock" },
+};
+function planMeta(plan) {
+  return PLAN_META[plan] ?? null;
+}
+function planLabel(plan) {
+  const m = PLAN_META[plan];
+  if (!m) return "-";
+  return t(m.key);
+}
+
+function subscriptionAvatarStyle(idx) {
+  const c = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+  return { background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` };
+}
+
+/* ==================================================================
+ * تحليلات لوحة الاشتراكات (رسوم بيانية / تنبيهات / أقرب للانتهاء)
+ * ملاحظة نطاق البيانات: كل التحليلات التالية محسوبة من subscriptions.value، يعني من
+ * اشتراكات الصفحة الحالية فقط بالجدول (بنفس قيد بطاقات الـ KPI أعلاه) - لأنه ما في
+ * endpoint إحصائيات عام للاشتراكات (زي المذكور بالتعليق فوق نظام حالة الهيدر). لو صار
+ * عندنا endpoint مماثل لاحقًا (مثال: subscriptionService.stats() / monthlyStats() /
+ * activityLog())، هاي الدوال بتحاول تستخدمه أولًا وبترجع تلقائيًا للحساب المحلي لو مش موجود.
+ * ================================================================== */
+
+/* ---------------- فرق الأيام عن اليوم (لتصنيف "على وشك الانتهاء" و"منتهي") ---------------- */
+function subscriptionDaysUntil(dateStr) {
+  if (!dateStr) return null;
+  const end = new Date(dateStr);
+  if (Number.isNaN(end.getTime())) return null;
+  const now = new Date();
+  end.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+  return Math.round((end - now) / 86400000);
+}
+
+/* ---------------- تصنيف مشتق لأغراض العرض التحليلي فقط (نشط / على وشك / منتهي / موقوف) ----------------
+ * هاد التصنيف منفصل عن sub.status الحقيقي (المستخدم بأزرار الإجراءات وفلتر الجدول)، لأنه
+ * بيدمج تاريخ الانتهاء (ends_at) مع الحالة الفعلية عشان يعطي صورة أوضح للأدمن بالرسوم البيانية:
+ *  - موقوف: sub.status === 'suspended'
+ *  - منتهي: sub.status هي 'cancelled' أو 'rejected'، أو تاريخ الانتهاء عدّى
+ *  - على وشك الانتهاء: باقي على الانتهاء EXPIRING_SOON_DAYS يوم أو أقل
+ *  - نشط: كل الباقي (يشمل active وpending البعيدين عن الانتهاء)
+ */
+const EXPIRING_SOON_DAYS = 14;
+function derivedStatusKey(sub) {
+  if (sub.status === "suspended") return "suspended";
+  if (sub.status === "cancelled" || sub.status === "rejected") return "expired";
+  const d = subscriptionDaysUntil(sub.end_date);
+  if (d !== null && d < 0) return "expired";
+  if (d !== null && d <= EXPIRING_SOON_DAYS) return "expiring";
+  return "active";
+}
+const DERIVED_STATUS_META = {
+  active: { key: "users_page.status_active", color: "#28A745", chip: "chip-success" },
+  expiring: { key: "subscriptions_page.derived_expiring", color: "#FFC107", chip: "chip-warning" },
+  expired: { key: "subscriptions_page.derived_expired", color: "#D9534F", chip: "chip-danger" },
+  suspended: { key: "users_page.status_suspended", color: "#17A2B8", chip: "chip-info" },
+};
+function derivedStatusLabel(key) {
+  return t(DERIVED_STATUS_META[key].key);
+}
+const derivedStatusCounts = computed(() => {
+  const counts = { active: 0, expiring: 0, expired: 0, suspended: 0 };
+  subscriptions.value.forEach((s) => { counts[derivedStatusKey(s)]++; });
+  return counts;
+});
+const statusDistribution = computed(() => {
+  const total = subscriptions.value.length || 1;
+  return Object.entries(DERIVED_STATUS_META).map(([key, meta]) => ({
+    key,
+    label: t(meta.key),
+    color: meta.color,
+    count: derivedStatusCounts.value[key],
+    pct: Math.round((derivedStatusCounts.value[key] / total) * 100),
+  }));
+});
+
+/* ---------------- فلتر سريع من الرسم البياني/الأسطورة (فوق فلتر الحالة الحقيقي بالجدول) ---------------- */
+const derivedFilter = ref(null); // 'active' | 'expiring' | 'expired' | 'suspended' | null
+function applyDerivedFilter(key) {
+  derivedFilter.value = derivedFilter.value === key ? null : key;
+}
+
+/* ---------------- توزيع نوع الخطة ---------------- */
+const planCounts = computed(() => {
+  const counts = { full: 0, hours: 0 };
+  subscriptions.value.forEach((s) => { if (counts[s.plan] !== undefined) counts[s.plan]++; });
+  return counts;
+});
+
+/* ---------------- الاشتراكات المنتهية خلال الأسابيع القادمة (تجميع بحسب المدى الزمني) ---------------- */
+const expiringBuckets = computed(() => {
+  const buckets = [0, 0, 0, 0, 0];
+  subscriptions.value.forEach((s) => {
+    const d = subscriptionDaysUntil(s.end_date);
+    if (d === null || d < 0) return;
+    if (d <= 7) buckets[0]++;
+    else if (d <= 14) buckets[1]++;
+    else if (d <= 21) buckets[2]++;
+    else if (d <= 28) buckets[3]++;
+    else if (d <= 60) buckets[4]++;
+  });
+  return buckets;
+});
+const expiringBucketLabels = computed(() => [
+  t("subscriptions_page.expiring_bucket_this_week"),
+  t("subscriptions_page.expiring_bucket_next_week"),
+  t("subscriptions_page.expiring_bucket_2weeks"),
+  t("subscriptions_page.expiring_bucket_3weeks"),
+  t("subscriptions_page.expiring_bucket_2months"),
+]);
+
+/* ---------------- تنبيهات متعلقة بالاشتراكات (مشتقة من البيانات) ---------------- */
+const subsAlerts = computed(() => {
+  const c = derivedStatusCounts.value;
+  const pendingCount = countOnPage("pending");
+  const all = [
+    {
+      icon: "fa-hourglass-half",
+      title: t("subscriptions_page.alert_pending_title"),
+      desc: t("subscriptions_page.alert_pending_desc", { count: pendingCount }),
+      color: "#FFC107",
+      chip: "chip-warning",
+      tag: t("subscriptions_page.tag_alert"),
+      show: pendingCount > 0,
+    },
+    {
+      icon: "fa-calendar-xmark",
+      title: t("subscriptions_page.alert_expiring_title"),
+      desc: t("subscriptions_page.alert_expiring_desc", { count: c.expiring, days: EXPIRING_SOON_DAYS }),
+      color: "#FFC107",
+      chip: "chip-warning",
+      tag: t("subscriptions_page.tag_alert"),
+      show: c.expiring > 0,
+    },
+    {
+      icon: "fa-ban",
+      title: t("subscriptions_page.alert_suspended_title"),
+      desc: t("subscriptions_page.alert_suspended_desc", { count: c.suspended }),
+      color: "#17A2B8",
+      chip: "chip-info",
+      tag: t("subscriptions_page.tag_info"),
+      show: c.suspended > 0,
+    },
+    {
+      icon: "fa-calendar-xmark",
+      title: t("subscriptions_page.alert_expired_title"),
+      desc: t("subscriptions_page.alert_expired_desc", { count: c.expired }),
+      color: "#D9534F",
+      chip: "chip-danger",
+      tag: t("owners_page.alert_tag_critical"),
+      show: c.expired > 0,
+    },
+    {
+      icon: "fa-circle-check",
+      title: t("subscriptions_page.alert_active_title"),
+      desc: t("subscriptions_page.alert_active_desc", { count: c.active }),
+      color: "#28A745",
+      chip: "chip-success",
+      tag: t("subscriptions_page.tag_good"),
+      show: true,
+    },
+  ];
+  return all.filter((a) => a.show);
+});
+
+function subscriptionTimeAgo(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.max(0, Math.floor(diffMs / 60000));
+  if (mins < 1) return t("subscriptions_page.time_just_now");
+  if (mins < 60) return t("subscriptions_page.time_mins_ago_short", { mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return t("subscribers_page.time_hours_ago", { hours });
+  const days = Math.floor(hours / 24);
+  return t("subscribers_page.time_days_ago", { days });
+}
+
+/* ---------------- الأقرب للانتهاء ---------------- */
+const topExpiring = computed(() =>
+  subscriptions.value
+    .filter((s) => s.status !== "suspended" && s.status !== "cancelled" && s.status !== "rejected")
+    .slice()
+    .sort((a, b) => new Date(a.end_date) - new Date(b.end_date))
+    .slice(0, 5)
+);
+function expiringLabel(sub) {
+  const d = subscriptionDaysUntil(sub.end_date);
+  if (d === null) return "-";
+  if (d < 0) return t("subscriptions_page.expired_marker");
+  return t("subscriptions_page.days_remaining", { d });
+}
+function expiringColor(sub) {
+  const d = subscriptionDaysUntil(sub.end_date);
+  if (d === null) return "#9a9d97";
+  if (d < 0) return "#D9534F";
+  if (d <= EXPIRING_SOON_DAYS) return "#FFC107";
+  return "#28A745";
+}
+
+const SUBSCRIPTION_STATUS_PILLS = computed(() => [
+  { value: "all", label: t("common.all") },
+  { value: "pending", label: subscriptionStatusLabel("pending") },
+  { value: "active", label: subscriptionStatusLabel("active") },
+  { value: "suspended", label: subscriptionStatusLabel("suspended") },
+  { value: "cancelled", label: subscriptionStatusLabel("cancelled") },
+  { value: "rejected", label: subscriptionStatusLabel("rejected") },
+]);
+
+/* ---------------- تصدير القائمة (Excel / PDF) ----------------
+ * ملاحظة تصميمية: نفس منطق الفلاتر المطبّق على الجدول (statusFilter/subscriptionSearchTerm) بينعكس على
+ * رابط التصدير، بحيث يصدّر بالضبط اللي الأدمن شايفه بالجدول.
+ */
+const exportParams = computed(() => ({
+  status: statusFilter.value !== "all" ? statusFilter.value : undefined,
+  search: subscriptionSearchTerm.value.trim() || undefined,
+}));
+const exportExcelUrl = computed(() => exportUrl("excel", exportParams.value));
+const exportPdfUrl = computed(() => exportUrl("pdf", exportParams.value));
+
+/* ---------------- فرز عبر رؤوس الأعمدة (أيقونة تصاعدي/تنازلي - نفس أسلوب صفحتَي المولدات والمشتركين) ---------------- */
+const subscriptionSortKey = ref("");
+const subscriptionSortDir = ref("desc");
+function subscriptionSortIconClass(key) {
+  if (subscriptionSortKey.value !== key) return "opacity-40";
+  return subscriptionSortDir.value === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
+}
+function subscriptionToggleSort(key) {
+  if (subscriptionSortKey.value === key) {
+    subscriptionSortDir.value = subscriptionSortDir.value === "desc" ? "asc" : "desc";
+  } else {
+    subscriptionSortKey.value = key;
+    subscriptionSortDir.value = "desc";
+  }
+}
+const derivedFilteredSubscriptions = computed(() => {
+  if (!derivedFilter.value) return subscriptions.value;
+  return subscriptions.value.filter((s) => derivedStatusKey(s) === derivedFilter.value);
+});
+const sortedSubscriptions = computed(() => {
+  if (!subscriptionSortKey.value) return derivedFilteredSubscriptions.value;
+  const list = [...derivedFilteredSubscriptions.value];
+  list.sort((a, b) => {
+    let va, vb;
+    if (subscriptionSortKey.value === "subscriber") {
+      va = (a.subscriber?.name ?? "").toLowerCase();
+      vb = (b.subscriber?.name ?? "").toLowerCase();
+    } else if (subscriptionSortKey.value === "generator") {
+      va = (a.generator?.name ?? "").toLowerCase();
+      vb = (b.generator?.name ?? "").toLowerCase();
+    } else if (subscriptionSortKey.value === "starts_at") {
+      va = a.start_date ?? "";
+      vb = b.start_date ?? "";
+    } else if (subscriptionSortKey.value === "ends_at") {
+      va = a.end_date ?? "";
+      vb = b.end_date ?? "";
+    } else if (subscriptionSortKey.value === "status") {
+      va = a.status ?? "";
+      vb = b.status ?? "";
+    }
+    if (va < vb) return subscriptionSortDir.value === "asc" ? -1 : 1;
+    if (va > vb) return subscriptionSortDir.value === "asc" ? 1 : -1;
+    return 0;
+  });
+  return list;
+});
+
+/* ---------------- Pagination بأزرار محدودة (بنفس نمط باقي الصفحات) ---------------- */
+const subscriptionPaginationRange = computed(() => {
+  const total = subscriptionPagination.value.last_page;
+  const current = subscriptionPagination.value.current_page;
+  const delta = 1;
+  const range = [];
+  const withDots = [];
+  let last = null;
+
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i);
+    }
+  }
+  for (const i of range) {
+    if (last !== null) {
+      if (i - last === 2) withDots.push(last + 1);
+      else if (i - last > 2) withDots.push("...");
+    }
+    withDots.push(i);
+    last = i;
+  }
+  return withDots;
+});
+
+/* ---------------- KPI Cards (من الصفحة الحالية، فيما عدا الإجمالي) ---------------- */
+const countOnPage = (status) => subscriptions.value.filter((s) => s.status === status).length;
+const SUBSCRIPTION_KPI_CARDS = computed(() => [
+  { icon: "fa-file-contract", label: t("subscriptions_page.total_subscriptions"), value: subscriptionPagination.value.total, c1: "#52733D", c2: "#3E582E" },
+  { icon: "fa-circle-check", label: subscriptionStatusLabel("active") + t("common.this_page_suffix"), value: countOnPage("active"), c1: "#28A745", c2: "#1f7a37" },
+  { icon: "fa-hourglass-half", label: subscriptionStatusLabel("pending") + t("common.this_page_suffix"), value: countOnPage("pending"), c1: "#FFC107", c2: "#a3760a" },
+  { icon: "fa-circle-pause", label: subscriptionStatusLabel("suspended") + t("common.this_page_suffix"), value: countOnPage("suspended"), c1: "#17A2B8", c2: "#0f6c7d" },
+]);
+
+/* ---------------- مؤشر حالة النظام بالهيدر (نفس أسلوب صفحة إدارة المولدات) ----------------
+ * ملاحظة نطاق البيانات: الحالات المعروضة بجدول الصفحة الحالية فقط (subscriptions.value)، تمامًا
+ * كباقي بطاقات الـ KPI أعلاه المعلّم عليها "(هذه الصفحة)" - لأنه ما في endpoint إحصائيات عام
+ * للاشتراكات مثل الموجود لصفحة المولدات (stats). لو صار عندنا endpoint مماثل لاحقًا، يفضّل
+ * الاعتماد عليه بدل الاكتفاء ببيانات الصفحة الحالية.
+ */
+const systemStatusInfo = computed(() => {
+  const pendingCount = countOnPage("pending");
+  if (pendingCount === 0) {
+    return {
+      label: t("subscriptions_page.no_requests_awaiting_review"),
+      color: "#28A745",
+    };
+  }
+  return {
+    label: t("subscriptions_page.requests_awaiting_review", { count: pendingCount }),
+    color: "#FFC107",
+  };
+});
+
+/* ==================================================================
+ * إضافة اشتراك جديد يدويًا من الأدمن
+ * قرارات العمل المعتمدة (تم تأكيدها):
+ *  - الحالة الابتدائية للاشتراك دائمًا "active" (الأدمن موثوق، ما في مسار موافقة).
+ *  - المشترك: بحث أولاً عن مشترك موجود (بالاسم/الإيميل/الهاتف)، ولو مش موجود يُنشأ كمشترك
+ *    جديد ضمن نفس النموذج (subscriberMode: 'search' | 'new').
+ *  - تاريخ البدء والانتهاء وسعر الكيلووات تُدخل يدويًا (مش مشتقة من خطة المولد الافتراضية).
+ * ================================================================== */
+const isAddFormOpen = ref(false);
+
+const subscriberMode = ref("search"); // 'search' | 'new'
+const selectedSubscriber = ref(null);
+
+const newSubscriber = reactive({ name: "", email: "", phone: "" });
+
+function emptyAddForm() {
+  return { generator_id: "", price_per_kw: "", starts_at: "", ends_at: "" };
+}
+const subscriptionAddForm = ref(emptyAddForm());
+
+async function openAddModal() {
+  subscriptionAddForm.value = emptyAddForm();
+  subscriberMode.value = "search";
+  subscriberSearchTerm.value = "";
+  subscriberSearchResults.value = [];
+  selectedSubscriber.value = null;
+  newSubscriber.name = "";
+  newSubscriber.email = "";
+  newSubscriber.phone = "";
+  saveSubscriptionError.value = null;
+  isAddFormOpen.value = true;
+  if (generatorsForForm.value.length === 0) await fetchGeneratorsForForm();
+}
+
+function closeAddModal() {
+  if (isSavingSubscription.value) return;
+  isAddFormOpen.value = false;
+  saveSubscriptionError.value = null;
+}
+
+function handleSubscriberSearchInput() {
+  // بخلاف الـ composable، الـ view هو اللي بيمسك selectedSubscriber (حالة
+  // نموذج محلية) — لازم يُلغى الاختيار السابق كل ما المستخدم يكتب بحثًا جديدًا.
+  selectedSubscriber.value = null;
+  searchSubscribers();
+}
+
+function pickSubscriber(subscriber) {
+  selectedSubscriber.value = subscriber;
+  subscriberSearchResults.value = [];
+  subscriberSearchTerm.value = "";
+}
+
+function clearPickedSubscriber() {
+  selectedSubscriber.value = null;
+}
+
+function switchSubscriberMode(mode) {
+  subscriberMode.value = mode;
+  selectedSubscriber.value = null;
+  subscriberSearchTerm.value = "";
+  subscriberSearchResults.value = [];
+  newSubscriber.name = "";
+  newSubscriber.email = "";
+  newSubscriber.phone = "";
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const addFormValidationError = computed(() => {
+  if (subscriberMode.value === "search" && !selectedSubscriber.value) {
+    return t("subscriptions_page.validation_select_subscriber");
+  }
+  if (subscriberMode.value === "new") {
+    if (!newSubscriber.name.trim()) return t("subscriptions_page.validation_name_required");
+    if (!EMAIL_RE.test(newSubscriber.email.trim())) return t("subscriptions_page.validation_invalid_email");
+    if (!newSubscriber.phone.trim()) return t("subscriptions_page.validation_phone_required");
+  }
+  if (!subscriptionAddForm.value.generator_id) return t("subscriptions_page.validation_select_generator");
+  if (!subscriptionAddForm.value.price_per_kw || Number(subscriptionAddForm.value.price_per_kw) <= 0) {
+    return t("subscriptions_page.validation_price_positive");
+  }
+  if (!subscriptionAddForm.value.starts_at) return t("subscriptions_page.validation_start_date_required");
+  if (!subscriptionAddForm.value.ends_at) return t("subscriptions_page.validation_end_date_required");
+  if (subscriptionAddForm.value.ends_at < subscriptionAddForm.value.starts_at) {
+    return t("subscriptions_page.validation_end_after_start");
+  }
+  return null;
+});
+
+async function handleAddSubscription() {
+  const validationError = addFormValidationError.value;
+  if (validationError) {
+    saveSubscriptionError.value = validationError;
+    return;
+  }
+
+  const payload = {
+    generator_id: Number(subscriptionAddForm.value.generator_id),
+    price_per_kw: Number(subscriptionAddForm.value.price_per_kw),
+    starts_at: subscriptionAddForm.value.starts_at,
+    ends_at: subscriptionAddForm.value.ends_at,
+    status: "active",
+  };
+  if (subscriberMode.value === "search") {
+    payload.subscriber_id = selectedSubscriber.value.id;
+  } else {
+    payload.subscriber = {
+      name: newSubscriber.name.trim(),
+      email: newSubscriber.email.trim(),
+      phone: newSubscriber.phone.trim(),
+    };
+  }
+
+  const subscriberName = subscriberMode.value === "search" ? selectedSubscriber.value?.name : newSubscriber.name;
+  const created = await createSubscription(payload);
+  if (created) {
+    pushActivity({
+      icon: "fa-file-circle-plus",
+      color: "#52733D",
+      key: subscriberName ? "subscriptions_page.activity_contract_signed_named" : "subscriptions_page.activity_contract_signed",
+      params: subscriberName ? { name: subscriberName } : undefined,
+    });
+    isAddFormOpen.value = false;
+  }
+}
+
+/* ---------------- تغيير الحالة (اعتماد/تعليق/إعادة تفعيل/إلغاء/رفض) ---------------- */
+
+/* الانتقالات المسموحة لكل حالة، مع لون وأيقونة الزر */
+const STATUS_ACTIONS = {
+  pending: [
+    { to: "active", labelKey: "subscriptions_page.action_approve", icon: "fa-check", color: "#28A745", danger: false },
+    { to: "rejected", labelKey: "subscriptions_page.action_reject", icon: "fa-xmark", color: "#D9534F", danger: true },
+  ],
+  active: [
+    { to: "suspended", labelKey: "subscriptions_page.action_suspend", icon: "fa-circle-pause", color: "#17A2B8", danger: false },
+    { to: "cancelled", labelKey: "subscriptions_page.action_cancel", icon: "fa-ban", color: "#D9534F", danger: true },
+  ],
+  suspended: [
+    { to: "active", labelKey: "subscriptions_page.action_reactivate", icon: "fa-play", color: "#28A745", danger: false },
+    { to: "cancelled", labelKey: "subscriptions_page.action_cancel", icon: "fa-ban", color: "#D9534F", danger: true },
+  ],
+  cancelled: [],
+  rejected: [],
+};
+function actionsFor(sub) {
+  return STATUS_ACTIONS[sub.status] ?? [];
+}
+
+async function handleStatusChange(sub, action) {
+  const actionLabel = t(action.labelKey);
+  if (action.danger) {
+    const confirmed = await confirm({
+      title: t("subscriptions_page.confirm_status_change_title", { action: actionLabel, name: sub.subscriber?.name }),
+      message: t("subscriptions_page.confirm_status_change_message"),
+      confirmLabel: actionLabel,
+      variant: "danger",
+    });
+    if (!confirmed) return;
+  }
+
+  const updated = await updateSubscriptionStatus(sub, action.to);
+  if (!updated) return;
+
+  if (viewingSubscription.value?.id === sub.id) viewingSubscription.value = updated;
+  pushActivity({
+    icon: action.icon,
+    color: action.color,
+    key: "subscriptions_page.activity_status_changed",
+    params: { actionKey: action.labelKey, name: sub.subscriber?.name ?? "-" },
+  });
+}
+
+/* نص عنصر سجل النشاط: يترجم مفتاح i18n مع بارامتراته (والـ action الفرعي لو موجود)،
+   أو يرجع للنص الخام لو العنصر جاي من الباك اند مباشرة */
+function activityText(entry) {
+  if (!entry.key) return entry.text ?? "";
+  const params = { ...(entry.params ?? {}) };
+  if (params.actionKey) {
+    params.action = t(params.actionKey);
+    delete params.actionKey;
+  }
+  return t(entry.key, params);
+}
+
+/* ---------------- نافذة عرض التفاصيل ---------------- */
+const viewingSubscription = ref(null);
+function openSubscriptionView(sub) {
+  viewingSubscription.value = sub;
+}
+
+/* ---------------- نقل الاشتراك لمولد آخر ---------------- */
+const transferModal = ref({ open: false, subscription: null });
+function openTransfer(subscription) {
+  transferModal.value = { open: true, subscription };
+}
+function handleTransferred(updated) {
+  const index = subscriptions.value.findIndex((s) => s.id === updated.id);
+  if (index !== -1) subscriptions.value[index] = updated;
+  if (viewingSubscription.value?.id === updated.id) viewingSubscription.value = updated;
+  pushActivity({
+    icon: "fa-right-left",
+    color: "#8A6D1F",
+    key: "subscriptions_page.activity_transferred",
+    params: { name: updated.subscriber?.name ?? "-" },
+  });
+}
+
+
+/* ==================================================================
+ * رسم بيانات لوحة التحليلات (Chart.js) - نفس الرسوم البيانية الأربعة بنسخة الـ HTML
+ * (نمو الاشتراكات الشهري / توزيع الحالات / حسب نوع الخطة / المنتهية خلال الأسابيع القادمة)
+ * ================================================================== */
+Chart.defaults.font.family = "Cairo, sans-serif";
+Chart.defaults.color = "#6B6B6B";
+
+const growthCanvas = ref(null);
+const statusCanvas = ref(null);
+const planCanvas = ref(null);
+const expiringCanvas = ref(null);
+let growthChart = null;
+let statusChart = null;
+let planChart = null;
+let expiringChart = null;
+
+function renderGrowthChart() {
+  if (!growthCanvas.value) return;
+  if (growthChart) growthChart.destroy();
+  growthChart = new Chart(growthCanvas.value, {
+    type: "line",
+    data: {
+      labels: monthlyGrowth.value.labels,
+      datasets: [
+        {
+          label: t("subscriptions_page.chart_new_contracts"),
+          data: monthlyGrowth.value.newCounts,
+          borderColor: "#8A6D1F",
+          backgroundColor: "rgba(138,109,31,0.12)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: t("subscriptions_page.chart_cancelled_contracts"),
+          data: monthlyGrowth.value.cancelledCounts,
+          borderColor: "#D9534F",
+          backgroundColor: "rgba(217,83,79,0.08)",
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { x: { grid: { display: false } }, y: { grid: { color: "rgba(82,115,61,0.08)" } } },
+    },
+  });
+}
+
+function renderStatusChart() {
+  if (!statusCanvas.value) return;
+  if (statusChart) statusChart.destroy();
+  const dist = statusDistribution.value;
+  statusChart = new Chart(statusCanvas.value, {
+    type: "doughnut",
+    data: {
+      labels: dist.map((d) => d.label),
+      datasets: [{ data: dist.map((d) => d.count), backgroundColor: dist.map((d) => d.color), borderWidth: 0 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "70%",
+      plugins: { legend: { display: false } },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        applyDerivedFilter(dist[elements[0].index].key);
+      },
+    },
+  });
+}
+
+function renderPlanChart() {
+  if (!planCanvas.value) return;
+  if (planChart) planChart.destroy();
+  planChart = new Chart(planCanvas.value, {
+    type: "bar",
+    data: {
+      labels: [planLabel("full"), planLabel("hours")],
+      datasets: [
+        {
+          label: t("subscriptions_page.chart_subscriptions_label"),
+          data: [planCounts.value.full, planCounts.value.hours],
+          backgroundColor: ["#52733D", "#17A2B8"],
+          borderRadius: 6,
+        },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: "rgba(82,115,61,0.08)" } }, y: { grid: { display: false } } },
+    },
+  });
+}
+
+function renderExpiringChart() {
+  if (!expiringCanvas.value) return;
+  if (expiringChart) expiringChart.destroy();
+  expiringChart = new Chart(expiringCanvas.value, {
+    type: "bar",
+    data: {
+      labels: expiringBucketLabels.value,
+      datasets: [
+        {
+          label: t("subscriptions_page.chart_expiring_subscriptions_label"),
+          data: expiringBuckets.value,
+          backgroundColor: "#D4AF37",
+          borderRadius: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { display: false } }, y: { grid: { color: "rgba(82,115,61,0.08)" } } },
+    },
+  });
+}
+
+function renderAllCharts() {
+  nextTick(() => {
+    renderGrowthChart();
+    renderStatusChart();
+    renderPlanChart();
+    renderExpiringChart();
+  });
+}
+
+/* لما بيانات الصفحة تتغيّر: نعيد حساب نمو الاشتراكات التقريبي (لو ما في endpoint حقيقي) ونعيد رسم كل الرسوم */
+watch(subscriptions, () => {
+  if (monthlyGrowth.value.isEstimate) computeMonthlyGrowthFromPage();
+  renderAllCharts();
+});
+/* لما تتغيّر اللغة: تحديث تسميات الأشهر/الحالات/الخطط والرسوم كلها */
+watch(locale, () => {
+  if (monthlyGrowth.value.isEstimate) computeMonthlyGrowthFromPage();
+  renderAllCharts();
+});
+
+onMounted(async () => {
+  await fetchSubscriptions();
+  await fetchMonthlyGrowth();
+  await fetchActivityLog();
+  renderAllCharts();
+});
+
+onBeforeUnmount(() => {
+  growthChart?.destroy();
+  statusChart?.destroy();
+  planChart?.destroy();
+  expiringChart?.destroy();
+});
+
+/* ---------------- تأثير الصواعق الخلفي في الـ Hero (هوية أمبير البصرية — منقول من subscribers.html) ---------------- */
+const heroCanvas = ref(null);
+let stopLightning = null;
+function startLightningEffect(canvas) {
+  const ctx = canvas.getContext("2d");
+  function resize() {
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = canvas.parentElement.offsetHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  class Lightning {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.startX = Math.random() * canvas.width;
+      this.startY = Math.random() * (canvas.height * 0.3);
+      this.path = [];
+      this.life = 0;
+      this.maxLife = 20 + Math.random() * 20;
+      let x = this.startX;
+      let y = this.startY;
+      this.path.push({ x, y });
+      const steps = 8 + Math.floor(Math.random() * 6);
+      for (let i = 0; i < steps; i++) {
+        x += (Math.random() - 0.5) * 70;
+        y += (canvas.height / steps) * (0.8 + Math.random() * 0.4);
+        this.path.push({ x, y });
+      }
+    }
+    draw() {
+      this.life++;
+      let alpha = Math.max(0, 1 - this.life / this.maxLife);
+      if (Math.random() < 0.25) alpha *= 0.3;
+      const dark = document.documentElement.classList.contains("dark");
+      ctx.save();
+      ctx.shadowBlur = dark ? 16 : 9;
+      ctx.shadowColor = dark ? "#D4AF37" : "#3E582E";
+      ctx.strokeStyle = dark ? `rgba(255,248,220,${alpha * 0.5})` : `rgba(62,88,46,${alpha * 0.35})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      this.path.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  let bolts = [new Lightning()];
+  let timer = 0;
+  let frame = null;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    timer++;
+    if (timer % 90 === 0 || Math.random() < 0.01) bolts.push(new Lightning());
+    for (let i = bolts.length - 1; i >= 0; i--) {
+      bolts[i].draw();
+      if (bolts[i].life >= bolts[i].maxLife) bolts.splice(i, 1);
+    }
+    frame = requestAnimationFrame(animate);
+  }
+  animate();
+
+  return () => {
+    window.removeEventListener("resize", resize);
+    if (frame) cancelAnimationFrame(frame);
+  };
+}
+onMounted(() => {
+  if (heroCanvas.value) stopLightning = startLightningEffect(heroCanvas.value);
+});
+onUnmounted(() => {
+  if (stopLightning) stopLightning();
+});
+
+async function handleUnlock(subscriber) {
+  await unlockSubscriber(subscriber.id);
+  toast.show({
+    type: "success",
+    title: t("users_page.unlocked_toast_title"),
+    message: t("users_page.unlocked_message", { name: subscriber.name }),
+  });
+}
+
+/* ---------------- أدوات كلمة السر (رابط إعادة تعيين / تعيين مباشر)     ---------------- */
+const isSendingResetLink = ref(false);
+async function handleSendResetLink(subscriber) {
+  const confirmed = await confirm({
+    title: t("users_page.send_reset_link_title"),
+    message: t("subscribers_page.send_reset_link_message", { email: subscriber.email }),
+    confirmLabel: t("users_page.send_action"),
+  });
+  if (!confirmed) return;
+  isSendingResetLink.value = true;
+  try {
+    await userService.sendPasswordResetLink(subscriber.id);
+    toast.show({ type: "success", title: t("users_page.sent_toast_title"), message: t("subscribers_page.reset_link_sent_message", { email: subscriber.email }) });
+  } catch (err) {
+    toast.show({ type: "danger", title: t("subscribers_page.send_failed_title"), message: err.response?.data?.message ?? "" });
+  } finally {
+    isSendingResetLink.value = false;
+  }
+}
+
+const setPasswordModal = ref(null);
+const setPasswordForm = reactive({ password: "", password_confirmation: "" });
+const showSetPassword = ref(true);
+const isSettingPassword = ref(false);
+const setPasswordError = ref(null);
+
+function generateSetPassword() {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*";
+  const all = upper + lower + digits + symbols;
+  let pwd = upper[Math.floor(Math.random() * upper.length)] + lower[Math.floor(Math.random() * lower.length)] + digits[Math.floor(Math.random() * digits.length)] + symbols[Math.floor(Math.random() * symbols.length)];
+  for (let i = 0; i < 8; i++) pwd += all[Math.floor(Math.random() * all.length)];
+  pwd = pwd.split("").sort(() => Math.random() - 0.5).join("");
+  setPasswordForm.password = pwd;
+  setPasswordForm.password_confirmation = pwd;
+}
+function openSetPassword(subscriber) {
+  setPasswordModal.value = subscriber;
+  setPasswordError.value = null;
+  showSetPassword.value = true;
+  generateSetPassword();
+}
+async function copySetPassword() {
+  try {
+    await navigator.clipboard.writeText(setPasswordForm.password);
+    toast.show({ type: "success", title: t("users_page.copied_toast_title"), message: t("subscribers_page.password_copied_short") });
+  } catch {
+    // فشل النسخ (صلاحيات المتصفح) — تجاهل بصمت.
+  }
+}
+async function handleSetPassword() {
+  isSettingPassword.value = true;
+  setPasswordError.value = null;
+  try {
+    await userService.setPassword(setPasswordModal.value.id, setPasswordForm.password, setPasswordForm.password_confirmation);
+    toast.show({
+      type: "success",
+      title: t("users_page.set_action"),
+      message: t("subscribers_page.password_set_message"),
+    });
+    setPasswordModal.value = null;
+  } catch (err) {
+    setPasswordError.value = err.response?.data?.errors?.password?.[0] ?? err.response?.data?.message ?? t("subscribers_page.could_not_set_password");
+  } finally {
+    isSettingPassword.value = false;
+  }
+}
+
+/* ---------------- بحث ---------------- */
+let searchTimeout = null;
+function handleSearchInput() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => fetchSubscribers(1), 400);
+}
+
+/* ---------------- فلتر حسب حالة الاشتراك (من السيرفر عبر subscription_status) ---------------- */
+const STATUS_PILLS = computed(() => [
+  { value: "", label: t("common.all") },
+  { value: "active", label: t("subscribers_page.filter_has_active_sub") },
+  { value: "none", label: t("subscribers_page.no_subscription") },
+  { value: "locked", label: t("subscribers_page.filter_locked") },
+]);
+function onFilterChange() {
+  onSubscriptionFilterChange();
+}
+
+/* ---------------- توجيه التنبيهات لمكانها ذو الصلة (كانت عرضًا بصريًا بس) ---------------- */
+function handleAlertClick(alert) {
+  if (alert.type === "overdue_balance") {
+    subscriptionFilter.value = "overdue";
+    onFilterChange();
+    document.getElementById("subscribers-table-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  // pending_review و suspended_account حالتا حساب عامة (مو حالة اشتراك)،
+  // وفلترة الحالة العامة موجودة أصلًا وشغّالة بصفحة "المستخدمين" — بدل ما
+  // نبني فلتر مكرَّر هون، نوجّه لهناك مباشرة مع تفعيل الفلتر تلقائيًا.
+  if (alert.type === "pending_review") {
+    router.push({ name: "admin.users", query: { role: "subscriber", status: "pending_review" } });
+    return;
+  }
+  if (alert.type === "suspended_account") {
+    router.push({ name: "admin.users", query: { role: "subscriber", status: "suspended" } });
+  }
+}
+
+/* ---------------- فلتر حسب الباقة (منزلي / تجاري / غيرها) ----------------
+ * فلترة محلية على البيانات المحمّلة حاليًا (تشتغل فورًا بدون تعديل بالـ backend).
+ * إذا صار عندك لاحقًا فلترة من السيرفر، فعّل onPackageFilterChange تستدعي
+ * fetchSubscribers(1) بعد ما تمرري packageFilter للـ composable.
+ */
+/* ---------------- فلتر حسب فئة المستفيد (عادي / مستفيد من تبرّع) ----------------
+ * ملاحظة إصلاح: كان الفلتر مبني على "الباقة" (تجاري/منزلي) — مفهوم وهمي
+ * غير موجود بالباك اند. استبدلناه بفلتر على فئة المستفيد الحقيقية
+ * (beneficiary_type) الموجودة فعليًا بالنظام.
+ */
+const packageFilter = ref("");
+const PACKAGE_PILLS = computed(() => [
+  { value: "", label: t("subscribers_page.all_categories") },
+  { value: "normal", label: t("subscribers_page.category_normal") },
+  { value: "special", label: t("subscribers_page.category_donation") },
+]);
+function subscriberPlanType(subscriber) {
+  return subscriber.beneficiary_type ?? null;
+}
+function onPackageFilterChange() {
+  // فلترة محلية على الصفحة الحالية — beneficiary_type محمَّل مسبقًا بكل استجابة.
+}
+
+/* ---------------- فرز عبر رؤوس الأعمدة (أيقونة تصاعدي/تنازلي - نفس أسلوب صفحة المولدات) ---------------- */
+const sortKey = ref("");
+const sortDir = ref("desc");
+function sortIconClass(key) {
+  if (sortKey.value !== key) return "opacity-40";
+  return sortDir.value === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
+}
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === "desc" ? "asc" : "desc";
+  } else {
+    sortKey.value = key;
+    sortDir.value = "desc";
+  }
+}
+const sortedSubscribers = computed(() => {
+  if (!sortKey.value) return subscribers.value;
+  const list = [...subscribers.value];
+  list.sort((a, b) => {
+    let va, vb;
+    if (sortKey.value === "name") {
+      va = (a.name ?? "").toLowerCase();
+      vb = (b.name ?? "").toLowerCase();
+    } else if (sortKey.value === "created_at") {
+      va = new Date(a.created_at ?? 0).getTime();
+      vb = new Date(b.created_at ?? 0).getTime();
+    } else if (sortKey.value === "balance") {
+      va = a.outstanding_balance_ils ?? 0;
+      vb = b.outstanding_balance_ils ?? 0;
+    }
+    if (va < vb) return sortDir.value === "asc" ? -1 : 1;
+    if (va > vb) return sortDir.value === "asc" ? 1 : -1;
+    return 0;
+  });
+  return list;
+});
+
+/* فلترة الباقة تُطبَّق فوق نتيجة الفرز (فلترة محلية على الصفحة الحالية) */
+const filteredSubscribers = computed(() => {
+  if (!packageFilter.value) return sortedSubscribers.value;
+  return sortedSubscribers.value.filter((s) => subscriberPlanType(s) === packageFilter.value);
+});
+
+/* ---------------- عرض جدول/شبكة (منقول من subscribers.html) ---------------- */
+const viewMode = ref("table");
+
+/* ---------------- تنسيق أحرف الأفاتار + ألوان متدرّجة (بنفس أسلوب باقي الصفحات) ---------------- */
+function initialsOf(name) {
+  const parts = (name ?? "").trim().split(/\s+/);
+  return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
+}
+const AVATAR_COLORS = [
+  ["#52733D", "#3E582E"],
+  ["#8A6D1F", "#D4AF37"],
+  ["#17A2B8", "#0f6c7d"],
+  ["#D9534F", "#8A6D1F"],
+];
+function avatarColor(index) {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+}
+
+/* ---------------- فئة المستفيد (عادي / مستفيد من تبرّع) ----------------
+ * ملاحظة إصلاح: كان الكود يفترض حقل "plan_type" بقيم "commercial"/"residential"
+ * — هاد المفهوم غير موجود إطلاقًا بمنطق النظام (لا يوجد تصنيف تجاري/سكني
+ * للمشتركين بالباك اند). الحقل الحقيقي الموجود هو beneficiary_type
+ * (عادي/مستفيد من تبرّع)، فاستبدلناه بدل اختراع بيانات وهمية.
+ */
+function planTypeLabel(subscriber) {
+  return subscriber.beneficiary_type_label ?? "-";
+}
+function planTypeChipClass(subscriber) {
+  return subscriber.beneficiary_type === "special" ? "chip-info" : "chip-neutral";
+}
+
+/* ---------------- الرصيد المستحق (حقيقي من الفواتير غير المسدَّدة) ----------------
+ * ملاحظة إصلاح: كان الكود يفترض حقل "balance" غير موجود بالباك اند إطلاقًا.
+ * الحقل الحقيقي هو outstanding_balance_ils — مجموع الفواتير غير المسدَّدة
+ * فقط (pending/overdue/partially_paid)، محسوب ومحمَّل مسبقًا من الباك اند.
+ */
+function formatBalance(subscriber) {
+  const balance = subscriber.outstanding_balance_ils;
+  if (balance === null || balance === undefined) return "-";
+  return balance > 0 ? `₪ ${balance.toLocaleString()}` : "₪ 0";
+}
+function balanceColor(subscriber) {
+  const balance = subscriber.outstanding_balance_ils;
+  return balance > 0 ? "#D9534F" : "inherit";
+}
+
+/* ---------------- حالة الدفع (3 حالات حقيقية من الباك اند: نشط / متأخر بالدفع / موقوف) ----------------
+ * ملاحظة إصلاح: كان الكود يفترض حقل "status" بقيم "active"/"overdue"/"suspended"،
+ * لكن الحقل status الفعلي بالـ UserResource هو حالة الحساب العامة
+ * (active/inactive/suspended/pending_review) ومالوش علاقة بحالة الدفع —
+ * "overdue" ما كانت لترجع أبدًا فعليًا. أضفنا حقل payment_status مشتق
+ * فعليًا بالباك اند (من الفواتير المتأخرة الحقيقية) واستخدمناه بدل الافتراض.
+ */
+function subscriberStatus(subscriber) {
+  if (subscriber.payment_status) return subscriber.payment_status;
+  return subscriber.is_locked ? "suspended" : "active";
+}
+function statusLabel(subscriber) {
+  const status = subscriberStatus(subscriber);
+  if (status === "overdue") return t("subscribers_page.status_overdue");
+  if (status === "suspended") return t("users_page.status_suspended");
+  return t("users_page.status_active");
+}
+function statusChipClass(subscriber) {
+  const status = subscriberStatus(subscriber);
+  if (status === "overdue") return "chip-warning";
+  if (status === "suspended") return "chip-danger";
+  return "chip-success";
+}
+
+/* ---------------- KPI Cards ----------------
+ * أصبحت الآن مبنية على إحصائيات حقيقية شاملة من الباك اند (userService.subscribersStats)
+ * بدل أرقام "هذه الصفحة" التقريبية القديمة — نفس نمط أصحاب المولدات والداشبورد.
+ */
+const KPI_CARDS = computed(() => {
+  if (!stats.value) return [];
+  const s = stats.value;
+  return [
+    { icon: "fa-users", label: t("subscribers_page.total_subscribers"), raw: s.total, decimals: 0, c1: "#52733D", c2: "#3E582E" },
+    { icon: "fa-circle-check", label: t("users_page.status_active"), raw: s.active, decimals: 0, c1: "#28A745", c2: "#1f7a37" },
+    { icon: "fa-clock", label: t("subscribers_page.status_overdue"), raw: s.overdue_count, decimals: 0, c1: "#D4AF37", c2: "#8A6D1F" },
+    { icon: "fa-ban", label: t("users_page.status_suspended"), raw: s.suspended_count, decimals: 0, c1: "#D9534F", c2: "#8A6D1F" },
+    { icon: "fa-user-plus", label: t("subscribers_page.new_this_month"), raw: s.new_this_month_count, decimals: 0, c1: "#8A6D1F", c2: "#6b551b" },
+  ];
+});
+
+/* ---------------- الرسوم البيانية (منقولة من subscribers.html — نسخة صادقة) ----------------
+ * ملاحظة هندسية مهمة: subscribers.html الأصلي فيه 4 رسوم بيانية:
+ *   1) نمو المشتركين الشهري (سنة/ربع/شهر) — بيانات تاريخية Demo وهمية بالكامل.
+ *   2) حالة الدفع — قابلة للاشتقاق من البيانات الحقيقية المحمّلة حاليًا.
+ *   3) المشتركون حسب المنطقة — قابلة للاشتقاق من البيانات الحقيقية المحمّلة حاليًا.
+ *   4) متوسط الاستهلاك الشهري (ك.و.س) — لا يوجد حقل استهلاك (kWh) على كائن
+ *      subscriber حاليًا بالـ composable، فبيانات هذا الرسم وهمية بالكامل بالـ HTML.
+ * نقلت فقط الرسمين (2) و(3) بصدق من بيانات الصفحة الحالية، وتجاهلت (1) و(4)
+ * لأن نقلهم كان سيعني عرض أرقام وهمية — بما يخالف نفس المبدأ اللي معمول فيه
+ * أصلاً ببطاقات الـ KPI بهذا الملف ("هذه الصفحة" بدل أرقام كاذبة).
+ * لرسمين (1) و(4) بشكل حقيقي، لازم endpoints تاريخية (نمو شهري) وحقل استهلاك
+ * فعلي (kWh) على المشترك/العداد بالـ backend. ---------------------------------------------------------------- */
+/* ---------------- توزيع حالات المشتركين (الآن من إحصائيات حقيقية شاملة) ---------------- */
+const paymentStatusChartData = computed(() => ({
+  labels: [
+    t("users_page.status_active"),
+    t("subscribers_page.overdue_short"),
+    t("users_page.status_suspended"),
+  ],
+  datasets: [{
+    data: [stats.value?.active ?? 0, stats.value?.overdue_count ?? 0, stats.value?.suspended_count ?? 0],
+    backgroundColor: ["#28A745", "#D4AF37", "#D9534F"],
+    borderWidth: 0,
+  }],
+}));
+const paymentDoughnutOptions = {
+  responsive: true, maintainAspectRatio: false, cutout: "68%",
+  plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10.5 } } } },
+};
+
+const byAreaChartData = computed(() => {
+  const counts = {};
+  subscribers.value.forEach((s) => {
+    const area = s.region || t("subscribers_page.unspecified_region");
+    counts[area] = (counts[area] ?? 0) + 1;
+  });
+  const labels = Object.keys(counts);
+  return {
+    labels,
+    datasets: [{
+      data: Object.values(counts),
+      backgroundColor: ["#52733D", "#8A6D1F", "#17A2B8", "#D4AF37", "#D9534F", "#9a9d97", "#3E582E", "#0f6c7d"],
+      borderWidth: 0,
+    }],
+  };
+});
+const byAreaOptions = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { position: "bottom", labels: { boxWidth: 9, font: { size: 9.5 } } } },
+};
+
+/* ---------------- تنبيهات المشتركين (مشتقة من بيانات الصفحة الحالية — صادقة) ----------------
+ * ملاحظة: subscribers.html الأصلي فيه "subAlertsList" لكن بدون مصدر بيانات حقيقي واضح
+ * (Demo فقط). هون اشتققتها من نفس أرقام KPI الصفحة الحالية بدل اختراع بيانات جديدة. ---------------------------------------------------------------- */
+/* ---------------- تنبيهات المشتركين (الآن من إحصائيات حقيقية شاملة، مو "هذه الصفحة" فقط) ---------------- */
+const pageAlerts = computed(() => {
+  const list = [];
+  const overdueCount = stats.value?.overdue_count ?? 0;
+  const suspendedCount = stats.value?.suspended_count ?? 0;
+  if (overdueCount > 0) {
+    list.push({
+      type: "overdue", severity: "warning", icon: "fa-clock", color: "#D4AF37",
+      title: t("subscribers_page.overdue_alert_title"),
+      description: t("subscribers_page.overdue_alert_desc", { count: overdueCount }),
+    });
+  }
+  if (suspendedCount > 0) {
+    list.push({
+      type: "suspended", severity: "critical", icon: "fa-ban", color: "#D9534F",
+      title: t("subscribers_page.suspended_alert_title"),
+      description: t("subscribers_page.suspended_alert_desc", { count: suspendedCount }),
+    });
+  }
+  return list;
+});
+const ALERT_CHIPS = { critical: "chip-danger", warning: "chip-warning", info: "chip-info" };
+function alertTag(severity) {
+  const tags = {
+    critical: t("owners_page.alert_tag_critical"),
+    warning: t("owners_page.alert_tag_warning"),
+    info: t("owners_page.alert_tag_info"),
+  };
+  return tags[severity] ?? t("owners_page.alert_tag_warning");
+}
+
+/* ---------------- الخط الزمني (Activity Log حقيقي — نفس نمط صفحة أصحاب المولدات) ---------------- */
+const timeline = ref([]);
+const isLoadingTimeline = ref(true);
+async function fetchTimeline() {
+  isLoadingTimeline.value = true;
+  try {
+    const { data } = await activityLogService.index({ subject_type: "user", per_page: 6 });
+    timeline.value = data.data.data ?? data.data;
+  } finally {
+    isLoadingTimeline.value = false;
+  }
+}
+function timeAgo(str) {
+  if (!str) return "-";
+  const diffMs = Date.now() - new Date(str.replace(" ", "T")).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return t("subscribers_page.time_now");
+  if (mins < 60) return t("subscribers_page.time_mins_ago", { mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return t("subscribers_page.time_hours_ago", { hours });
+  return t("subscribers_page.time_days_ago", { days: Math.floor(hours / 24) });
+}
+
+/* ---------------- الاشتراكات الأقرب للانتهاء (الصفحة الحالية) ---------------- */
+const soonestExpiring = computed(() =>
+  [...subscribers.value]
+    .filter((s) => s.active_subscription?.ends_at)
+    .sort((a, b) => new Date(a.active_subscription.ends_at) - new Date(b.active_subscription.ends_at))
+    .slice(0, 5),
+);
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const diffMs = new Date(dateStr).getTime() - Date.now();
+  return Math.ceil(diffMs / 86400000);
+}
+function expiryColor(days) {
+  if (days === null) return "#9a9d97";
+  if (days <= 3) return "#D9534F";
+  if (days <= 7) return "#FFC107";
+  return "#6B6B6B";
+}
+
+/* ---------------- تنسيق تاريخ مختصر ---------------- */
+function formatDate(dateStr) {
+  return dateStr ? dateStr.slice(0, 10) : "-";
+}
+
+/* ---------------- طباعة (منقولة من subscribers.html: زر الهيرو + أيقونة شريط الأدوات) ---------------- */
+function printPage() {
+  window.print();
+}
+
+/* ---------------- تذكير جماعي بالدفع ----------------
+ * أصبحت الآن متّصلة فعليًا بـ POST /users/bulk-payment-reminder (تعيد استخدام
+ * نفس بنية الإشعارات الموجودة: حدث InvoiceDueSoon + بوابة تفضيلات الإشعارات) —
+ * راجع SendBulkPaymentReminderAction بالباك اند للتفاصيل الكاملة.
+ * ---------------------------------------------------------------- */
+const isSendingBulkReminder = ref(false);
+async function handleBulkReminder() {
+  const dueSubscriberIds = subscribers.value
+    .filter((s) => subscriberStatus(s) === "overdue")
+    .map((s) => s.id);
+
+  if (dueSubscriberIds.length === 0) {
+    await confirm({
+      title: t("subscribers_page.no_overdue_subscribers_title"),
+      message: t("subscribers_page.no_overdue_subscribers_message"),
+      confirmLabel: t("subscribers_page.ok_action"),
+      hideCancel: true,
+    });
+    return;
+  }
+
+  const confirmed = await confirm({
+    title: t("subscribers_page.bulk_reminder_title"),
+    message: t("subscribers_page.bulk_reminder_message", { count: dueSubscriberIds.length }),
+    confirmLabel: t("users_page.send_action"),
+  });
+  if (!confirmed) return;
+
+  isSendingBulkReminder.value = true;
+  try {
+    const { data } = await userService.sendBulkPaymentReminder(dueSubscriberIds);
+    await confirm({
+      title: t("users_page.sent_toast_title"),
+      message: data?.message ?? t("subscribers_page.reminders_sent_message"),
+      confirmLabel: t("subscribers_page.ok_action"),
+      hideCancel: true,
+    });
+  } catch (err) {
+    await confirm({
+      title: t("users_page.send_failed_title"),
+      message: err.response?.data?.message ?? t("subscribers_page.reminder_send_failed_message"),
+      confirmLabel: t("subscribers_page.ok_action"),
+      hideCancel: true,
+    });
+  } finally {
+    isSendingBulkReminder.value = false;
+  }
+}
+
+/* ---------------- Pagination بأزرار محدودة (مش زر لكل صفحة) ---------------- */
+const paginationRange = computed(() => {
+  const total = pagination.value.last_page;
+  const current = pagination.value.current_page;
+  const delta = 1;
+  const range = [];
+  const withDots = [];
+  let last = null;
+
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i);
+    }
+  }
+  for (const i of range) {
+    if (last !== null) {
+      if (i - last === 2) withDots.push(last + 1);
+      else if (i - last > 2) withDots.push("...");
+    }
+    withDots.push(i);
+    last = i;
+  }
+  return withDots;
+});
+
+/* ---------------- إضافة مشترك جديد ----------------
+ * ملاحظة: بيعتمد على createSubscriber من الـ composable. لو مش مضافة هناك بعد،
+ * رح تظهر رسالة خطأ بالنافذة بدل ما تنكسر الصفحة.
+ */
+const showAddModal = ref(false);
+const addForm = reactive({ name: "", email: "", phone: "", password: "", password_confirmation: "" });
+const addLocalError = ref("");
+const showAddPassword = ref(false);
+
+function generateAddPassword() {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*";
+  const all = upper + lower + digits + symbols;
+  let pwd = upper[Math.floor(Math.random() * upper.length)] + lower[Math.floor(Math.random() * lower.length)] + digits[Math.floor(Math.random() * digits.length)] + symbols[Math.floor(Math.random() * symbols.length)];
+  for (let i = 0; i < 8; i++) pwd += all[Math.floor(Math.random() * all.length)];
+  pwd = pwd.split("").sort(() => Math.random() - 0.5).join("");
+  addForm.password = pwd;
+  addForm.password_confirmation = pwd;
+  showAddPassword.value = true;
+}
+
+function openAdd() {
+  addForm.name = "";
+  addForm.email = "";
+  addForm.phone = "";
+  addForm.password = "";
+  addForm.password_confirmation = "";
+  showAddPassword.value = false;
+  addLocalError.value = "";
+  if (createError) createError.value = null;
+  showAddModal.value = true;
+}
+function closeAdd() {
+  if (isCreating?.value) return;
+  showAddModal.value = false;
+}
+async function handleCreate() {
+  if (typeof createSubscriber !== "function") {
+    addLocalError.value = t("subscribers_page.create_subscriber_missing_error");
+    return;
+  }
+  const ok = await createSubscriber({ ...addForm });
+  if (ok) showAddModal.value = false;
+}
+
+const editingSubscriber = ref(null);
+const editForm = reactive({ name: "", email: "", phone: "" });
+
+function openEdit(subscriber) {
+  editingSubscriber.value = subscriber;
+  editForm.name = subscriber.name;
+  editForm.email = subscriber.email;
+  editForm.phone = subscriber.phone ?? "";
+  saveError.value = null;
+}
+
+function closeEdit() {
+  if (isSaving.value) return;
+  editingSubscriber.value = null;
+  saveError.value = null;
+}
+
+async function handleSave() {
+  const name = editingSubscriber.value.name;
+  const ok = await updateSubscriber(editingSubscriber.value.id, {
+    ...editForm,
+  });
+  if (ok) {
+    editingSubscriber.value = null;
+    toast.show({
+      type: "success",
+      title: t("users_page.saved_toast_title"),
+      message: t("subscribers_page.subscriber_updated_message", { name }),
+    });
+  }
+}
+
+async function handleDelete(subscriber) {
+  const confirmed = await confirm({
+    title: t("subscribers_page.delete_subscriber_title", { name: subscriber.name }),
+    message: t("subscribers_page.delete_subscriber_message"),
+    confirmLabel: t("subscribers_page.delete_permanently"),
+    variant: "danger",
+  });
+  if (confirmed) {
+    const ok = await deleteSubscriber(subscriber.id);
+    if (ok) {
+      toast.show({
+        type: "success",
+        title: t("users_page.deleted_toast_title"),
+        message: t("subscribers_page.subscriber_deleted_message", { name: subscriber.name }),
+      });
+    }
+  }
+}
+
+/* ---------------- نافذة عرض التفاصيل (منفصلة عن التعديل) ---------------- */
+const viewingSubscriber = ref(null);
+
+function openView(subscriber) {
+  viewingSubscriber.value = subscriber;
+}
+
+function switchToEditFromView() {
+  const subscriber = viewingSubscriber.value;
+  viewingSubscriber.value = null;
+  openEdit(subscriber);
+}
+
+/* ---------------- تصدير CSV ----------------
+ * ملاحظة: التصدير هون على مستوى الصفحة المحمّلة حاليًا (subscribers.value) فقط، مو كل
+ * السجلات. لتصدير الكل بغض النظر عن الـ pagination، يلزم إما رفع per_page مؤقتًا عبر
+ * fetchSubscribers، أو إضافة Endpoint تصدير مخصص بالـ Backend (الأفضل للحجم الكبير).
+ */
+function handleExportCsv() {
+  const escapeCsv = (val) => {
+    const s = String(val ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = [
+    t("dashboard.name"),
+    t("users_page.email_label"),
+    t("dashboard.phone"),
+    t("dashboard.status"),
+    t("subscribers_page.current_subscription_col"),
+    t("subscribers_page.expires_on_col"),
+    t("subscribers_page.joined_col"),
+  ];
+  const rows = subscribers.value.map((s) => [
+    s.name,
+    s.email,
+    s.phone ?? "",
+    statusLabel(s),
+    s.active_subscription ? (s.active_subscription.generator_name ?? s.active_subscription.plan_name ?? "") : t("subscribers_page.no_subscription"),
+    s.active_subscription ? formatDate(s.active_subscription.ends_at) : "",
+    formatDate(s.created_at),
+  ]);
+  const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(escapeCsv).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+onMounted(() => {
+  if (route.query.q) searchTerm.value = String(route.query.q);
+  fetchSubscribers();
+  fetchStats();
+  fetchTimeline();
+});
+
+</script>
+
+<template>
+  <div class="space-y-6">
+    <!-- ===== HERO ===== -->
+    <section v-reveal class="glass-card relative overflow-hidden p-6 lg:p-8">
+      <canvas ref="heroCanvas" class="absolute inset-0 w-full h-full pointer-events-none opacity-70"></canvas>
+      <div class="absolute -start-16 -top-16 w-72 h-72 bg-[#D4AF37]/20 dark:bg-[#D4AF37]/25 rounded-full blur-[100px] pointer-events-none"></div>
+      <div class="absolute -end-10 -bottom-16 w-72 h-72 bg-[#52733D]/20 dark:bg-[#8cc35a]/15 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div class="relative flex flex-col gap-3">
+        <nav class="flex items-center gap-1.5 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
+          <span>{{ t("common.home") }}</span>
+          <ChevronRight class="rtl:block ltr:hidden text-[9px]" aria-hidden="true" />
+          <ChevronLeft class="ltr:block rtl:hidden text-[9px]" aria-hidden="true" />
+          <span class="text-[#52733D] dark:text-[#8cc35a] font-bold">
+            {{ activeTab === "subscribers" ? t("subscribers_page.breadcrumb") : t("subscriptions_page.title") }}
+          </span>
+        </nav>
+
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <span class="inline-flex items-center gap-2 text-[11px] font-bold text-[#52733D] dark:text-[#8cc35a] bg-[#EBF1E7] dark:bg-white/5 border border-[#D4AF37]/30 rounded-full px-3 py-1.5 w-fit">
+              <Users aria-hidden="true" v-if="activeTab === 'subscribers'" /><FilePenLine aria-hidden="true" v-else />
+              {{ activeTab === "subscribers" ? t("subscribers_page.eyebrow") : t("subscriptions_page.title") }}
+            </span>
+
+            <h1 class="text-2xl lg:text-[28px] font-extrabold mt-3">
+              {{ activeTab === "subscribers" ? t("subscribers_page.breadcrumb") : t("subscriptions_page.title") }}
+            </h1>
+
+            <p class="text-[13.5px] text-[#6B6B6B] dark:text-[#aeb1ab] leading-relaxed max-w-2xl mt-1.5">
+              <template v-if="activeTab === 'subscribers'">
+                {{ t("subscribers_page.subtitle_before") }}
+                <b class="text-[#3E582E] dark:text-[#8cc35a]">{{ pagination.total ?? 0 }}</b>
+                {{ t("subscribers_page.subtitle_after") }}
+              </template>
+              <template v-else>
+                {{ t("subscriptions_page.subtitle") }}
+                <span v-if="systemStatusInfo" class="inline-flex items-center gap-1.5 font-bold ms-1.5" :style="{ color: systemStatusInfo.color }">
+                  <Circle class="text-[7px]" aria-hidden="true" /> {{ systemStatusInfo.label }}
+                </span>
+              </template>
+            </p>
+          </div>
+
+          <!-- ===== تبديل التابات (المشتركون / الاشتراكات) ===== -->
+          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 shrink-0 print-hidden">
+            <button
+              v-for="tab in TABS"
+              :key="tab.key"
+              type="button"
+              @click="activeTab = tab.key"
+              class="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold transition-colors"
+              :class="
+                activeTab === tab.key
+                  ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white shadow-sm'
+                  : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'
+              "
+            >
+              <AppIcon :name="tab.icon" />
+              {{ tab.label }}
+              <span
+                v-if="tab.badge"
+                class="text-[10px] font-extrabold rounded-full px-1.5 min-w-[1.1rem] text-center"
+                :class="activeTab === tab.key ? 'bg-white/25 text-white' : 'bg-[#D9534F] text-white'"
+              >{{ tab.badge }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2.5 mt-1">
+          <template v-if="activeTab === 'subscribers'">
+            <button v-if="can('users.create')" type="button" @click="openAdd" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
+              <UserPlus aria-hidden="true" /> {{ t("subscribers_page.new_subscriber_button") }}
+            </button>
+            <button type="button" @click="handleExportCsv" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
+              <FileDown aria-hidden="true" /> {{ t("subscribers_page.export_list_button") }}
+            </button>
+            <button type="button" @click="handleBulkReminder" :disabled="isSendingBulkReminder" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2 disabled:opacity-60">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSendingBulkReminder" /><Bell aria-hidden="true" v-else /> {{ t("subscribers_page.bulk_reminder_button") }}
+            </button>
+            <button type="button" @click="printPage" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
+              <Printer aria-hidden="true" /> {{ t("owner_applications_page.print") }}
+            </button>
+          </template>
+          <template v-else>
+            <a :href="exportExcelUrl" target="_blank" rel="noopener" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
+              <FileSpreadsheet aria-hidden="true" /> {{ t("owner_applications_page.export_excel_title") }}
+            </a>
+            <a :href="exportPdfUrl" target="_blank" rel="noopener" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
+              <FileText aria-hidden="true" /> {{ t("subscriptions_page.export_pdf") }}
+            </a>
+            <button type="button" @click="openAddModal" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
+              <Plus aria-hidden="true" /> {{ t("subscriptions_page.add_subscription_button") }}
+            </button>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         ==================  تبويب: المشتركون  =======================
+         ========================================================== -->
+    <template v-if="activeTab === 'subscribers'">
+    <!-- ===== ALERTS (كانت محسوبة بالباك اند بدون أي عرض بالواجهة) ===== -->
+    <section v-if="stats?.alerts?.length" v-reveal class="glass-card p-4">
+      <h3 class="text-[13px] font-bold mb-3 flex items-center gap-2">
+        <TriangleAlert class="text-[#D9534F]" aria-hidden="true" />
+        {{ $t("subscribers_page.alerts_needing_attention") }}
+        <span class="text-[10px] font-bold text-white bg-[#D9534F] rounded-full px-2 py-0.5">{{ stats.alerts.length }}</span>
+      </h3>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <button
+          v-for="(a, i) in stats.alerts" :key="i" type="button"
+          @click="handleAlertClick(a)"
+          class="flex items-start gap-2.5 p-3 rounded-xl text-start transition-transform hover:-translate-y-0.5"
+          :class="a.severity === 'critical' ? 'bg-[#D9534F]/8 border border-[#D9534F]/20' : 'bg-[#D4AF37]/8 border border-[#D4AF37]/20'"
+        >
+          <CircleAlert class="mt-0.5 shrink-0 text-[#D9534F]" aria-hidden="true" v-if="a.severity === 'critical'" /><Clock class="mt-0.5 shrink-0 text-[#8A6D1F]" aria-hidden="true" v-else />
+          <div class="min-w-0 flex-1">
+            <p class="text-[11.5px] font-bold">{{ a.title }}</p>
+            <p class="text-[10.5px] text-[#6B6B6B] dark:text-[#a8aaa5]">{{ a.description }}</p>
+          </div>
+          <ChevronLeft class="text-[9px] text-[#c9cdc2] dark:text-[#565952] shrink-0 self-center" aria-hidden="true" v-if="locale === 'ar'" /><ChevronRight class="text-[9px] text-[#c9cdc2] dark:text-[#565952] shrink-0 self-center" aria-hidden="true" v-else />
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== KPI CARDS ===== -->
+    <section v-reveal>
+      <div v-if="isLoadingStats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div v-for="i in 5" :key="i" class="h-24 rounded-2xl thumb-loading"></div>
+      </div>
+      <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div
+          v-for="c in KPI_CARDS"
+          :key="c.label"
+          class="kpi-card glass-card hoverable"
+          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
+        >
+          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
+          <div class="text-lg font-extrabold"><span v-count-up="{ value: c.raw, decimals: c.decimals }">0</span></div>
+          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CHARTS (نسخة صادقة من subscribers.html — راجع الملاحظة الهندسية بالسكربت) ===== -->
+    <section class="grid md:grid-cols-2 gap-4">
+      <div v-reveal class="glass-card p-4">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscribers_page.payment_status_chart_title") }}</h3>
+        <div v-if="isLoading" class="h-40 thumb-loading rounded-lg"></div>
+        <div v-else class="h-40"><Doughnut :data="paymentStatusChartData" :options="paymentDoughnutOptions" /></div>
+      </div>
+      <div v-reveal class="glass-card p-4">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscribers_page.by_area_chart_title") }}</h3>
+        <div v-if="isLoading" class="h-40 thumb-loading rounded-lg"></div>
+        <div v-else class="h-40"><Pie :data="byAreaChartData" :options="byAreaOptions" /></div>
+      </div>
+    </section>
+
+    <!-- ===== TOOLBAR ===== -->
+    <section v-reveal class="glass-card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="relative w-full sm:flex-1 sm:max-w-md">
+          <Search class="absolute top-1/2 -translate-y-1/2 start-3.5 text-[#9a9d97] dark:text-[#8f938a] text-[11px]" aria-hidden="true" />
+          <input
+            v-model="searchTerm"
+            type="text"
+            @input="handleSearchInput"
+            :placeholder="$t('subscribers_page.search_placeholder')"
+            class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2.5 ps-9 pe-3 text-[12.5px] outline-none focus:border-[#8A6D1F]"
+          />
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
+            <button
+              v-for="pill in STATUS_PILLS"
+              :key="pill.value"
+              type="button"
+              @click="subscriptionFilter = pill.value; onFilterChange()"
+              class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+              :class="subscriptionFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+            >
+              {{ pill.label }}
+            </button>
+          </div>
+          <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
+          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1">
+            <button type="button" @click="viewMode = 'table'" class="icon-btn !w-8 !h-8" :class="{ '!bg-white dark:!bg-white/10': viewMode === 'table' }" :title="$t('subscribers_page.table_view')" :aria-label="$t('subscribers_page.table_view')">
+              <Table2 class="text-[11px]" aria-hidden="true" />
+            </button>
+            <button type="button" @click="viewMode = 'grid'" class="icon-btn !w-8 !h-8" :class="{ '!bg-white dark:!bg-white/10': viewMode === 'grid' }" :title="$t('subscribers_page.grid_view')" :aria-label="$t('subscribers_page.grid_view')">
+              <GripVertical class="text-[11px]" aria-hidden="true" />
+            </button>
+          </div>
+          <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
+          <button type="button" @click="handleExportCsv" class="icon-btn !w-8 !h-8" :title="$t('owner_applications_page.export_action')" :aria-label="$t('owner_applications_page.export_action')">
+            <FileSpreadsheet class="text-[11px]" aria-hidden="true" />
+          </button>
+          <button type="button" @click="printPage" class="icon-btn !w-8 !h-8" :title="$t('owner_applications_page.print')" :aria-label="$t('owner_applications_page.print')">
+            <Printer class="text-[11px]" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 mt-3 pt-3 border-t border-[#eee8da] dark:border-white/10">
+        <span class="text-[10.5px] font-bold text-[#9a9d97] dark:text-[#8f938a] px-2">{{ $t("subscribers_page.category_label") }}</span>
+        <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
+          <button
+            v-for="pill in PACKAGE_PILLS"
+            :key="pill.value"
+            type="button"
+            @click="packageFilter = pill.value; onPackageFilterChange()"
+            class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+            :class="packageFilter === pill.value ? 'bg-gradient-to-l from-[#8A6D1F] to-[#6b551b] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+          >
+            {{ pill.label }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TABLE / GRID ===== -->
+    <section id="subscribers-table-section" v-reveal class="glass-card p-4 overflow-hidden">
+      <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscribers_page.subscribers_list_title") }}</h3>
+
+      <div v-if="deleteError" class="mb-3 text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2">{{ deleteError }}</div>
+
+      <div v-if="isLoading" class="space-y-2">
+        <div v-for="i in 6" :key="i" class="h-14 rounded-lg thumb-loading"></div>
+      </div>
+      <div v-else-if="error" class="text-center py-8 text-[12px] text-[#D9534F]">{{ error }}</div>
+      <div v-else-if="filteredSubscribers.length === 0" class="text-center py-10">
+        <ZoomOut class="text-2xl text-[#c9cdc2] dark:text-[#565952] mb-2" aria-hidden="true" />
+        <p class="text-[12px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscribers_page.no_matching_results") }}</p>
+      </div>
+
+      <template v-else>
+      <div v-if="viewMode === 'table'" class="overflow-x-auto -mx-1">
+        <table class="data-table w-full text-[12px] min-w-[1150px]">
+          <thead>
+            <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
+              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('name')">
+                {{ $t("subscribers_page.subscriber_col") }}
+                <AppIcon :name="sortIconClass('name')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3">{{ $t("subscribers_page.phone_number_col") }}</th>
+              <th class="py-2.5 px-3">{{ $t("subscribers_page.region_col") }}</th>
+              <th class="py-2.5 px-3">{{ $t("subscribers_page.linked_generator_col") }}</th>
+              <th class="py-2.5 px-3">{{ $t("subscribers_page.beneficiary_category_col") }}</th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('created_at')">
+                {{ $t("subscribers_page.joined_col") }}
+                <AppIcon :name="sortIconClass('created_at')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('balance')">
+                {{ $t("subscribers_page.balance_col") }}
+                <AppIcon :name="sortIconClass('balance')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3">{{ $t("dashboard.status") }}</th>
+              <th class="py-2.5 px-3 rounded-e-lg">{{ $t("subscribers_page.actions_col") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(subscriber, idx) in filteredSubscribers"
+              :key="subscriber.id"
+              class="border-b border-[#f0ece0] dark:border-white/5 last:border-0 text-center"
+              :class="{ 'opacity-50 pointer-events-none': deletingId === subscriber.id }"
+            >
+              <td class="py-2.5 px-3">
+                <div class="flex items-center justify-center gap-2.5">
+                  <div
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                    :style="{ background: `linear-gradient(135deg, ${avatarColor(idx)[0]}, ${avatarColor(idx)[1]})` }"
+                  >
+                    {{ initialsOf(subscriber.name) }}
+                  </div>
+                  <div class="min-w-0 text-start">
+                    <div class="font-bold truncate max-w-[8rem]">{{ subscriber.name }}</div>
+                    <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a] truncate max-w-[8rem]">{{ subscriber.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]" dir="ltr">{{ subscriber.phone ?? "-" }}</td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ subscriber.region ?? "-" }}</td>
+              <td class="py-2.5 px-3">
+                <template v-if="subscriber.active_subscription">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <CircleCheck class="text-[#28A745] text-[11px]" aria-hidden="true" />
+                    <span class="font-bold">
+                      {{ subscriber.active_subscription.generator_name ?? subscriber.active_subscription.plan_name }}
+                    </span>
+                  </div>
+                </template>
+                <span v-else class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscribers_page.no_subscription") }}</span>
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="status-chip" :class="planTypeChipClass(subscriber)">
+                  {{ planTypeLabel(subscriber) }}
+                </span>
+              </td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ formatDate(subscriber.created_at) }}</td>
+              <td class="py-2.5 px-3 font-bold" :style="{ color: balanceColor(subscriber) }">
+                {{ formatBalance(subscriber) }}
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="status-chip" :class="statusChipClass(subscriber)">
+                  {{ statusLabel(subscriber) }}
+                </span>
+              </td>
+              <td class="py-2.5 px-3">
+                <div class="row-actions">
+                  <button type="button" @click="openView(subscriber)" class="action-btn action-btn--view" :title="$t('common.view')" :aria-label="$t('common.view')">
+                    <Eye aria-hidden="true" />
+                  </button>
+                  <button v-if="subscriber.is_locked && can('users.unlock')" type="button" @click="handleUnlock(subscriber)" class="action-btn action-btn--unlock" :title="$t('users_page.unlock_action')" :aria-label="$t('users_page.unlock_action')">
+                    <LockOpen aria-hidden="true" />
+                  </button>
+                  <button v-if="can('users.update')" type="button" @click="openEdit(subscriber)" class="action-btn action-btn--edit" :title="$t('common.edit')" :aria-label="$t('common.edit')">
+                    <Pencil aria-hidden="true" />
+                  </button>
+                  <span class="row-actions-divider"></span>
+                  <button
+                    v-if="can('users.delete')"
+                    type="button"
+                    @click="handleDelete(subscriber)"
+                    :disabled="deletingId === subscriber.id"
+                    class="action-btn action-btn--delete"
+                    :title="$t('common.delete')"
+                    :aria-label="$t('common.delete')"
+                  >
+                    <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === subscriber.id" /><Trash2 aria-hidden="true" v-else />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-else class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div v-for="(subscriber, idx) in filteredSubscribers" :key="subscriber.id" class="glass-card p-3.5">
+          <div class="flex items-start justify-between mb-2.5">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0" :style="{ background: `linear-gradient(135deg, ${avatarColor(idx)[0]}, ${avatarColor(idx)[1]})` }">
+                {{ initialsOf(subscriber.name) }}
+              </div>
+              <div class="min-w-0">
+                <div class="font-bold text-[12.5px] truncate">{{ subscriber.name }}</div>
+                <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a] text-start" dir="ltr">{{ subscriber.phone ?? "-" }}</div>
+              </div>
+            </div>
+            <span class="status-chip shrink-0" :class="statusChipClass(subscriber)">{{ statusLabel(subscriber) }}</span>
+          </div>
+          <div class="flex items-center gap-2 mb-2.5 flex-wrap">
+            <span class="status-chip" :class="planTypeChipClass(subscriber)">{{ planTypeLabel(subscriber) }}</span>
+            <span class="text-[11px] font-bold" :style="{ color: balanceColor(subscriber) }">{{ formatBalance(subscriber) }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscribers_page.region_col") }}:</span> <b>{{ subscriber.region ?? "-" }}</b></div>
+            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscribers_page.joined_short_col") }}:</span> <b>{{ formatDate(subscriber.created_at) }}</b></div>
+          </div>
+          <div class="flex items-center justify-end gap-1">
+            <button :aria-label="$t('common.view')" type="button" @click="openView(subscriber)" class="w-7 h-7 rounded-lg flex items-center justify-center text-[#17A2B8] hover:bg-[#17A2B8]/10"><Eye class="text-[11px]" aria-hidden="true" /></button>
+            <button :aria-label="$t('common.unlock')" v-if="subscriber.is_locked && can('users.unlock')" type="button" @click="handleUnlock(subscriber)" class="w-7 h-7 rounded-lg flex items-center justify-center text-success hover:bg-success/10"><LockOpen class="text-[11px]" aria-hidden="true" /></button>
+            <button v-if="can('users.update')" :aria-label="$t('common.edit')" type="button" @click="openEdit(subscriber)" class="w-7 h-7 rounded-lg flex items-center justify-center text-secondary-700 hover:bg-secondary-700/10"><Pencil class="text-[11px]" aria-hidden="true" /></button>
+            <button v-if="can('users.delete')" :aria-label="$t('common.delete')" type="button" @click="handleDelete(subscriber)" :disabled="deletingId === subscriber.id" class="w-7 h-7 rounded-lg flex items-center justify-center text-danger hover:bg-danger/10 disabled:opacity-40">
+              <LoaderCircle class="animate-spin text-[11px]" aria-hidden="true" v-if="deletingId === subscriber.id" /><Trash2 class="text-[11px]" aria-hidden="true" v-else />
+            </button>
+          </div>
+        </div>
+      </div>
+      </template>
+
+      <!-- Pagination بأزرار محدودة -->
+      <div v-if="pagination.last_page > 1" class="flex items-center justify-between mt-3.5">
+        <span class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
+          {{ $t("subscribers_page.pagination_text", { current: pagination.current_page, last: pagination.last_page, total: pagination.total }) }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button :aria-label="$t('common.previous_page')"
+            type="button"
+            :disabled="pagination.current_page <= 1"
+            @click="fetchSubscribers(pagination.current_page - 1)"
+            class="w-7 h-7 rounded-lg hover:bg-[#EBF1E7] dark:hover:bg-white/5 disabled:opacity-40"
+          >
+            <ChevronRight class="rtl:block ltr:hidden text-[10px]" aria-hidden="true" />
+            <ChevronLeft class="ltr:block rtl:hidden text-[10px]" aria-hidden="true" />
+          </button>
+
+          <template v-for="(page, i) in paginationRange" :key="i">
+            <span v-if="page === '...'" class="w-7 h-7 flex items-center justify-center text-[11px] text-[#9a9d97] dark:text-[#8f938a]">…</span>
+            <button
+              v-else
+              type="button"
+              @click="fetchSubscribers(page)"
+              class="w-7 h-7 rounded-lg text-[11px] font-bold transition-colors"
+              :class="
+                page === pagination.current_page
+                  ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white'
+                  : 'hover:bg-[#EBF1E7] dark:hover:bg-white/5 text-[#6B6B6B] dark:text-[#a8aaa5]'
+              "
+            >
+              {{ page }}
+            </button>
+          </template>
+
+          <button
+            :aria-label="$t('common.next_page')"
+            type="button"
+            :disabled="pagination.current_page >= pagination.last_page"
+            @click="fetchSubscribers(pagination.current_page + 1)"
+            class="w-7 h-7 rounded-lg hover:bg-[#EBF1E7] dark:hover:bg-white/5 disabled:opacity-40"
+          >
+            <ChevronLeft class="rtl:block ltr:hidden text-[10px]" aria-hidden="true" />
+            <ChevronRight class="ltr:block rtl:hidden text-[10px]" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== الاشتراكات الأقرب للانتهاء (الصفحة الحالية) ===== -->
+    <section v-if="soonestExpiring.length" v-reveal class="glass-card p-4">
+      <h3 class="text-[13.5px] font-bold mb-3">
+        {{ $t("subscribers_page.soonest_expiring_title") }}
+      </h3>
+      <div class="space-y-1">
+        <button
+          v-for="s in soonestExpiring"
+          :key="s.id"
+          type="button"
+          @click="openView(s)"
+          class="flex items-center gap-2.5 w-full text-start hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 rounded-lg p-2 transition-colors"
+        >
+          <span class="text-[12px] font-bold truncate flex-1">{{ s.name }}</span>
+          <span class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a] truncate max-w-[8rem]">
+            {{ s.active_subscription.generator_name ?? s.active_subscription.plan_name }}
+          </span>
+          <span class="text-[11.5px] font-extrabold shrink-0" :style="{ color: expiryColor(daysUntil(s.active_subscription.ends_at)) }">
+            {{ formatDate(s.active_subscription.ends_at) }}
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== ALERTS + TIMELINE (منقول من subscribers.html — بيانات صادقة، راجع الملاحظات بالسكربت) ===== -->
+    <section class="grid md:grid-cols-2 gap-4">
+      <div v-reveal class="glass-card p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 class="text-[13.5px] font-bold">{{ $t("subscribers_page.subscriber_alerts_title") }}</h3>
+          <span v-if="pageAlerts.length" class="text-[10px] font-bold text-white bg-[#D9534F] rounded-full px-2 py-0.5">{{ pageAlerts.length }}</span>
+        </div>
+        <div v-if="isLoading" class="space-y-2">
+          <div v-for="i in 2" :key="i" class="h-14 rounded-lg thumb-loading"></div>
+        </div>
+        <div v-else-if="!pageAlerts.length" class="text-center py-8 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscribers_page.no_alerts") }}</div>
+        <div v-else class="space-y-2.5">
+          <div v-for="(a, i) in pageAlerts" :key="i" class="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 transition-colors">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0" :style="{ background: a.color }">
+              <AppIcon :name="a.icon" class="text-[11px]" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[12px] font-bold truncate">{{ a.title }}</span>
+                <span class="status-chip shrink-0" :class="ALERT_CHIPS[a.severity]">{{ alertTag(a.severity) }}</span>
+              </div>
+              <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ a.description }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-reveal class="glass-card p-4">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("users_page.recent_activity") }}</h3>
+        <div v-if="isLoadingTimeline" class="space-y-2">
+          <div v-for="i in 3" :key="i" class="h-10 rounded-lg thumb-loading"></div>
+        </div>
+        <div v-else-if="timeline.length === 0" class="text-center py-8 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("users_page.no_activity") }}</div>
+        <div v-else class="mt-1">
+          <div v-for="log in timeline" :key="log.id" class="timeline-item" style="--dot-color:#52733D">
+            <p class="text-[12px] font-semibold">
+              {{ log.causer?.name ?? $t("users_page.system_label") }}
+              <span class="font-normal text-[#6B6B6B] dark:text-[#a8aaa5]">— {{ log.description }}</span>
+            </p>
+            <span class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ timeAgo(log.created_at) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center text-[11px] text-[#9a9d97] dark:text-[#8f938a] py-4">
+      {{ $t("subscribers_page.footer_copyright") }}
+    </footer>
+
+    <!-- ===================== نافذة إضافة مشترك جديد ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div
+        v-if="showAddModal"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        @click.self="closeAdd"
+      >
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="relative shrink-0 px-5 py-4 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white overflow-hidden">
+            <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image:radial-gradient(circle at 88% 15%, #fff 0%, transparent 40%)"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-[15px] shrink-0">
+                  <UserPlus aria-hidden="true" />
+                </span>
+                <div class="min-w-0">
+                  <h3 class="text-[15px] font-extrabold truncate">
+                    {{ $t("subscribers_page.add_subscriber_modal_title") }}
+                  </h3>
+                  <p class="text-[11px] text-white/75 truncate">
+                    {{ $t("subscribers_page.add_subscriber_modal_subtitle") }}
+                  </p>
+                </div>
+              </div>
+              <button :aria-label="$t('common.close')" type="button" @click="closeAdd" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 transition-colors"><X aria-hidden="true" /></button>
+            </div>
+          </div>
+
+          <form @submit.prevent="handleCreate" class="p-5 space-y-3.5 overflow-y-auto">
+            <div v-if="addLocalError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 border border-[#D9534F]/20 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+              <CircleAlert class="shrink-0" aria-hidden="true" /> {{ addLocalError }}
+            </div>
+            <div v-if="createError?.message" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 border border-[#D9534F]/20 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+              <CircleAlert class="shrink-0" aria-hidden="true" /> {{ createError.message }}
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-head"><span class="form-section-icon"><IdCard aria-hidden="true" /></span>{{ $t("subscribers_page.basic_info") }}</div>
+              <div class="grid gap-3.5">
+                <div>
+                  <label class="field-label">{{ $t("dashboard.name") }}</label>
+                  <input v-model="addForm.name" required type="text" autocomplete="off" :placeholder="$t('users_page.name_placeholder_example')" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("users_page.email_label") }}</label>
+                  <input v-model="addForm.email" required type="email" dir="ltr" autocomplete="off" placeholder="example@email.com" class="field-input" />
+                  <p v-if="createError?.errors?.email" class="text-[10.5px] text-[#D9534F] mt-1">{{ createError.errors.email[0] }}</p>
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("users_page.phone_label") }}</label>
+                  <input v-model="addForm.phone" type="text" dir="ltr" placeholder="+970 5X XXX XXXX" class="field-input" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-head"><span class="form-section-icon"><Lock aria-hidden="true" /></span>{{ $t("dashboard.password") }}</div>
+              <div class="grid gap-3.5">
+                <div>
+                  <label class="field-label">{{ $t("dashboard.password") }}</label>
+                  <div class="relative">
+                    <input v-model="addForm.password" required :type="showAddPassword ? 'text' : 'password'" autocomplete="new-password" class="field-input ps-8 font-mono" />
+                    <button :aria-label="showAddPassword ? $t('common.hide_password') : $t('common.show_password')" type="button" @click="showAddPassword = !showAddPassword" class="absolute top-1/2 -translate-y-1/2 start-2 flex items-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]">
+                      <EyeOff class="text-[11px]" aria-hidden="true" v-if="showAddPassword" /><Eye class="text-[11px]" aria-hidden="true" v-else />
+                    </button>
+                  </div>
+                  <p v-if="createError?.errors?.password" class="text-[10.5px] text-[#D9534F] mt-1">{{ createError.errors.password[0] }}</p>
+                  <button type="button" @click="generateAddPassword" class="text-[10.5px] font-bold text-[#8A6D1F] mt-1.5"><Shuffle aria-hidden="true" /> {{ $t("users_page.generate_random_password") }}</button>
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("dashboard.confirm_password") }}</label>
+                  <input v-model="addForm.password_confirmation" required :type="showAddPassword ? 'text' : 'password'" dir="ltr" autocomplete="new-password" class="field-input font-mono" />
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0 bg-[#f4efe5]/40 dark:bg-white/[0.02]">
+            <button type="button" @click="closeAdd" class="text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">{{ $t("dashboard.cancel") }}</button>
+            <button type="submit" @click="handleCreate" :disabled="isCreating" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2 disabled:opacity-60">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isCreating" /><Check aria-hidden="true" v-else />
+              {{ isCreating ? $t("subscribers_page.adding_ellipsis") : $t("subscribers_page.add_subscriber_button") }}
+            </button>
+          </div>
+        </div>
+      </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ===================== نافذة التعديل (بنفس أسلوب نافذة تعديل المولدات) ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div
+        v-if="editingSubscriber"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        @click.self="closeEdit"
+      >
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="relative shrink-0 px-5 py-4 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white overflow-hidden">
+            <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image:radial-gradient(circle at 88% 15%, #fff 0%, transparent 40%)"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-[15px] shrink-0">
+                  <Pencil aria-hidden="true" />
+                </span>
+                <div class="min-w-0">
+                  <h3 class="text-[15px] font-extrabold truncate">
+                    {{ $t("subscribers_page.edit_subscriber_modal_title") }}
+                  </h3>
+                  <p class="text-[11px] text-white/75 truncate">{{ editingSubscriber.name }}</p>
+                </div>
+              </div>
+              <button :aria-label="$t('common.close')" type="button" @click="closeEdit" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 transition-colors"><X aria-hidden="true" /></button>
+            </div>
+          </div>
+
+          <form @submit.prevent="handleSave" class="p-5 space-y-3.5 overflow-y-auto">
+            <div v-if="saveError?.message" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 border border-[#D9534F]/20 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+              <CircleAlert class="shrink-0" aria-hidden="true" /> {{ saveError.message }}
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-head"><span class="form-section-icon"><IdCard aria-hidden="true" /></span>{{ $t("subscribers_page.basic_info") }}</div>
+              <div class="grid gap-3.5">
+                <div>
+                  <label class="field-label">{{ $t("dashboard.name") }}</label>
+                  <input v-model="editForm.name" required type="text" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("users_page.email_label") }}</label>
+                  <input v-model="editForm.email" required type="email" class="field-input" />
+                  <p v-if="saveError?.errors?.email" class="text-[10.5px] text-[#D9534F] mt-1">{{ saveError.errors.email[0] }}</p>
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("users_page.phone_label") }}</label>
+                  <input v-model="editForm.phone" type="text" class="field-input" />
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0 bg-[#f4efe5]/40 dark:bg-white/[0.02]">
+            <button type="button" @click="closeEdit" class="text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">{{ $t("dashboard.cancel") }}</button>
+            <button type="submit" @click="handleSave" :disabled="isSaving" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2 disabled:opacity-60">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSaving" /><Check aria-hidden="true" v-else />
+              {{ isSaving ? $t("users_page.saving_ellipsis") : $t("dashboard.save_changes") }}
+            </button>
+          </div>
+        </div>
+      </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ===================== نافذة عرض التفاصيل (بنفس أسلوب نافذة عرض المولدات) ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div
+        v-if="viewingSubscriber"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        @click.self="viewingSubscriber = null"
+      >
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-2xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="relative shrink-0 px-5 py-4 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white overflow-hidden">
+            <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image:radial-gradient(circle at 88% 15%, #fff 0%, transparent 40%)"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span
+                  class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-[13px] font-bold shrink-0"
+                >
+                  {{ initialsOf(viewingSubscriber.name) }}
+                </span>
+                <div class="min-w-0">
+                  <h3 class="text-[15px] font-extrabold truncate">{{ viewingSubscriber.name }}</h3>
+                  <p class="text-[11px] text-white/75 truncate">{{ viewingSubscriber.email }}</p>
+                </div>
+              </div>
+              <button :aria-label="$t('common.close')" type="button" @click="viewingSubscriber = null" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 transition-colors"><X aria-hidden="true" /></button>
+            </div>
+          </div>
+
+          <div class="p-5 grid sm:grid-cols-2 gap-4 overflow-y-auto">
+            <div class="space-y-4">
+              <div class="glass-card p-4 flex items-center gap-4">
+                <div
+                  class="w-14 h-14 rounded-full flex items-center justify-center text-white text-base font-bold shrink-0"
+                  :style="{ background: `linear-gradient(135deg, ${avatarColor(0)[0]}, ${avatarColor(0)[1]})` }"
+                >
+                  {{ initialsOf(viewingSubscriber.name) }}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a] mb-1.5">{{ $t("subscribers_page.account_status_label") }}</div>
+                  <span class="status-chip" :class="statusChipClass(viewingSubscriber)">
+                    {{ statusLabel(viewingSubscriber) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="glass-card p-4 space-y-1">
+                <div class="info-row">
+                  <span class="info-row-icon"><Mail aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("users_page.email_label") }}</span>
+                  <b class="info-row-value">{{ viewingSubscriber.email }}</b>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-icon"><Phone aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("users_page.phone_label") }}</span>
+                  <b class="info-row-value" dir="ltr">{{ viewingSubscriber.phone ?? "-" }}</b>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-icon"><CalendarPlus aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("subscribers_page.joined_col") }}</span>
+                  <b class="info-row-value">{{ formatDate(viewingSubscriber.created_at) }}</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <p class="text-[11px] font-bold text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscribers_page.subscription_history_title") }}</p>
+
+              <div v-if="viewingSubscriber.subscription_history?.length" class="space-y-2 max-h-[19rem] overflow-y-auto pe-1">
+                <div
+                  v-for="sub in viewingSubscriber.subscription_history" :key="sub.id"
+                  class="glass-card p-3"
+                  :class="sub.status === 'active' ? '!border-[#28A745]/30' : ''"
+                >
+                  <div class="flex items-center justify-between gap-2 mb-1">
+                    <span class="text-[12px] font-bold truncate">{{ sub.generator_name ?? "-" }}</span>
+                    <span
+                      class="status-chip shrink-0"
+                      :class="{
+                        'chip-success': sub.status === 'active',
+                        'chip-danger': sub.status === 'rejected' || sub.status === 'cancelled',
+                        'chip-warning': sub.status === 'pending' || sub.status === 'suspended',
+                      }"
+                    >{{ sub.status_label }}</span>
+                  </div>
+                  <p class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">
+                    {{ formatDate(sub.start_date) }}
+                    <ArrowRight class="text-[8px] mx-1 ltr:block rtl:hidden" aria-hidden="true" />
+                    <ArrowLeft class="text-[8px] mx-1 rtl:block ltr:hidden" aria-hidden="true" />
+                    {{ sub.end_date ? formatDate(sub.end_date) : $t("subscribers_page.ongoing_label") }}
+                  </p>
+                </div>
+              </div>
+              <div v-else class="glass-card p-4 flex items-center gap-2 text-[12px] text-[#9a9d97] dark:text-[#8f938a]">
+                <CircleMinus aria-hidden="true" />
+                {{ $t("subscribers_page.no_subscriptions_history") }}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0 bg-[#f4efe5]/40 dark:bg-white/[0.02] flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <button v-if="can('users.update')" type="button" :disabled="isSendingResetLink" @click="handleSendResetLink(viewingSubscriber)" class="w-9 h-9 rounded-full flex items-center justify-center text-secondary-700 border border-secondary-700/40 hover:bg-secondary-700/10 disabled:opacity-50" :title="$t('subscribers_page.send_reset_link_hint_short')" :aria-label="$t('subscribers_page.send_reset_link_hint_short')">
+                <LoaderCircle class="text-[13px] animate-spin" aria-hidden="true" v-if="isSendingResetLink" /><Key class="text-[13px]" aria-hidden="true" v-else />
+              </button>
+              <button v-if="can('users.update')" type="button" @click="openSetPassword(viewingSubscriber)" class="w-9 h-9 rounded-full flex items-center justify-center text-danger border border-danger/40 hover:bg-danger/10" :title="$t('subscribers_page.set_password_hint_short')" :aria-label="$t('subscribers_page.set_password_hint_short')">
+                <Lock class="text-[13px]" aria-hidden="true" />
+              </button>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <button type="button" @click="viewingSubscriber = null" class="text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">
+                {{ $t("common.close") }}
+              </button>
+              <button type="button" @click="switchToEditFromView" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2">
+                <Pencil aria-hidden="true" />
+                {{ $t("common.edit") }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ===================== نافذة تعيين كلمة سر مؤقتة ===================== -->
+    <Teleport to="body">
+      <div v-if="setPasswordModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="setPasswordModal = null">
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-sm p-5 shadow-2xl">
+          <h3 class="text-[14px] font-extrabold mb-1.5 flex items-center gap-2">
+            <Lock class="text-[#D9534F]" aria-hidden="true" />
+            {{ $t("users_page.set_password_for", { name: setPasswordModal.name }) }}
+          </h3>
+          <p class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mb-4">
+            {{ $t("subscribers_page.set_password_desc_short") }}
+          </p>
+
+          <div v-if="setPasswordError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">{{ setPasswordError }}</div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="field-label">{{ $t("users_page.temp_password_label") }}</label>
+              <div class="relative">
+                <input
+                  v-model="setPasswordForm.password"
+                  :type="showSetPassword ? 'text' : 'password'"
+                  class="field-input ps-16 font-mono"
+                />
+                <div class="absolute top-1/2 -translate-y-1/2 start-2 flex items-center gap-1">
+                  <button :aria-label="showSetPassword ? $t('common.hide_password') : $t('common.show_password')" type="button" @click="showSetPassword = !showSetPassword" class="w-6 h-6 rounded-md flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]">
+                    <EyeOff class="text-[11px]" aria-hidden="true" v-if="showSetPassword" /><Eye class="text-[11px]" aria-hidden="true" v-else />
+                  </button>
+                  <button :aria-label="$t('common.copy_password')" type="button" @click="copySetPassword" class="w-6 h-6 rounded-md flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]">
+                    <Copy class="text-[11px]" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <button type="button" @click="generateSetPassword" class="text-[10.5px] font-bold text-[#8A6D1F] mt-1.5"><Shuffle aria-hidden="true" /> {{ $t("users_page.generate_new_password") }}</button>
+            </div>
+          </div>
+
+          <div class="flex gap-2.5 mt-5">
+            <button type="button" @click="setPasswordModal = null" class="flex-1 text-[12.5px] font-bold py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5">{{ $t("dashboard.cancel") }}</button>
+            <button type="button" @click="handleSetPassword" :disabled="isSettingPassword" class="flex-1 btn-fill relative bg-gradient-to-l from-[#D9534F] to-[#8A2E2A] text-white text-[12.5px] font-bold py-2.5 rounded-full shadow-md flex items-center justify-center gap-2 disabled:opacity-60">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSettingPassword" /><Check aria-hidden="true" v-else />
+              {{ isSettingPassword ? $t("users_page.setting_ellipsis") : $t("users_page.set_action") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    </template>
+
+    <!-- ==========================================================
+         ==================  تبويب: الاشتراكات  =======================
+         ========================================================== -->
+    <template v-else>
+    <!-- ===== KPI CARDS ===== -->
+    <section v-reveal>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div
+          v-for="c in SUBSCRIPTION_KPI_CARDS"
+          :key="c.label"
+          class="kpi-card glass-card hoverable"
+          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
+        >
+          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
+          <div class="text-lg font-extrabold">{{ c.value }}</div>
+          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CHARTS ===== -->
+    <section v-reveal class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="glass-card p-4 md:col-span-2">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 class="text-[13.5px] font-bold">{{ $t("subscriptions_page.monthly_growth_title") }}</h3>
+          <span v-if="monthlyGrowth.isEstimate" class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">
+            {{ $t("subscriptions_page.estimate_notice") }}
+          </span>
+        </div>
+        <div class="h-64"><canvas ref="growthCanvas"></canvas></div>
+      </div>
+
+      <div class="glass-card p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 class="text-[13.5px] font-bold">{{ $t("subscriptions_page.status_breakdown_filter_title") }}</h3>
+          <button
+            v-if="derivedFilter"
+            type="button"
+            @click="applyDerivedFilter(derivedFilter)"
+            class="text-[10px] font-bold text-[#D9534F] hover:underline shrink-0"
+          >
+            {{ $t("subscriptions_page.clear_filter") }}
+          </button>
+        </div>
+        <div class="h-40"><canvas ref="statusCanvas"></canvas></div>
+        <div class="grid grid-cols-4 gap-1.5 mt-3 text-center">
+          <button
+            v-for="s in statusDistribution"
+            :key="s.key"
+            type="button"
+            @click="applyDerivedFilter(s.key)"
+            class="rounded-lg py-1 transition-colors"
+            :class="derivedFilter === s.key ? 'bg-[#f4efe5] dark:bg-white/10' : 'hover:bg-[#f4efe5]/60 dark:hover:bg-white/5'"
+          >
+            <div class="text-[13px] font-extrabold" :style="{ color: s.color }">{{ s.pct }}%</div>
+            <div class="text-[9.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ s.label }}</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-card p-4">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscriptions_page.by_plan_type_title") }}</h3>
+        <div class="h-44"><canvas ref="planCanvas"></canvas></div>
+      </div>
+
+      <div class="glass-card p-4 md:col-span-2 lg:col-span-2">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscriptions_page.expiring_weeks_title") }}</h3>
+        <div class="h-44"><canvas ref="expiringCanvas"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ===== TOOLBAR ===== -->
+    <section v-reveal class="glass-card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="relative max-w-sm w-full sm:w-auto">
+          <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[#9a9d97] dark:text-[#8f938a] text-[10px]" aria-hidden="true" />
+          <input
+            v-model="subscriptionSearchTerm"
+            type="text"
+            @input="handleSubscriptionSearchInput"
+            :placeholder="$t('subscriptions_page.search_placeholder')"
+            class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2 ps-8 pe-3 text-[11.5px] outline-none focus:border-[#8A6D1F]"
+          />
+        </div>
+        <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
+          <button
+            v-for="pill in SUBSCRIPTION_STATUS_PILLS"
+            :key="pill.value"
+            type="button"
+            @click="applyFilter(pill.value)"
+            class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+            :class="statusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+          >
+            {{ pill.label }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TABLE ===== -->
+    <section v-reveal class="glass-card p-4 overflow-hidden">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <h3 class="text-[13.5px] font-bold">{{ $t("subscriptions_page.subscriptions_list_title") }}</h3>
+        <button
+          v-if="derivedFilter"
+          type="button"
+          @click="applyDerivedFilter(derivedFilter)"
+          class="text-[10.5px] font-bold text-[#8A6D1F] bg-[#8A6D1F]/10 rounded-full px-3 py-1 flex items-center gap-1.5 hover:bg-[#8A6D1F]/20 transition-colors"
+        >
+          <Funnel class="text-[9px]" aria-hidden="true" />
+          {{ derivedStatusLabel(derivedFilter) }}
+          <X class="text-[9px]" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div v-if="statusUpdateError" class="mb-3 text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2">{{ statusUpdateError }}</div>
+
+      <div v-if="isLoadingSubscriptions" class="space-y-2">
+        <div v-for="i in 6" :key="i" class="h-16 rounded-lg thumb-loading"></div>
+      </div>
+
+      <div v-else-if="subscriptionsError" class="text-center py-8 text-[12px] text-[#D9534F]">{{ subscriptionsError }}</div>
+
+      <div v-else-if="sortedSubscriptions.length === 0" class="text-center py-10">
+        <ZoomOut class="text-2xl text-[#c9cdc2] dark:text-[#565952] mb-2" aria-hidden="true" />
+        <p class="text-[12px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscriptions_page.no_matching_subscriptions") }}</p>
+      </div>
+
+      <div v-else class="overflow-x-auto -mx-1">
+        <table class="data-table w-full text-[12px] min-w-[1180px]">
+          <thead>
+            <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
+              <th class="py-2.5 px-3 rounded-s-lg">{{ $t("subscriptions_page.contract_no_col") }}</th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="subscriptionToggleSort('subscriber')">
+                {{ $t("subscribers_page.subscriber_col") }}
+                <AppIcon :name="subscriptionSortIconClass('subscriber')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="subscriptionToggleSort('generator')">
+                {{ $t("dashboard.generator_col") }}
+                <AppIcon :name="subscriptionSortIconClass('generator')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3">{{ $t("subscriptions_page.generator_owner_col") }}</th>
+              <th class="py-2.5 px-3">{{ $t("subscriptions_page.plan_type_col") }}</th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="subscriptionToggleSort('starts_at')">
+                {{ $t("subscriptions_page.start_date_col") }}
+                <AppIcon :name="subscriptionSortIconClass('starts_at')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="subscriptionToggleSort('ends_at')">
+                {{ $t("subscriptions_page.end_date_col") }}
+                <AppIcon :name="subscriptionSortIconClass('ends_at')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3">{{ $t("subscriptions_page.auto_renewal_col") }}</th>
+              <th class="py-2.5 px-3 cursor-pointer select-none" @click="subscriptionToggleSort('status')">
+                {{ $t("dashboard.status_col") }}
+                <AppIcon :name="subscriptionSortIconClass('status')" class="text-[9px] ms-1 transition-all" />
+              </th>
+              <th class="py-2.5 px-3 rounded-e-lg">{{ $t("subscribers_page.actions_col") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(sub, idx) in sortedSubscriptions"
+              :key="sub.id"
+              class="border-b border-[#f0ece0] dark:border-white/5 last:border-0 text-center"
+              :class="{ 'opacity-50 pointer-events-none': updatingStatusId === sub.id }"
+            >
+              <td class="py-2.5 px-3 font-semibold text-[#6B6B6B] dark:text-[#a8aaa5]" dir="ltr">{{ sub.id }}</td>
+              <td class="py-2.5 px-3">
+                <div class="flex items-center gap-2.5 justify-center">
+                  <div class="sub-avatar" :style="subscriptionAvatarStyle(idx)">{{ initialsOf(sub.subscriber?.name) }}</div>
+                  <button type="button" @click="openSubscriptionView(sub)" class="font-bold hover:text-[#8A6D1F] transition-colors">
+                    {{ sub.subscriber?.name ?? "-" }}
+                  </button>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ sub.generator?.name ?? "-" }}</td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ sub.generator?.owner_name ?? "-" }}</td>
+              <td class="py-2.5 px-3">
+                <span v-if="planMeta(sub.plan)" class="plan-chip" :class="planMeta(sub.plan).cls">
+                  <AppIcon :name="planMeta(sub.plan).icon" />{{ planLabel(sub.plan) }}
+                </span>
+                <span v-else class="text-[#9a9d97] dark:text-[#8f938a]">-</span>
+              </td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ formatDate(sub.start_date) }}</td>
+              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ formatDate(sub.end_date) }}</td>
+              <td class="py-2.5 px-3">
+                <span class="renew-chip" :class="sub.auto_renew ? 'renew-on' : 'renew-off'">
+                  <ToggleRight aria-hidden="true" v-if="sub.auto_renew" /><ToggleLeft aria-hidden="true" v-else />
+                  {{ sub.auto_renew ? $t("subscriptions_page.renew_on") : $t("subscriptions_page.renew_off") }}
+                </span>
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="status-chip" :class="statusChip(sub.status)" :style="statusChipStyle(sub.status)">{{ subscriptionStatusLabel(sub.status) }}</span>
+              </td>
+              <td class="py-2.5 px-3">
+                <div class="row-actions">
+                  <button type="button" @click="openSubscriptionView(sub)" class="action-btn action-btn--view" :title="$t('common.view')" :aria-label="$t('common.view')">
+                    <Eye aria-hidden="true" />
+                  </button>
+
+                  <button
+                    v-for="action in actionsFor(sub)"
+                    :key="action.to"
+                    type="button"
+                    @click="handleStatusChange(sub, action)"
+                    :disabled="updatingStatusId === sub.id"
+                    class="action-btn"
+                    :style="{ color: action.color, '--hover-bg': action.color + '1A' }"
+                    :title="t(action.labelKey)"
+                    :aria-label="t(action.labelKey)"
+                  >
+                    <AppIcon :name="updatingStatusId === sub.id ? 'fa-spinner fa-spin' : action.icon" />
+                  </button>
+
+                  <span class="row-actions-divider"></span>
+
+                  <button type="button" @click="openTransfer(sub)" class="action-btn action-btn--transfer" :title="$t('subscriptions_page.transfer_action_title')" :aria-label="$t('subscriptions_page.transfer_action_title')">
+                    <ArrowRightLeft aria-hidden="true" />
+                  </button>
+
+                  <a
+                    :href="contractUrl(sub)"
+                    target="_blank"
+                    rel="noopener"
+                    class="action-btn action-btn--contract"
+                    :title="$t('subscriptions_page.download_contract_title')"
+                    :aria-label="$t('subscriptions_page.download_contract_title')"
+                  >
+                    <FileText aria-hidden="true" />
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination بأزرار محدودة -->
+      <div v-if="subscriptionPagination.last_page > 1" class="flex items-center justify-between mt-3.5">
+        <span class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
+          {{ $t("subscriptions_page.pagination_text", { current: subscriptionPagination.current_page, last: subscriptionPagination.last_page, total: subscriptionPagination.total }) }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button :aria-label="$t('common.previous_page')"
+            type="button"
+            :disabled="subscriptionPagination.current_page <= 1"
+            @click="fetchSubscriptions(subscriptionPagination.current_page - 1)"
+            class="w-7 h-7 rounded-lg hover:bg-[#EBF1E7] dark:hover:bg-white/5 disabled:opacity-40"
+          >
+            <ChevronRight class="rtl:block ltr:hidden text-[10px]" aria-hidden="true" />
+            <ChevronLeft class="ltr:block rtl:hidden text-[10px]" aria-hidden="true" />
+          </button>
+
+          <template v-for="(page, i) in subscriptionPaginationRange" :key="i">
+            <span v-if="page === '...'" class="w-7 h-7 flex items-center justify-center text-[11px] text-[#9a9d97] dark:text-[#8f938a]">…</span>
+            <button
+              v-else
+              type="button"
+              @click="fetchSubscriptions(page)"
+              class="w-7 h-7 rounded-lg text-[11px] font-bold transition-colors"
+              :class="
+                page === subscriptionPagination.current_page
+                  ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white'
+                  : 'hover:bg-[#EBF1E7] dark:hover:bg-white/5 text-[#6B6B6B] dark:text-[#a8aaa5]'
+              "
+            >
+              {{ page }}
+            </button>
+          </template>
+
+          <button
+            :aria-label="$t('common.next_page')"
+            type="button"
+            :disabled="subscriptionPagination.current_page >= subscriptionPagination.last_page"
+            @click="fetchSubscriptions(subscriptionPagination.current_page + 1)"
+            class="w-7 h-7 rounded-lg hover:bg-[#EBF1E7] dark:hover:bg-white/5 disabled:opacity-40"
+          >
+            <ChevronLeft class="rtl:block ltr:hidden text-[10px]" aria-hidden="true" />
+            <ChevronRight class="ltr:block rtl:hidden text-[10px]" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ALERTS + TIMELINE + TOP EXPIRING ===== -->
+    <section v-reveal class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="glass-card p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 class="text-[13.5px] font-bold">{{ $t("subscriptions_page.subscription_alerts_title") }}</h3>
+          <span class="text-[10px] font-bold text-white bg-[#D9534F] rounded-full px-2 py-0.5">{{ subsAlerts.length }}</span>
+        </div>
+        <div v-if="subsAlerts.length" class="space-y-2.5">
+          <div
+            v-for="(a, i) in subsAlerts"
+            :key="i"
+            class="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 transition-colors"
+          >
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0" :style="{ background: a.color }">
+              <AppIcon :name="a.icon" class="text-[11px]" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[12px] font-bold truncate">{{ a.title }}</span>
+                <span class="status-chip shrink-0" :class="a.chip">{{ a.tag }}</span>
+              </div>
+              <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ a.desc }}</p>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-[11.5px] text-[#9a9d97] dark:text-[#8f938a] text-center py-4">{{ $t("subscriptions_page.no_alerts_now") }}</p>
+      </div>
+
+      <div class="glass-card p-4">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscriptions_page.latest_activity_title") }}</h3>
+        <div v-if="activityLog.length" class="mt-1">
+          <div v-for="(entry, i) in activityLog" :key="i" class="timeline-item" :style="{ '--dot-color': entry.color ?? '#52733D' }">
+            <p class="text-[12px] font-semibold">{{ activityText(entry) }}</p>
+            <span class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ subscriptionTimeAgo(entry.at) }}</span>
+          </div>
+        </div>
+        <p v-else class="text-[11.5px] text-[#9a9d97] dark:text-[#8f938a] text-center py-4">
+          {{ $t("subscriptions_page.no_activity_this_session") }}
+        </p>
+      </div>
+
+      <div class="glass-card p-4">
+        <h3 class="text-[13.5px] font-bold mb-3">{{ $t("subscriptions_page.expiring_soonest_title") }}</h3>
+        <div v-if="topExpiring.length" class="space-y-2.5">
+          <button
+            v-for="sub in topExpiring"
+            :key="sub.id"
+            type="button"
+            @click="openSubscriptionView(sub)"
+            class="w-full flex items-center justify-between gap-2 text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 rounded-lg px-1.5 py-1 transition-colors"
+          >
+            <div class="min-w-0">
+              <p class="text-[11.5px] font-bold truncate">{{ sub.subscriber?.name ?? "-" }}</p>
+              <p class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]" dir="ltr">{{ sub.id }} · {{ sub.generator?.name ?? "-" }}</p>
+            </div>
+            <span class="text-[11px] font-extrabold shrink-0" :style="{ color: expiringColor(sub) }">{{ expiringLabel(sub) }}</span>
+          </button>
+        </div>
+        <p v-else class="text-[11.5px] text-[#9a9d97] dark:text-[#8f938a] text-center py-4">
+          {{ $t("subscriptions_page.no_subscriptions_nearing_expiry") }}
+        </p>
+      </div>
+    </section>
+
+    <!-- ===================== نافذة عرض التفاصيل (بنفس أسلوب نافذة عرض المولدات/المشتركين) ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div
+        v-if="viewingSubscription"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        @click.self="viewingSubscription = null"
+      >
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-2xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="relative shrink-0 px-5 py-4 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white overflow-hidden">
+            <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image:radial-gradient(circle at 88% 15%, #fff 0%, transparent 40%)"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-[13px] font-bold shrink-0">
+                  {{ initialsOf(viewingSubscription.subscriber?.name) }}
+                </span>
+                <div class="min-w-0">
+                  <h3 class="text-[15px] font-extrabold truncate">{{ viewingSubscription.subscriber?.name ?? "-" }}</h3>
+                  <p class="text-[11px] text-white/75 truncate">{{ viewingSubscription.generator?.name ?? "-" }}</p>
+                </div>
+              </div>
+              <button :aria-label="$t('common.close')" type="button" @click="viewingSubscription = null" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 transition-colors"><X aria-hidden="true" /></button>
+            </div>
+          </div>
+
+          <div class="p-5 grid sm:grid-cols-2 gap-4 overflow-y-auto">
+            <div class="space-y-4">
+              <div class="glass-card p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" :style="{ background: (STATUS_META[viewingSubscription.status]?.color ?? '#9a9d97') + '1A' }">
+                  <FilePenLine class="text-[16px]" aria-hidden="true" :style="{ color: STATUS_META[viewingSubscription.status]?.color ?? '#9a9d97' }" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a] mb-1.5">{{ $t("subscriptions_page.subscription_status_label") }}</div>
+                  <span class="status-chip" :class="statusChip(viewingSubscription.status)" :style="statusChipStyle(viewingSubscription.status)">{{ subscriptionStatusLabel(viewingSubscription.status) }}</span>
+                </div>
+              </div>
+
+              <div class="glass-card p-4 space-y-1">
+                <div class="info-row">
+                  <span class="info-row-icon"><User aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("subscribers_page.subscriber_col") }}</span>
+                  <b class="info-row-value">{{ viewingSubscription.subscriber?.name ?? "-" }}</b>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-icon"><PlugZap aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("dashboard.generator_col") }}</span>
+                  <b class="info-row-value">{{ viewingSubscription.generator?.name ?? "-" }}</b>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-icon"><UserRound aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("subscriptions_page.generator_owner_col") }}</span>
+                  <b class="info-row-value">{{ viewingSubscription.generator?.owner_name ?? "-" }}</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="grid grid-cols-3 gap-2.5">
+                <div class="glass-card p-3 text-center">
+                  <CalendarDays class="text-[#52733D] dark:text-[#8cc35a] text-[13px] mb-1" aria-hidden="true" />
+                  <div class="text-sm font-extrabold">{{ formatDate(viewingSubscription.start_date) }}</div>
+                  <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscriptions_page.starts_label") }}</div>
+                </div>
+                <div class="glass-card p-3 text-center">
+                  <CalendarX class="text-[#D9534F] text-[13px] mb-1" aria-hidden="true" />
+                  <div class="text-sm font-extrabold">{{ formatDate(viewingSubscription.end_date) }}</div>
+                  <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscriptions_page.ends_label") }}</div>
+                </div>
+                <div class="glass-card p-3 text-center">
+                  <CalendarPlus class="text-[#17A2B8] text-[13px] mb-1" aria-hidden="true" />
+                  <div class="text-sm font-extrabold">{{ formatDate(viewingSubscription.created_at) }}</div>
+                  <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscriptions_page.requested_label") }}</div>
+                </div>
+              </div>
+
+              <div v-if="actionsFor(viewingSubscription).length" class="glass-card p-4">
+                <h5 class="text-[12px] font-bold mb-2.5 flex items-center gap-2"><Zap class="text-[#8A6D1F] text-[11px]" aria-hidden="true" /> {{ $t("subscriptions_page.status_actions_title") }}</h5>
+                <div class="flex gap-2 flex-wrap">
+                  <button
+                    v-for="action in actionsFor(viewingSubscription)"
+                    :key="action.to"
+                    type="button"
+                    @click="handleStatusChange(viewingSubscription, action)"
+                    :disabled="updatingStatusId === viewingSubscription.id"
+                    class="flex-1 text-[12px] font-bold py-2 rounded-full border disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    :style="{ borderColor: action.color + '80', color: action.color }"
+                  >
+                    <AppIcon :name="updatingStatusId === viewingSubscription.id ? 'fa-spinner fa-spin' : action.icon" class="text-[11px]" />
+                    {{ t(action.labelKey) }}
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" @click="openTransfer(viewingSubscription)" class="glass-card p-4 w-full flex items-center gap-2.5 text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 transition-colors">
+                <span class="w-9 h-9 rounded-lg bg-[#8A6D1F]/10 text-[#8A6D1F] flex items-center justify-center shrink-0"><ArrowRightLeft aria-hidden="true" /></span>
+                <span class="text-[12px] font-bold">{{ $t("subscriptions_page.transfer_to_another_generator") }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0 bg-[#f4efe5]/40 dark:bg-white/[0.02]">
+            <button type="button" @click="viewingSubscription = null" class="text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">
+              {{ $t("common.close") }}
+            </button>
+            <a
+              :href="contractUrl(viewingSubscription)"
+              target="_blank"
+              rel="noopener"
+              class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2"
+            >
+              <FileText aria-hidden="true" />
+              {{ $t("subscriptions_page.download_contract_button") }}
+            </a>
+          </div>
+        </div>
+      </div>
+      </Transition>
+    </Teleport>
+
+    <TransferSubscriptionModal
+      :open="transferModal.open"
+      :subscription="transferModal.subscription"
+      @close="transferModal.open = false"
+      @transferred="handleTransferred"
+    />
+
+    <!-- ===================== نافذة إضافة اشتراك جديد ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isAddFormOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="closeAddModal">
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="relative shrink-0 px-5 py-4 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white overflow-hidden">
+            <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image:radial-gradient(circle at 88% 15%, #fff 0%, transparent 40%)"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-[15px] shrink-0">
+                  <FilePlus aria-hidden="true" />
+                </span>
+                <div class="min-w-0">
+                  <h3 class="text-[15px] font-extrabold truncate">{{ $t("subscriptions_page.add_new_subscription_title") }}</h3>
+                  <p class="text-[11px] text-white/75 truncate">{{ $t("subscriptions_page.add_subscription_active_note") }}</p>
+                </div>
+              </div>
+              <button :aria-label="$t('common.close')" type="button" @click="closeAddModal" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 transition-colors"><X aria-hidden="true" /></button>
+            </div>
+          </div>
+
+          <form @submit.prevent="handleAddSubscription" class="p-5 space-y-3.5 overflow-y-auto">
+            <div v-if="saveSubscriptionError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 border border-[#D9534F]/20 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+              <CircleAlert class="shrink-0" aria-hidden="true" /> {{ saveSubscriptionError }}
+            </div>
+
+            <!-- Section: Subscriber -->
+            <div class="form-section">
+              <div class="form-section-head"><span class="form-section-icon"><User aria-hidden="true" /></span>{{ $t("subscribers_page.subscriber_col") }}</div>
+
+              <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 w-fit mt-3">
+                <button type="button" @click="switchSubscriberMode('search')" class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors" :class="subscriberMode === 'search' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5]'">
+                  {{ $t("subscriptions_page.search_subscriber_tab") }}
+                </button>
+                <button type="button" @click="switchSubscriberMode('new')" class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors" :class="subscriberMode === 'new' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5]'">
+                  {{ $t("subscriptions_page.new_subscriber_tab") }}
+                </button>
+              </div>
+
+              <!-- Search mode -->
+              <div v-if="subscriberMode === 'search'" class="mt-3">
+                <div v-if="!selectedSubscriber">
+                  <div class="relative">
+                    <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[#9a9d97] dark:text-[#8f938a] text-[10px]" aria-hidden="true" />
+                    <input
+                      v-model="subscriberSearchTerm"
+                      type="text"
+                      @input="handleSubscriberSearchInput"
+                      :placeholder="$t('subscriptions_page.search_by_name_email_phone_placeholder')"
+                      class="field-input ps-8"
+                    />
+                  </div>
+                  <div v-if="isSearchingSubscribers" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-2">{{ $t("common.searching") }}</div>
+                  <div v-else-if="subscriberSearchTerm.trim().length >= 2 && subscriberSearchResults.length === 0" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-2">
+                    {{ $t("subscriptions_page.no_results_try_new_tab") }}
+                  </div>
+                  <div v-else-if="subscriberSearchResults.length" class="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+                    <button
+                      v-for="s in subscriberSearchResults" :key="s.id" type="button"
+                      @click="pickSubscriber(s)"
+                      class="w-full text-start flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <span class="w-7 h-7 rounded-full bg-[#52733D]/10 text-[#52733D] dark:text-[#8cc35a] flex items-center justify-center text-[10px] font-bold shrink-0">{{ initialsOf(s.name) }}</span>
+                      <span class="min-w-0">
+                        <span class="block text-[11.5px] font-bold truncate">{{ s.name }}</span>
+                        <span class="block text-[10px] text-[#9a9d97] dark:text-[#8f938a] truncate">{{ s.email }} · {{ s.phone }}</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div v-else class="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#EBF1E7] dark:bg-white/5">
+                  <span class="w-8 h-8 rounded-full bg-[#52733D]/15 text-[#52733D] dark:text-[#8cc35a] flex items-center justify-center text-[11px] font-bold shrink-0">{{ initialsOf(selectedSubscriber.name) }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-[11.5px] font-bold truncate">{{ selectedSubscriber.name }}</span>
+                    <span class="block text-[10px] text-[#9a9d97] dark:text-[#8f938a] truncate">{{ selectedSubscriber.email }} · {{ selectedSubscriber.phone }}</span>
+                  </span>
+                  <button type="button" @click="clearPickedSubscriber" class="text-[10.5px] font-bold text-[#D9534F] shrink-0">{{ $t("subscriptions_page.change_action") }}</button>
+                </div>
+              </div>
+
+              <!-- New subscriber mode -->
+              <div v-else class="grid sm:grid-cols-2 gap-3.5 mt-3">
+                <div class="sm:col-span-2">
+                  <label class="field-label">{{ $t("dashboard.name") }}</label>
+                  <input v-model="newSubscriber.name" type="text" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("users_page.email_label") }}</label>
+                  <input v-model="newSubscriber.email" type="email" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("users_page.phone_label") }}</label>
+                  <input v-model="newSubscriber.phone" type="tel" class="field-input" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: Generator & Pricing -->
+            <div class="form-section">
+              <div class="form-section-head"><span class="form-section-icon" style="--ic1:#8A6D1F;--ic2:#D4AF37"><PlugZap aria-hidden="true" /></span>{{ $t("subscriptions_page.generator_pricing_section_title") }}</div>
+              <div class="grid sm:grid-cols-2 gap-3.5">
+                <div class="sm:col-span-2">
+                  <label class="field-label">{{ $t("dashboard.generator_col") }}</label>
+                  <AppDropdownSelect
+                    v-model="subscriptionAddForm.generator_id"
+                    :options="generatorFormOptions"
+                    :disabled="isLoadingGeneratorsForForm"
+                    :placeholder="isLoadingGeneratorsForForm ? $t('common.loading') : $t('subscriptions_page.select_generator_placeholder')"
+                    variant="field"
+                    width-class="w-full"
+                    match-trigger-width
+                  />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="field-label">{{ $t("subscriptions_page.price_per_kw_subscription_label") }}</label>
+                  <input v-model="subscriptionAddForm.price_per_kw" type="number" min="0" step="0.01" class="field-input" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: Period -->
+            <div class="form-section">
+              <div class="form-section-head"><span class="form-section-icon" style="--ic1:#17A2B8;--ic2:#0f6c7d"><CalendarDays aria-hidden="true" /></span>{{ $t("subscriptions_page.subscription_period_section_title") }}</div>
+              <div class="grid sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label class="field-label">{{ $t("subscriptions_page.start_date_field_label") }}</label>
+                  <input v-model="subscriptionAddForm.starts_at" type="date" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("subscriptions_page.end_date_col") }}</label>
+                  <input v-model="subscriptionAddForm.ends_at" type="date" class="field-input" />
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0 bg-[#f4efe5]/40 dark:bg-white/[0.02]">
+            <button type="button" @click="closeAddModal" class="text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">{{ $t("dashboard.cancel") }}</button>
+            <button type="submit" @click="handleAddSubscription" :disabled="isSavingSubscription" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2 disabled:opacity-60">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSavingSubscription" /><Check aria-hidden="true" v-else />
+              {{ $t("subscriptions_page.save_subscription_button") }}
+            </button>
+          </div>
+        </div>
+      </div>
+      </Transition>
+    </Teleport>
+
+    </template>
+  </div>
+</template>

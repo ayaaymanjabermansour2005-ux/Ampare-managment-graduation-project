@@ -1,0 +1,535 @@
+name: الوقود
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/fuel/purchases'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/generators/{generator_id}/fuel/purchases'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      liters:
+        custom: []
+        name: liters
+        description: 'Must be at least 0.1. Must not be greater than 99999.99.'
+        required: true
+        example: 21
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      cost_amount:
+        custom: []
+        name: cost_amount
+        description: 'Must be at least 0.'
+        required: true
+        example: 45
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      currency:
+        custom: []
+        name: currency
+        description: ''
+        required: true
+        example: ILS
+        type: string
+        enumValues:
+          - ILS
+          - USD
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      purchased_at:
+        custom: []
+        name: purchased_at
+        description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
+        required: true
+        example: '2020-12-12'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: 'Must not be greater than 500 characters.'
+        required: false
+        example: mqeopfuudtdsufvyvddqa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      attachments:
+        custom: []
+        name: attachments
+        description: 'Must be a file. Must not be greater than 5120 kilobytes.'
+        required: false
+        example:
+          - null
+        type: 'file[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      liters: 21
+      cost_amount: 45
+      currency: ILS
+      purchased_at: '2020-12-12'
+      notes: mqeopfuudtdsufvyvddqa
+    fileParameters:
+      attachments:
+        - null
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/fuel/readings'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/generators/{generator_id}/fuel/readings'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      tank_level_liters:
+        custom: []
+        name: tank_level_liters
+        description: 'Must be at least 0. Must not be greater than 99999.99.'
+        required: true
+        example: 21
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      meter_hours:
+        custom: []
+        name: meter_hours
+        description: 'Must be at least 0. Must not be greater than 99999.99.'
+        required: false
+        example: 13
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      reading_date:
+        custom: []
+        name: reading_date
+        description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
+        required: true
+        example: '2020-12-12'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: 'Must not be greater than 500 characters.'
+        required: false
+        example: mqeopfuudtdsufvyvddqa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      attachments:
+        custom: []
+        name: attachments
+        description: 'Must be a file. Must not be greater than 5120 kilobytes.'
+        required: false
+        example:
+          - null
+        type: 'file[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      tank_level_liters: 21
+      meter_hours: 13
+      reading_date: '2020-12-12'
+      notes: mqeopfuudtdsufvyvddqa
+    fileParameters:
+      attachments:
+        - null
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/fuel/consumption'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      from:
+        custom: []
+        name: from
+        description: 'Must be a valid date.'
+        required: true
+        example: '2026-08-17T12:22:15'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      to:
+        custom: []
+        name: to
+        description: 'Must be a valid date. Must be a date after or equal to <code>from</code>. Must be a date before or equal to <code>today</code>.'
+        required: true
+        example: '2020-12-12'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      from: '2026-08-17T12:22:15'
+      to: '2020-12-12'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/fuel/cost-per-kwh'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      from:
+        custom: []
+        name: from
+        description: 'Must be a valid date.'
+        required: true
+        example: '2026-08-17T12:22:15'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      to:
+        custom: []
+        name: to
+        description: 'Must be a valid date. Must be a date after or equal to <code>from</code>. Must be a date before or equal to <code>today</code>.'
+        required: true
+        example: '2020-12-12'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      from: '2026-08-17T12:22:15'
+      to: '2020-12-12'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/fuel/status'
+    metadata:
+      custom: []
+      groupName: الوقود
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
