@@ -198,12 +198,17 @@ const paginationRange = computed(() => {
 });
 
 async function loadUsers(page = 1) {
-  await userStore.fetchUsers({
-    page,
-    search: searchTerm.value || undefined,
-    role: roleFilter.value || undefined,
-    status: statusFilter.value || undefined,
-  });
+  try {
+    await userStore.fetchUsers({
+      page,
+      search: searchTerm.value || undefined,
+      role: roleFilter.value || undefined,
+      status: statusFilter.value || undefined,
+    });
+  } catch {
+    // الخطأ نفسه محفوظ بـ userStore.error/errors ومعروض بالقالب — هون فقط
+    // منع الـ unhandled rejection.
+  }
 }
 
 function onFilterChange() {
@@ -226,22 +231,40 @@ async function handleDelete(user) {
   });
 
   if (confirmed) {
-    await userStore.deleteUser(user.id);
-    toast.show({
-      type: "success",
-      title: t("users_page.deleted_toast_title"),
-      message: t("users_page.deleted_message", { name: user.name }),
-    });
+    try {
+      await userStore.deleteUser(user.id);
+      toast.show({
+        type: "success",
+        title: t("users_page.deleted_toast_title"),
+        message: t("users_page.deleted_message", { name: user.name }),
+      });
+    } catch (err) {
+      // FIX: كانت بدون try/catch — فشل الحذف (مثلاً مستخدم له اشتراكات/مولدات
+      // فعّالة) كان يظهر كـ unhandled rejection بصمت بدون أي رسالة للأدمن.
+      toast.show({
+        type: "error",
+        title: t("users_page.delete_user_title"),
+        message: err.response?.data?.errors?.user?.[0] ?? err.response?.data?.message ?? t("common.unexpected_error_retry"),
+      });
+    }
   }
 }
 
 async function handleUnlock(user) {
-  await userStore.unlockUser(user.id);
-  toast.show({
-    type: "success",
-    title: t("users_page.unlocked_toast_title"),
-    message: t("users_page.unlocked_message", { name: user.name }),
-  });
+  try {
+    await userStore.unlockUser(user.id);
+    toast.show({
+      type: "success",
+      title: t("users_page.unlocked_toast_title"),
+      message: t("users_page.unlocked_message", { name: user.name }),
+    });
+  } catch (err) {
+    toast.show({
+      type: "error",
+      title: t("users_page.unlocked_toast_title"),
+      message: err.response?.data?.message ?? t("common.unexpected_error_retry"),
+    });
+  }
 }
 
 /* ---------------- إرسال رابط إعادة تعيين كلمة المرور (بمبادرة من الأدمن) ---------------- */
@@ -710,6 +733,10 @@ onMounted(() => {
       <div v-if="userStore.isLoading" class="space-y-2">
         <div v-for="i in 6" :key="i" class="h-16 rounded-lg thumb-loading"></div>
       </div>
+
+      <!-- FIX: ما كان في حالة خطأ منفصلة أصلًا — فشل التحميل (صلاحيات/شبكة/500)
+           كان يظهر بصمت كـ "لا يوجد مستخدمون مطابقون" بدل رسالة خطأ حقيقية. -->
+      <div v-else-if="userStore.error" class="text-center py-8 text-[12px] text-[#D9534F]">{{ userStore.error }}</div>
 
       <div v-else-if="!userStore.users.length" class="text-center py-12">
         <UserX class="text-2xl text-[#9a9d97] dark:text-[#8f938a] mb-2" aria-hidden="true" />

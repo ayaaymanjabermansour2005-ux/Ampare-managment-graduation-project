@@ -1,1 +1,0 @@
-import{$ as e}from"./app-CTEi3LdY.js";const n={list(){return e.get("/auth/neighborhoods")},store(o){return e.post("/admin/neighborhoods",o)},update(o,r){return e.patch(`/admin/neighborhoods/${o}`,r)},destroy(o){return e.delete(`/admin/neighborhoods/${o}`)}};export{n};

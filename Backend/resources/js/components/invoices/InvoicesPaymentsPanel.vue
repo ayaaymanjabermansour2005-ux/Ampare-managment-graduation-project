@@ -4,6 +4,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import invoiceService from "@/services/invoiceService";
 import paymentService from "@/services/paymentService";
+import { useConfirm } from "@/composables/useConfirm";
 import { Ban, CircleAlert, CircleCheck, Eye, FileDown, Info, LoaderCircle, Receipt, RotateCw, TriangleAlert, Wallet, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
@@ -113,8 +114,18 @@ const accent = computed(() => {
   return { hex: "#52733D", glow: "rgba(82,115,61,0.2)", icon: "fa-wallet" };
 });
 
-async function handleCancelPayment(payment, confirmFn) {
-  const confirmed = await confirmFn();
+const { confirm } = useConfirm();
+
+// FIX: كانت هذه الدالة معرَّفة (تقبل confirmFn) لكن غير مستخدَمة أبدًا —
+// زر "إلغاء الدفعة" بالقالب كان يُصدر الحدث مباشرة بدون أي تأكيد، خلافًا
+// لبقية عمليات الحذف/الإلغاء بالتطبيق اللي كلها تمر عبر useConfirm().
+async function handleCancelPayment(payment) {
+  const confirmed = await confirm({
+    title: t("invoices_payments_panel.cancel_payment_title"),
+    message: t("invoices_payments_panel.cancel_payment_confirm_message"),
+    confirmLabel: t("invoices_payments_panel.cancel_payment_confirm_label"),
+    variant: "danger",
+  });
   if (confirmed) emit("cancel-payment", payment.id);
 }
 </script>
@@ -268,7 +279,7 @@ async function handleCancelPayment(payment, confirmFn) {
             </button>
           </div>
           <div v-else-if="payment.status === 'pending'" class="flex gap-2 mt-3.5 pt-3.5 border-t border-[#f0ece0] dark:border-white/10">
-            <button type="button" :disabled="isCancelling" class="btn-fill-brand btn-fill-brand--danger flex-1 justify-center" @click="emit('cancel-payment', payment.id)">
+            <button type="button" :disabled="isCancelling" class="btn-fill-brand btn-fill-brand--danger flex-1 justify-center" @click="handleCancelPayment(payment)">
               <Ban aria-hidden="true" />
               <span>{{ t("invoices_payments_panel.cancel_payment_action") }}</span>
             </button>

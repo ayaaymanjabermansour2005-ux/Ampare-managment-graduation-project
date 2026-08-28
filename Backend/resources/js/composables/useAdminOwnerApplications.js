@@ -46,14 +46,15 @@ export function useAdminOwnerApplications() {
       });
       const payload = data.data;
       applications.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? applications.value.length,
-        per_page: payload.per_page ?? 15,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? applications.value.length,
+        per_page: meta.per_page ?? 15,
       };
 
-      const counts = payload.meta?.status_counts ?? data.data.meta?.status_counts;
+      const counts = meta?.status_counts;
       if (counts) {
         statusCounts.value = {
           pending: counts.pending ?? 0,

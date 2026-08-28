@@ -11,6 +11,12 @@ storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
 
+
+
+.claude/
+
+.docs/
+
 bootstrap/cache/*
 
 *.log

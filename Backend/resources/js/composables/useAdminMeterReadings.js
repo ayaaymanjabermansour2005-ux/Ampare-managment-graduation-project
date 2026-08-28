@@ -28,6 +28,9 @@ export function useAdminMeterReadings() {
   const approvingId = ref(null);
   const approveError = ref(null);
 
+  const rejectingId = ref(null);
+  const rejectError = ref(null);
+
   const isSaving = ref(false);
   const saveError = ref(null);
   const deletingId = ref(null);
@@ -44,11 +47,12 @@ export function useAdminMeterReadings() {
       });
       const payload = data.data;
       readings.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? readings.value.length,
-        per_page: payload.per_page ?? 15,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? readings.value.length,
+        per_page: meta.per_page ?? 15,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("meter_readings_page.load_error");
@@ -79,6 +83,24 @@ export function useAdminMeterReadings() {
       return false;
     } finally {
       approvingId.value = null;
+    }
+  }
+
+  // FIX: القراءات كان ينفع اعتمادها بس، مش رفضها — رغم إنّ الباك اند
+  // (meterReadingService.reject) وحالة "rejected" جاهزين أصلًا بالواجهة.
+  async function rejectReading(id, reason) {
+    rejectingId.value = id;
+    rejectError.value = null;
+    try {
+      const { data } = await meterReadingService.reject(id, reason);
+      const index = readings.value.findIndex((r) => r.id === id);
+      if (index !== -1) readings.value[index] = data.data;
+      return true;
+    } catch (err) {
+      rejectError.value = extractErrorMessage(err, t("meter_readings_page.reject_error"));
+      return false;
+    } finally {
+      rejectingId.value = null;
     }
   }
 
@@ -137,6 +159,8 @@ export function useAdminMeterReadings() {
     statusFilter,
     approvingId,
     approveError,
+    rejectingId,
+    rejectError,
     isSaving,
     saveError,
     deletingId,
@@ -145,6 +169,7 @@ export function useAdminMeterReadings() {
     onSearchInput,
     onFilterChange,
     approveReading,
+    rejectReading,
     createReading,
     updateReading,
     deleteReading,

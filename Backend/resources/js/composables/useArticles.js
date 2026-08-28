@@ -17,11 +17,12 @@ export function useArticles() {
       const { data } = await articleService.listForAdmin({ page });
       const payload = data.data;
       articles.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? articles.value.length,
-        per_page: payload.per_page ?? 15,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? articles.value.length,
+        per_page: meta.per_page ?? 15,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("articles_page.load_error");

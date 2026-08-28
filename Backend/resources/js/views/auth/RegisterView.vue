@@ -63,10 +63,20 @@ async function loadNeighborhoods() {
 }
 
 function fieldError(field) {
+  if (field === "password_confirmation" && passwordMismatch.value) {
+    return t("auth.password_mismatch");
+  }
   return authStore.errors?.[field]?.[0] ?? null;
 }
 
+// FIX: ما كان في أي تحقّق محلي من تطابق كلمتي المرور — الخطأ كان يظهر
+// بس بعد رحلة كاملة للباك اند (قاعدة confirmed بـ RegisterRequest).
+const passwordMismatch = computed(
+  () => form.password_confirmation.length > 0 && form.password !== form.password_confirmation,
+);
+
 async function handleSubmit() {
+  if (passwordMismatch.value) return;
   submitState.value = "loading";
   try {
     await authStore.register({ ...form });
@@ -185,11 +195,13 @@ onMounted(loadNeighborhoods);
               :type="showPasswordConfirmation ? 'text' : 'password'"
               required
               class="auth-glass-input auth-input-with-eye"
+              :class="{ 'is-invalid': passwordMismatch }"
             />
             <span class="auth-password-eye" role="button" tabindex="0" :aria-label="t('auth.toggle_password_visibility')" @click="showPasswordConfirmation = !showPasswordConfirmation" @keydown.enter.prevent="showPasswordConfirmation = !showPasswordConfirmation" @keydown.space.prevent="showPasswordConfirmation = !showPasswordConfirmation">
               <EyeOff aria-hidden="true" v-if="showPasswordConfirmation" class="text-xs" /><Eye aria-hidden="true" v-else class="text-xs" />
             </span>
           </div>
+          <p v-if="passwordMismatch" class="auth-field-error">{{ t("auth.password_mismatch") }}</p>
         </div>
       </div>
 
@@ -197,7 +209,7 @@ onMounted(loadNeighborhoods);
         type="submit"
         class="auth-btn-submit"
         :class="{ 'is-success': submitState === 'success' }"
-        :disabled="submitState !== 'idle'"
+        :disabled="submitState !== 'idle' || passwordMismatch"
       >
         <LoaderCircle v-if="submitState === 'loading'" class="animate-spin" aria-hidden="true" />
         <Check v-else-if="submitState === 'success'" aria-hidden="true" />

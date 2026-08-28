@@ -16,9 +16,10 @@ export function useLoginLogs() {
       const { data } = await loginLogService.list({ page, ...filters });
       const payload = data.data;
       logs.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
       };
     } catch (err) {
       error.value =

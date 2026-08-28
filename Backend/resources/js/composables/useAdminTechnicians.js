@@ -21,11 +21,12 @@ export function useAdminTechnicians() {
       });
       const payload = data.data;
       technicians.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? technicians.value.length,
-        per_page: payload.per_page ?? 15,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? technicians.value.length,
+        per_page: meta.per_page ?? 15,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("admin_technicians_page.load_error");
@@ -108,7 +109,8 @@ export function useAdminTechnicians() {
     if (!technician?.user_id) return false;
 
     try {
-      const { default: userService } = await import("@/services/userService");
+      // FIX: (item 15) userService مستورَد static أصلًا بأعلى الملف —
+      // كان في import() ديناميكي زائد لنفس الموديول هون بدون داعٍ.
       await userService.unlock(technician.user_id);
       const index = technicians.value.findIndex((t) => t.id === technicianId);
       if (index !== -1) technicians.value[index].is_locked = false;

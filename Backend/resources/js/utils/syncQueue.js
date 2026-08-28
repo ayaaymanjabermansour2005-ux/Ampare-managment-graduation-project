@@ -1,4 +1,6 @@
 import http from "@/services/http";
+import i18n from "@/i18n";
+import { useToastStore } from "@/stores/toast";
 import {
   listQueuedRequestsForUser,
   removeQueuedRequest,
@@ -6,6 +8,17 @@ import {
 } from "./offlineQueue";
 
 const MAX_ATTEMPTS = 5;
+
+// FIX-007: كانت العمليات المحفوظة أوفلاين اللي بتفشل نهائيًا (422 من الباك،
+// أو تجاوزت MAX_ATTEMPTS) بتنحذف بصمت (console.error فقط) بدون أي إشعار
+// للمستخدم — فيفقد بيانات (مثل إثبات دفع أو قراءة عداد) بدون ما يعرف.
+function notifyDropped() {
+  useToastStore().show({
+    message: i18n.global.t("common.queued_item_dropped_message"),
+    type: "error",
+    duration: 8000,
+  });
+}
 
 function objectToFormData(obj) {
   const formData = new FormData();
@@ -51,6 +64,7 @@ export async function flushQueue(userId) {
           error,
         );
         await removeQueuedRequest(item.idempotencyKey);
+        notifyDropped();
         continue;
       }
 
@@ -58,6 +72,7 @@ export async function flushQueue(userId) {
       if (attempts >= MAX_ATTEMPTS) {
         console.error("Queued request exceeded max attempts, dropping.", item);
         await removeQueuedRequest(item.idempotencyKey);
+        notifyDropped();
       } else {
         await updateAttempts(item.idempotencyKey, attempts);
       }

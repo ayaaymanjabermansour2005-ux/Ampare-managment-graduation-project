@@ -583,12 +583,23 @@ async function confirmDeleteOwner() {
 }
 
 async function handleUnlock(owner) {
-  await unlockOwner(owner.id);
-  toast.show({
-    type: "success",
-    title: t("owners_page.unlocked_toast_title"),
-    message: t("owners_page.owner_unlocked_msg", { name: owner.name }),
-  });
+  // FIX: (item 13) نفس النمط المطبَّق سابقًا بـ UsersView.vue (FIX-015) —
+  // كان بدون try/catch، فأي فشل بالفتح (شبكة/صلاحيات) كان unhandled
+  // rejection صامت بدون أي رسالة للأدمن.
+  try {
+    await unlockOwner(owner.id);
+    toast.show({
+      type: "success",
+      title: t("owners_page.unlocked_toast_title"),
+      message: t("owners_page.owner_unlocked_msg", { name: owner.name }),
+    });
+  } catch (err) {
+    toast.show({
+      type: "error",
+      title: t("owners_page.unlocked_toast_title"),
+      message: err.response?.data?.message ?? t("common.unexpected_error_retry"),
+    });
+  }
 }
 
 const planModal = ref({ open: false, owner: null, planId: null });

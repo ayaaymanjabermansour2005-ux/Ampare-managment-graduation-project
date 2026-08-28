@@ -258,7 +258,7 @@ onMounted(async () => {
           class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           @click.self="closeTransferModal"
         >
-          <div class="glass-card modal-panel-pop !bg-white\98 dark:!bg-[#1c1e20]/98 w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden rounded-2xl">
+          <div class="glass-card modal-panel-pop !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden rounded-2xl">
             <div class="modal-head-brand modal-head-brand--gold shrink-0">
               <div class="modal-head-brand__inner flex-1">
                 <span class="modal-head-brand__icon"><ArrowRightLeft aria-hidden="true" /></span>

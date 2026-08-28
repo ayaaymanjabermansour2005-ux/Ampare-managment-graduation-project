@@ -51,20 +51,35 @@ export function useTechnicianTasks() {
       ).length,
   );
 
-  async function fetchTasks(page = 1) {
+  // FIX: الفلترة بالحالة كانت تصفّي بس الصفحة المحمّلة حاليًا (15 عنصر)
+  // بدل الطلب من الباك اند، فيصير عدد النتائج/الصفحات غلط لو في أكثر من
+  // صفحة. الباك اند (TechnicianTaskService::list) بيدعم فلترة بحالة واحدة
+  // دقيقة فقط (status = X) — ما بيدعم تجميعة "active" (كل الحالات ما عدا
+  // approved/rejected/cancelled). فبنمرر status للباك اند بس لما تكون قيمة
+  // حقيقية مطابقة تمامًا لحالة بالباك اند (submitted/approved)، وبنسيب
+  // "active"/"all" فلترة محلية بالصفحة الحالية لحد ما يُضاف دعم فلترة
+  // مجمّعة بالباك اند.
+  const SERVER_FILTERABLE_STATUSES = ["submitted", "approved", "rejected", "cancelled"];
+
+  async function fetchTasks(page = 1, status = null) {
     isLoading.value = true;
     error.value = null;
 
     try {
-      const { data } = await technicianTaskService.list({ page });
+      const params = { page };
+      if (status && SERVER_FILTERABLE_STATUSES.includes(status)) {
+        params.status = status;
+      }
+      const { data } = await technicianTaskService.list(params);
       const payload = data.data;
 
       tasks.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? tasks.value.length,
-        per_page: payload.per_page ?? 15,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? tasks.value.length,
+        per_page: meta.per_page ?? 15,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("technician_tasks.load_error");

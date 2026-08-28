@@ -5,6 +5,7 @@ import { useI18n } from "vue-i18n";
 import { motion, AnimatePresence, useReducedMotion } from "motion-v";
 import { setLocale } from "@/i18n";
 import { useThemeSync } from "@/composables/useThemeSync";
+import { useScrollToSection } from "@/composables/useScrollToSection";
 import { ArrowUp, Mail, MapPin, Menu, Moon, Phone, Sun, X } from "@lucide/vue";
 
 
@@ -45,9 +46,15 @@ const NAV_LINKS = computed(() => [
   { label: t("landing.nav.contact"), sectionId: "contact" },
 ]);
 
-function scrollToSection(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
+// FIX: (item 11) كانت هذه الدالة تنادي document.getElementById مباشرة —
+// شغّالة فقط طالما المستخدم أصلًا على صفحة landing.home (حيث توجد عناصر
+// الأقسام). LandingLayout هذا مشترك بين HomeView وArticlesListView/
+// ArticleDetailView/LiveScheduleView أيضًا — فالنقر على "تواصل معنا" أو
+// "المزايا" من صفحة مقال مثلًا كان لا يفعل شيئًا بصمت (العنصر غير موجود
+// بتلك الصفحة). composables/useScrollToSection.js كان مبنيًا بالضبط لحل
+// هذه الحالة (ينتقل لـ landing.home أولًا ثم يمرّر) لكنه كان معزولًا بدون
+// أي استخدام — وُصل هون الآن.
+const { scrollToSection } = useScrollToSection();
 
 const isScrolled = ref(false);
 /* ---------------- زر الرجوع لأعلى + حلقة تقدّم القراءة ----------------
@@ -214,11 +221,15 @@ function handleMobileNavClick(id) {
               <span class="text-lg font-extrabold text-[#F4E0A5]">{{ t("auth.brand_name") }}</span>
             </div>
             <p class="text-[13px] leading-relaxed text-[#9a9d97] mb-5">{{ t("landing.footer.description") }}</p>
+            <!-- FIX: (item 12) كانت 4 روابط href="#" وهمية — ما في حسابات
+                 سوشال ميديا حقيقية موصولة بعد. حوّلناها لحالة placeholder
+                 واضحة (معطّلة بصريًا + tooltip) بدل رابط ميت صامت، لحد ما
+                 توفَّر الروابط الحقيقية من الجهة المسؤولة (TODO). -->
             <div class="flex items-center gap-2">
-              <a href="#" class="w-9 h-9 rounded-full bg-white/5 hover:bg-[#D4AF37]/20 hover:text-[#F4E0A5] flex items-center justify-center transition-colors"><i class="fab fa-facebook-f text-xs"></i></a>
-              <a href="#" class="w-9 h-9 rounded-full bg-white/5 hover:bg-[#D4AF37]/20 hover:text-[#F4E0A5] flex items-center justify-center transition-colors"><i class="fab fa-instagram text-xs"></i></a>
-              <a href="#" class="w-9 h-9 rounded-full bg-white/5 hover:bg-[#D4AF37]/20 hover:text-[#F4E0A5] flex items-center justify-center transition-colors"><i class="fab fa-whatsapp text-xs"></i></a>
-              <a href="#" class="w-9 h-9 rounded-full bg-white/5 hover:bg-[#D4AF37]/20 hover:text-[#F4E0A5] flex items-center justify-center transition-colors"><i class="fab fa-x-twitter text-xs"></i></a>
+              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-facebook-f text-xs"></i></span>
+              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-instagram text-xs"></i></span>
+              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-whatsapp text-xs"></i></span>
+              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-x-twitter text-xs"></i></span>
             </div>
           </div>
 
@@ -257,9 +268,13 @@ function handleMobileNavClick(id) {
 
         <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11.5px] text-[#8a8f83]">
           <p>{{ t("landing.footer.copyright", { year: new Date().getFullYear() }) }}</p>
+          <!-- FIX: (item 12) لا توجد صفحتا خصوصية/شروط بالمشروع أصلًا (تحقّق
+               عبر grep على ملفات الراوتر) — لا يمكن اختراع محتوى قانوني.
+               نفس حالة placeholder المطبَّقة على روابط السوشال ميديا أعلاه،
+               بانتظار قرار العمل (بناء الصفحات فعليًا أو حذف الروابط). -->
           <div class="flex items-center gap-4">
-            <a href="#" class="hover:text-[#F4E0A5]">{{ t("landing.footer.privacy") }}</a>
-            <a href="#" class="hover:text-[#F4E0A5]">{{ t("landing.footer.terms") }}</a>
+            <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="opacity-50 cursor-not-allowed">{{ t("landing.footer.privacy") }}</span>
+            <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="opacity-50 cursor-not-allowed">{{ t("landing.footer.terms") }}</span>
           </div>
         </div>
       </div>

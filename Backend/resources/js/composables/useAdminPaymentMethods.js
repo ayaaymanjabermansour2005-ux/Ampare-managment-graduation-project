@@ -21,11 +21,12 @@ export function useAdminPaymentMethods() {
       });
       const payload = data.data;
       methods.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? methods.value.length,
-        per_page: payload.per_page ?? 15,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? methods.value.length,
+        per_page: meta.per_page ?? 15,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("payment_methods_page.load_error");

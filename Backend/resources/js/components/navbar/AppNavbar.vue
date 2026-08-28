@@ -389,8 +389,8 @@ function toggleQuickAdd() {
             <div class="p-1.5 grid grid-cols-1">
               <RouterLink
                 v-for="q in visibleQuickActions"
-                :key="q.route"
-                :to="{ name: q.route }"
+                :key="q.route + (q.query?.tab ?? '')"
+                :to="{ name: q.route, query: q.query }"
                 class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] font-semibold hover:bg-[#EBF1E7] dark:hover:bg-white/5 transition-colors"
                 @click="isQuickAddOpen = false"
               >

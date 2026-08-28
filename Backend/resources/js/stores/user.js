@@ -12,10 +12,15 @@ export const useUserStore = defineStore("user", () => {
   });
   const isLoading = ref(false);
   const errors = ref(null);
+  // FIX: "errors" (أخطاء تحقّق حقول 422) ما كانت تُعرَض بأي مكان بالواجهة،
+  // وما في أصلًا رسالة عامة تُلتقط لفشل التحميل نفسه (شبكة/صلاحيات/500) —
+  // فالقائمة كانت تظهر "لا يوجد مستخدمون" بصمت بدل رسالة خطأ حقيقية.
+  const error = ref(null);
 
   async function fetchUsers(params = {}) {
     isLoading.value = true;
     errors.value = null;
+    error.value = null;
     try {
       const { data } = await userService.list(params);
       const payload = data.data;
@@ -27,9 +32,10 @@ export const useUserStore = defineStore("user", () => {
         total: meta.total ?? users.value.length,
         per_page: meta.per_page ?? 15,
       };
-    } catch (error) {
-      errors.value = error.response?.data?.errors ?? null;
-      throw error;
+    } catch (err) {
+      errors.value = err.response?.data?.errors ?? null;
+      error.value = err.response?.data?.message ?? null;
+      throw err;
     } finally {
       isLoading.value = false;
     }
@@ -63,6 +69,7 @@ export const useUserStore = defineStore("user", () => {
     pagination,
     isLoading,
     errors,
+    error,
     fetchUsers,
     updateUser,
     fetchUser,

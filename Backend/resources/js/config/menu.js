@@ -254,17 +254,6 @@ export default [
     groupKey: "menu_groups.finance",
   },
   {
-    label: "الدفعات",
-    labelKey: "menu.payments",
-    icon: "fa-solid fa-wallet",
-    route: "owner.invoices",
-    query: { tab: "payments" },
-    roles: ["generator_owner"],
-    permission: "payments.view",
-    group: "المالية",
-    groupKey: "menu_groups.finance",
-  },
-  {
     label: "العروض",
     labelKey: "menu.offers",
     icon: "fa-solid fa-tags",

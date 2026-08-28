@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, onMounted } from "vue";
+import { reactive, ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import authService from "@/services/authService";
@@ -25,8 +25,17 @@ const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
 
 function fieldError(field) {
+  if (field === "password_confirmation" && passwordMismatch.value) {
+    return t("auth.password_mismatch");
+  }
   return fieldErrors.value?.[field]?.[0] ?? null;
 }
+
+// FIX: ما كان في تحقّق محلي من تطابق كلمتي المرور — نفس النمط المُطبَّق
+// بصفحة التسجيل.
+const passwordMismatch = computed(
+  () => form.password_confirmation.length > 0 && form.password !== form.password_confirmation,
+);
 
 onMounted(() => {
   form.token = route.query.token ?? "";
@@ -34,6 +43,7 @@ onMounted(() => {
 });
 
 async function handleSubmit() {
+  if (passwordMismatch.value) return;
   isLoading.value = true;
   error.value = null;
   fieldErrors.value = {};
@@ -96,14 +106,16 @@ async function handleSubmit() {
             :type="showPasswordConfirmation ? 'text' : 'password'"
             required
             class="auth-glass-input auth-input-with-eye"
+            :class="{ 'is-invalid': passwordMismatch }"
           />
           <span class="auth-password-eye" role="button" tabindex="0" :aria-label="t('auth.toggle_password_visibility')" @click="showPasswordConfirmation = !showPasswordConfirmation" @keydown.enter.prevent="showPasswordConfirmation = !showPasswordConfirmation" @keydown.space.prevent="showPasswordConfirmation = !showPasswordConfirmation">
             <EyeOff aria-hidden="true" v-if="showPasswordConfirmation" class="text-xs" /><Eye aria-hidden="true" v-else class="text-xs" />
           </span>
         </div>
+        <p v-if="passwordMismatch" class="auth-field-error">{{ t("auth.password_mismatch") }}</p>
       </div>
 
-      <button type="submit" class="auth-btn-submit" :disabled="isLoading">
+      <button type="submit" class="auth-btn-submit" :disabled="isLoading || passwordMismatch">
         <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isLoading" />
         <span>{{ isLoading ? t("auth.reset_password.submit_loading") : t("auth.reset_password.submit_idle") }}</span>
       </button>

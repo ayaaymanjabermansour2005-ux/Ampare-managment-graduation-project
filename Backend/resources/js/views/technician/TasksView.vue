@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTechnicianTasks } from "@/composables/useTechnicianTasks";
 import { Check, Clock, FlagTriangleRight, Star } from "@lucide/vue";
@@ -21,6 +21,13 @@ const {
   performAction,
 } = useTechnicianTasks();
 const statusFilter = ref("active");
+
+watch(statusFilter, (val) => {
+  // FIX: الفلترة الآن بتنعمل بالباك اند لما ينفع (راجع useTechnicianTasks)
+  // بدل ما تضل تصفّي بس الصفحة المحمّلة — لازم نرجع لصفحة 1 كل ما تتغيّر
+  // الفلترة، وإلا ممكن نطلب صفحة رقمها أعلى من last_page الجديد.
+  fetchTasks(1, val === "active" || val === "all" ? null : val);
+});
 
 const STATUS_TONES = {
   pending: "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400",
@@ -63,7 +70,7 @@ async function handleSubmit() {
   }
 }
 
-onMounted(() => fetchTasks());
+onMounted(() => fetchTasks(1, null));
 </script>
 
 <template>
@@ -249,7 +256,7 @@ onMounted(() => fetchTasks());
         v-for="page in pagination.last_page"
         :key="page"
         type="button"
-        @click="fetchTasks(page)"
+        @click="fetchTasks(page, statusFilter === 'active' || statusFilter === 'all' ? null : statusFilter)"
         class="w-9 h-9 rounded-lg text-sm font-mono font-data transition"
         :class="
           page === pagination.current_page

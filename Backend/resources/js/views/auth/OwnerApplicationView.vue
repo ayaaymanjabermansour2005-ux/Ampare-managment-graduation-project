@@ -120,8 +120,17 @@ const generalError = ref(null);
 const successEmail = ref("");
 
 function fieldError(field) {
+  if (field === "password_confirmation" && passwordMismatch.value) {
+    return t("auth.password_mismatch");
+  }
   return errors.value?.[field]?.[0] ?? errors.value?.[`${field}.0`]?.[0] ?? null;
 }
+
+// FIX: ما كان في تحقّق محلي من تطابق كلمتي المرور — نفس النمط المُطبَّق
+// بصفحات التسجيل الأخرى.
+const passwordMismatch = computed(
+  () => form.password_confirmation.length > 0 && form.password !== form.password_confirmation,
+);
 
 async function loadNeighborhoods() {
   try {
@@ -141,6 +150,7 @@ async function handleSubmit() {
     }
   }
   if (hasMissingDocument) return;
+  if (passwordMismatch.value) return;
 
   submitState.value = "loading";
   errors.value = null;
@@ -412,18 +422,20 @@ onMounted(loadNeighborhoods);
                 :type="showPasswordConfirmation ? 'text' : 'password'"
                 required
                 class="auth-glass-input auth-input-with-eye"
+                :class="{ 'is-invalid': passwordMismatch }"
               />
               <span class="auth-password-eye" role="button" tabindex="0" :aria-label="t('auth.toggle_password_visibility')" @click="showPasswordConfirmation = !showPasswordConfirmation" @keydown.enter.prevent="showPasswordConfirmation = !showPasswordConfirmation" @keydown.space.prevent="showPasswordConfirmation = !showPasswordConfirmation">
                 <EyeOff aria-hidden="true" v-if="showPasswordConfirmation" class="text-xs" /><Eye aria-hidden="true" v-else class="text-xs" />
               </span>
             </div>
+            <p v-if="passwordMismatch" class="auth-field-error">{{ t("auth.password_mismatch") }}</p>
           </div>
         </div>
 
         <button
           type="submit"
           class="auth-btn-submit"
-          :disabled="submitState !== 'idle'"
+          :disabled="submitState !== 'idle' || passwordMismatch"
         >
           <LoaderCircle class="animate-spin" aria-hidden="true" v-if="submitState === 'loading'" />
           <span>{{ submitState === "loading" ? t("auth.owner_application.submit_loading") : t("auth.owner_application.submit_idle") }}</span>

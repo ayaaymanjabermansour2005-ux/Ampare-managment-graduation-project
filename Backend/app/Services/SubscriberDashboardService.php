@@ -70,7 +70,10 @@ class SubscriberDashboardService
 
             'unread_notifications_count' => $user->unreadNotifications()->count(),
 
-            'generator_status' => $generator ? $this->generatorStatus($generator) : null,
+            // generator_id مُضاف هنا (مو جوا generatorStatus()) عشان الواجهة
+            // تقدر تربط "عرض جدول المولد" بصفحة تفاصيل المولد الصحيحة —
+            // كان غير موجود بالرد أصلاً فالرابط كان مكسور دايمًا.
+            'generator_status' => $generator ? ['generator_id' => $generator->id, ...$this->generatorStatus($generator)] : null,
 
             'upcoming_schedule' => $generator ? $this->upcomingSchedule($generator) : null,
         ];

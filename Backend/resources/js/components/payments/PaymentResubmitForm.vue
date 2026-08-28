@@ -1,6 +1,9 @@
 <script setup>
 import { reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { LoaderCircle, RotateCw, X } from "@lucide/vue";
+
+const { t } = useI18n();
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -65,7 +68,7 @@ function submit() {
               >
                 <RotateCw aria-hidden="true" />
               </span>
-              إعادة إرسال الدفعة
+              {{ t("payment_resubmit_form.title") }}
             </h3>
             <button :aria-label="$t('common.close')"
               type="button"
@@ -85,7 +88,7 @@ function submit() {
             </div>
 
             <div>
-              <label class="block text-[12px] font-bold mb-1.5">المبلغ</label>
+              <label class="block text-[12px] font-bold mb-1.5">{{ t("payment_resubmit_form.amount_label") }}</label>
               <input
                 v-model="form.amount"
                 type="number"
@@ -100,8 +103,8 @@ function submit() {
 
             <div>
               <label class="block text-[12px] font-bold mb-1.5">
-                رقم العملية
-                <span class="text-[#9a9d97] font-normal">(اختياري)</span>
+                {{ t("payment_resubmit_form.transaction_reference_label") }}
+                <span class="text-[#9a9d97] font-normal">{{ t("payment_resubmit_form.optional_suffix") }}</span>
               </label>
               <input
                 v-model="form.transaction_reference"
@@ -113,8 +116,8 @@ function submit() {
 
             <div>
               <label class="block text-[12px] font-bold mb-1.5">
-                ملاحظة
-                <span class="text-[#9a9d97] font-normal">(اختياري)</span>
+                {{ t("payment_resubmit_form.note_label") }}
+                <span class="text-[#9a9d97] font-normal">{{ t("payment_resubmit_form.optional_suffix") }}</span>
               </label>
               <textarea
                 v-model="form.note"
@@ -126,8 +129,8 @@ function submit() {
 
             <div>
               <label class="block text-[12px] font-bold mb-1.5">
-                إثبات دفع جديد
-                <span class="text-[#9a9d97] font-normal">(حتى 5 ملفات)</span>
+                {{ t("payment_resubmit_form.new_proof_label") }}
+                <span class="text-[#9a9d97] font-normal">{{ t("payment_resubmit_form.max_files_suffix") }}</span>
               </label>
               <input
                 type="file"
@@ -137,7 +140,7 @@ function submit() {
                 class="w-full text-[12px] text-[#6B6B6B] dark:text-[#a8aaa5] file:me-3 file:py-2 file:px-3.5 file:rounded-full file:border-0 file:bg-gradient-to-l file:from-[#8A6D1F] file:to-[#D4AF37] file:text-white file:text-[11px] file:font-bold"
               />
               <p v-if="files.length" class="text-[11px] text-[#9a9d97] mt-1.5">
-                {{ files.length }} ملف مختار
+                {{ t("payment_resubmit_form.files_selected_count", { count: files.length }) }}
               </p>
             </div>
           </div>
@@ -151,7 +154,7 @@ function submit() {
               @click="emit('close')"
               class="flex-1 text-[12.5px] font-bold py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 transition"
             >
-              إلغاء
+              {{ t("common.cancel") }}
             </button>
             <button
               type="button"
@@ -160,7 +163,7 @@ function submit() {
               class="flex-1 btn-fill relative text-[12.5px] font-bold py-2.5 rounded-full text-white bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] shadow-md flex items-center justify-center gap-2 disabled:opacity-50 transition"
             >
               <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSubmitting" />
-              {{ isSubmitting ? "جارٍ الإرسال..." : "إعادة الإرسال" }}
+              {{ isSubmitting ? t("payment_resubmit_form.submit_loading") : t("payment_resubmit_form.submit_idle") }}
             </button>
           </footer>
         </div>

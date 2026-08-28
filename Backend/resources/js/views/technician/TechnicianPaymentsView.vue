@@ -47,8 +47,6 @@ async function handleReject() {
 }
 
 onMounted(() => fetchPayments());
-
-defineExpose({ fetchPayments });
 </script>
 
 <template>

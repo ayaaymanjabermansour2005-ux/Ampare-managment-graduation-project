@@ -19,9 +19,10 @@ const {
   readings, pagination, isLoading, error,
   search, statusFilter,
   approvingId, approveError,
+  rejectingId, rejectError,
   isSaving, saveError, deletingId, deleteError,
   fetchReadings, onSearchInput, onFilterChange,
-  approveReading, createReading, updateReading, deleteReading,
+  approveReading, rejectReading, createReading, updateReading, deleteReading,
 } = useAdminMeterReadings();
 
 /* ---------------- حالة القراءة ---------------- */
@@ -173,6 +174,34 @@ const systemStatusInfo = computed(() => {
 async function handleApprove(r) {
   await approveReading(r.id);
   if (approveError.value) toast.show({ type: "danger", title: approveError.value });
+}
+
+/* ---------------- رفض قراءة (بانتظار الاعتماد فقط، بسبب مطلوب) ----------------
+ * FIX: القراءات كان ينفع اعتمادها بس، مش رفضها، رغم إنّ الباك اند وحالة
+ * "rejected" جاهزين أصلًا. اخترنا نافذة بسبب مطلوب (مش one-click) لتماشي
+ * نفس النمط المعتمد لرفض دفعات الفنيين (TechnicianPaymentsView.vue) —
+ * الرفض قرار يحتاج تبرير يوصل للمشترك/الفني، خلافًا للاعتماد اللي ما
+ * بيحتاج تفسير. */
+const rejectTarget = ref(null);
+const rejectReason = ref("");
+function openReject(r) {
+  if (r.status !== "pending_approval") return;
+  rejectTarget.value = r;
+  rejectReason.value = "";
+}
+function closeReject() {
+  if (rejectingId.value) return;
+  rejectTarget.value = null;
+}
+async function handleReject() {
+  if (!rejectReason.value.trim()) return;
+  const ok = await rejectReading(rejectTarget.value.id, rejectReason.value.trim());
+  if (ok) {
+    rejectTarget.value = null;
+    rejectReason.value = "";
+  } else if (rejectError.value) {
+    toast.show({ type: "danger", title: rejectError.value });
+  }
 }
 
 /* =========================================================================
@@ -636,6 +665,15 @@ onMounted(async () => {
                     >
                       <LoaderCircle class="animate-spin" aria-hidden="true" v-if="approvingId === r.id" /><Check aria-hidden="true" v-else />
                     </button>
+                    <span class="row-actions-divider"></span>
+                    <button
+                      type="button" @click="openReject(r)" :disabled="rejectingId === r.id"
+                      class="action-btn action-btn--delete"
+                      :title="$t('meter_readings_page.reject_action')"
+                      :aria-label="$t('meter_readings_page.reject_action')"
+                    >
+                      <LoaderCircle class="animate-spin" aria-hidden="true" v-if="rejectingId === r.id" /><X aria-hidden="true" v-else />
+                    </button>
                   </template>
                 </div>
               </td>
@@ -724,6 +762,9 @@ onMounted(async () => {
                     <b class="info-row-value">{{ viewingReading.approved_by }}</b>
                   </div>
                 </div>
+                <p v-if="viewingReading.status === 'rejected' && viewingReading.rejection_reason" class="text-[12px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg p-3">
+                  <strong>{{ $t("meter_readings_page.rejection_reason_label") }}:</strong> {{ viewingReading.rejection_reason }}
+                </p>
               </div>
 
               <div class="space-y-4">
@@ -759,11 +800,54 @@ onMounted(async () => {
               </button>
               <button
                 v-if="viewingReading.status === 'pending_approval'"
+                type="button" @click="openReject(viewingReading)" :disabled="rejectingId === viewingReading.id"
+                class="btn-outline-brand !text-[#D9534F] !border-[#D9534F]/40"
+              >
+                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="rejectingId === viewingReading.id" /><X aria-hidden="true" v-else />
+                {{ rejectingId === viewingReading.id ? $t("meter_readings_page.rejecting_ellipsis") : $t("meter_readings_page.reject_action") }}
+              </button>
+              <button
+                v-if="viewingReading.status === 'pending_approval'"
                 type="button" @click="handleApprove(viewingReading)" :disabled="approvingId === viewingReading.id"
                 class="btn-fill-brand"
               >
                 <LoaderCircle class="animate-spin" aria-hidden="true" v-if="approvingId === viewingReading.id" /><Check aria-hidden="true" v-else />
                 {{ approvingId === viewingReading.id ? $t("meter_readings_page.approving_ellipsis") : $t("generators_management_page.approve_action") }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ===================== نافذة رفض قراءة (بسبب مطلوب) ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="rejectTarget" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="closeReject">
+          <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-sm shadow-2xl overflow-hidden p-5">
+            <h3 class="text-[14.5px] font-extrabold mb-1.5">{{ $t("meter_readings_page.reject_modal_title") }}</h3>
+            <p class="text-[12px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-3">{{ $t("meter_readings_page.reject_modal_desc") }}</p>
+            <textarea
+              v-model="rejectReason"
+              rows="4"
+              required
+              maxlength="1000"
+              :placeholder="$t('meter_readings_page.reject_reason_placeholder')"
+              class="w-full rounded-lg border border-[#e7e2d6] dark:border-white/10 bg-transparent px-3.5 py-2.5 text-[12.5px] resize-none outline-none focus:ring-2 focus:ring-[#D9534F]/20 focus:border-[#D9534F]"
+            ></textarea>
+            <!-- FIX: (item 22) maxlength كان 500 بالغلط، والباك اند (RejectMeterReadingRequest)
+                 بيسمح لحد 1000 حرف — صُحّح ليطابق تمامًا. -->
+            <p v-if="!rejectReason.trim()" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-1">{{ $t("meter_readings_page.reject_reason_required_error") }}</p>
+            <div class="flex items-center gap-2.5 mt-4">
+              <button type="button" @click="closeReject" class="flex-1 text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">
+                {{ $t("meter_readings_page.reject_cancel_action") }}
+              </button>
+              <button
+                type="button" @click="handleReject" :disabled="!rejectReason.trim() || rejectingId === rejectTarget?.id"
+                class="flex-1 text-[12.5px] font-bold px-4 py-2.5 rounded-full bg-[#D9534F] text-white shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="rejectingId === rejectTarget?.id" /><X aria-hidden="true" v-else />
+                {{ $t("meter_readings_page.reject_confirm_action") }}
               </button>
             </div>
           </div>

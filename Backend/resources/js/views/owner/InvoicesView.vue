@@ -181,6 +181,14 @@ const exportUrl = computed(() =>
   ),
 );
 
+// FIX: (item 14) نفس نمط تصدير تبويب الدفعات أعلاه، لتبويب الفواتير —
+// كان الزر غائب كليًا هون رغم وجود GET /invoices/export بالباك اند.
+const invoiceExportUrl = computed(() =>
+  invoiceService.exportUrl(
+    invoiceStatusFilter.value ? { status: invoiceStatusFilter.value } : {},
+  ),
+);
+
 const isPanelOpen = ref(false);
 const selectedPayment = ref(null);
 
@@ -449,6 +457,15 @@ onMounted(() => {
               <button :aria-label="t('common.view_as_table')" type="button" @click="invoicesViewMode = 'table'" class="icon-btn !w-8 !h-8" :class="{ '!bg-white dark:!bg-white/10': invoicesViewMode === 'table' }"><Table2 class="text-[11px]" aria-hidden="true" /></button>
               <button :aria-label="t('common.view_as_grid')" type="button" @click="invoicesViewMode = 'grid'" class="icon-btn !w-8 !h-8" :class="{ '!bg-white dark:!bg-white/10': invoicesViewMode === 'grid' }"><GripVertical class="text-[11px]" aria-hidden="true" /></button>
             </div>
+            <!-- FIX: (item 14) زر تصدير حقيقي جديد — نفس نمط زر تبويب الدفعات المجاور -->
+            <a
+              :href="invoiceExportUrl" target="_blank" rel="noopener"
+              class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
+              :title="t('owner_invoices.export_excel')"
+              :aria-label="t('owner_invoices.export_excel')"
+            >
+              <FileSpreadsheet class="text-[11px]" aria-hidden="true" />
+            </a>
             <button
               type="button" @click="printPage"
               class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
@@ -575,7 +592,9 @@ onMounted(() => {
     <!-- ==========================================================
          ==================  تبويب: الدفعات  ========================
          ========================================================== -->
-    <template v-else>
+    <!-- FIX: كانت v-else بدل v-else-if، فكانت تظهر معًا مع تبويب "دفعات
+         الفنيين" (activeTab === 'technician_payments') بنفس الوقت. -->
+    <template v-else-if="activeTab === 'payments'">
       <!-- ===== TOOLBAR ===== -->
       <section v-reveal class="glass-card p-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -723,7 +742,7 @@ onMounted(() => {
     <!-- ==========================================================
          ==================  تبويب: دفعات الفنيين  ===================
          ========================================================== -->
-    <template v-if="activeTab === 'technician_payments'">
+    <template v-else-if="activeTab === 'technician_payments'">
       <!-- ===== TOOLBAR (فلتر الفني) ===== -->
       <section v-reveal class="glass-card p-4">
         <div class="flex flex-wrap items-center gap-2">

@@ -3,12 +3,14 @@ import { ref, reactive, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import settingService from "@/services/settingService";
 import neighborhoodService from "@/services/neighborhoodService";
+import { useConfirm } from "@/composables/useConfirm";
 import { vReveal } from "@/directives/reveal";
 import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Info, LoaderCircle, MapPinned, Save, SlidersHorizontal, TriangleAlert } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
 const { t, locale } = useI18n();
+const { confirm } = useConfirm();
 
 const TABS = [
   { key: "general", labelKey: "menu_groups.general", icon: "fa-gear" },
@@ -173,6 +175,16 @@ async function saveEdit(id) {
 
 const deletingId = ref(null);
 async function deleteNeighborhood(id) {
+  // FIX: كان الحذف يتنفذ فورًا بدون أي تأكيد، خلافًا لكل عمليات الحذف
+  // الأخرى بالتطبيق (تستخدم useConfirm() قبل أي حذف نهائي).
+  const confirmed = await confirm({
+    title: t("settings_page.delete_neighborhood_title"),
+    message: t("settings_page.delete_neighborhood_confirm_message"),
+    confirmLabel: t("common.delete"),
+    variant: "danger",
+  });
+  if (!confirmed) return;
+
   deletingId.value = id;
   neighborhoodError.value = null;
   try {

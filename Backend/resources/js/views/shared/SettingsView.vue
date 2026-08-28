@@ -90,7 +90,13 @@ async function handleAvatarChange(e) {
 
 /* ---------------- الأمان ---------------- */
 const passwordForm = reactive({ current_password: "", password: "", password_confirmation: "" });
+// FIX: ما كان في تحقّق محلي من تطابق كلمتي المرور — نفس النمط المُطبَّق
+// بفورمات التسجيل الثلاثة (Register/ResetPassword/OwnerApplication).
+const passwordMismatch = computed(
+  () => passwordForm.password_confirmation.length > 0 && passwordForm.password !== passwordForm.password_confirmation,
+);
 async function handlePasswordSubmit() {
+  if (passwordMismatch.value) return;
   const ok = await changePassword({ ...passwordForm });
   if (ok) {
     passwordForm.current_password = "";
@@ -466,13 +472,20 @@ onMounted(() => {
           </div>
           <div>
             <label class="text-[11.5px] font-bold block mb-1.5">{{ t("owner_settings.security.confirm_password") }}</label>
-            <input v-model="passwordForm.password_confirmation" type="password" required class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] transition" />
+            <input
+              v-model="passwordForm.password_confirmation"
+              type="password"
+              required
+              class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] transition"
+              :class="{ '!border-[#D9534F]': passwordMismatch }"
+            />
+            <p v-if="passwordMismatch" class="text-[11px] text-[#D9534F] mt-1">{{ t("auth.password_mismatch") }}</p>
           </div>
         </div>
 
         <button
           type="submit"
-          :disabled="isChangingPassword"
+          :disabled="isChangingPassword || passwordMismatch"
           class="btn-fill relative px-6 py-2.5 rounded-full text-[12.5px] font-bold text-white bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] shadow-md flex items-center justify-center gap-2 disabled:opacity-60 transition w-fit"
         >
           <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isChangingPassword" /><Lock aria-hidden="true" v-else />

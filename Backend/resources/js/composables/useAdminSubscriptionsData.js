@@ -35,10 +35,11 @@ export function useAdminSubscriptionsData() {
       const { data } = await subscriptionService.list(params);
       const payload = data.data;
       subscriptions.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? subscriptions.value.length,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? subscriptions.value.length,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("subscriptions_page.load_error");

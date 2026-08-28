@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { RouterView, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { setLucideProps } from "@lucide/vue";
 import { useConnectivityStore } from "./stores/connectivity";
 import { useAuthStore } from "./stores/auth";
@@ -13,6 +14,7 @@ import SplashView from "./views/splash/SplashView.vue";
 const router = useRouter();
 const connectivityStore = useConnectivityStore();
 const authStore = useAuthStore();
+const { t } = useI18n();
 
 // سياسة الأيقونات الموحّدة على مستوى التطبيق كامل: كل أيقونة Lucide بترث حجمها
 // من font-size السياق المحيط بها (1em) بدل حجم بكسل ثابت — نفس سلوك <i> الخاص
@@ -39,16 +41,12 @@ function goToLogin() {
 
   <template v-else>
     <div v-if="needsReauth" class="reauth-banner" role="alert">
-      <span>
-        انتهت جلستك ولديك {{ pendingCount }} عملية محفوظة بانتظار الإرسال. سجّل
-        الدخول من جديد لإتمامها.
-      </span>
-      <button type="button" @click="goToLogin">تسجيل الدخول</button>
+      <span>{{ t("common.reauth_banner_message", { count: pendingCount }) }}</span>
+      <button type="button" @click="goToLogin">{{ t("common.reauth_banner_login_button") }}</button>
     </div>
 
     <div v-if="!isOnline" class="offline-banner" role="status">
-      لا يوجد اتصال بالإنترنت — سيتم حفظ العمليات وإرسالها تلقائيًا عند عودة
-      الاتصال.
+      {{ t("common.offline_banner_message") }}
     </div>
 
     <RouterView />

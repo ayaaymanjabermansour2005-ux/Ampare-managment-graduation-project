@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useConfirm } from "@/composables/useConfirm";
+import { useOwnerSubscriptionMeterTransfers } from "@/composables/useOwnerSubscriptionMeterTransfers";
 import subscriptionService from "@/services/subscriptionService";
 import generatorService from "@/services/generatorService";
 import userService from "@/services/userService";
@@ -10,6 +11,84 @@ import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { ArrowRightLeft, Bell, Check, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, Gauge, GripVertical, LoaderCircle, MessageCircleMore, Printer, Receipt, RotateCw, Search, Send, Table2, UserPlus, Users, X, ZoomOut } from "@lucide/vue";
+
+/* ---------------- تبويبات: الاشتراكات / طلبات نقل العداد ----------------
+ * FIX: composables/useOwnerSubscriptionMeterTransfers.js كان جاهزًا بالكامل
+ * (لائحة + موافقة/رفض) لكن بدون أي واجهة تستخدمه — المالك ما كان قادر
+ * يوافق أو يرفض طلبات نقل العداد اللي يرسلها المشتركون، رغم إنّ الباك اند
+ * يدعم ذلك بالكامل. اخترنا "تبويب جديد بهاي الصفحة" بدل صفحة مستقلة لأنها
+ * ميزة مرتبطة مباشرة بنفس نطاق "المشتركين" الموجود هون أصلًا، وتفاديًا
+ * لإضافة رابط سلايدر جديد بدون داعٍ (نفس فلسفة دمج تبويب الدفعات جوا
+ * صفحة الفواتير). */
+const activeTab = ref("subscriptions");
+
+const {
+  requests: transferRequests,
+  pagination: transferPagination,
+  isLoading: isLoadingTransfers,
+  error: transferLoadError,
+  statusFilter: transferStatusFilter,
+  isApproving: isApprovingTransfer,
+  isRejecting: isRejectingTransfer,
+  rejectError: transferRejectError,
+  fetchRequests: fetchTransferRequests,
+  onFilterChange: onTransferFilterChange,
+  approveRequest: approveTransferRequest,
+  rejectRequest: rejectTransferRequestAction,
+} = useOwnerSubscriptionMeterTransfers();
+
+let transfersLoadedOnce = false;
+watch(activeTab, (tab) => {
+  if (tab === "transfers" && !transfersLoadedOnce) {
+    transfersLoadedOnce = true;
+    fetchTransferRequests(1);
+  }
+});
+
+const TRANSFER_STATUS_META = {
+  pending: { chip: "chip-warning", key: "owner_subscribers.transfer_status_pending" },
+  approved: { chip: "chip-success", key: "owner_subscribers.transfer_status_approved" },
+  rejected: { chip: "chip-danger", key: "owner_subscribers.transfer_status_rejected" },
+};
+function transferStatusLabel(s) {
+  const m = TRANSFER_STATUS_META[s];
+  return m ? t(m.key) : s;
+}
+const TRANSFER_STATUS_PILLS = computed(() => [
+  { value: "", label: t("common.all") },
+  ...Object.entries(TRANSFER_STATUS_META).map(([value, m]) => ({ value, label: t(m.key) })),
+]);
+
+async function handleApproveTransfer(reqItem) {
+  const ok = await approveTransferRequest(reqItem.id);
+  if (ok) {
+    toast.show({ type: "success", title: t("owner_subscribers.transfer_success_title") });
+  } else if (transferRejectError.value) {
+    toast.show({ type: "danger", title: transferRejectError.value });
+  }
+}
+
+const rejectTransferTarget = ref(null);
+const transferRejectReason = ref("");
+function openRejectTransfer(reqItem) {
+  if (reqItem.status !== "pending") return;
+  rejectTransferTarget.value = reqItem;
+  transferRejectReason.value = "";
+}
+function closeRejectTransfer() {
+  if (isRejectingTransfer.value) return;
+  rejectTransferTarget.value = null;
+}
+async function handleRejectTransfer() {
+  if (!transferRejectReason.value.trim()) return;
+  const ok = await rejectTransferRequestAction(rejectTransferTarget.value.id, transferRejectReason.value.trim());
+  if (ok) {
+    rejectTransferTarget.value = null;
+    transferRejectReason.value = "";
+  } else if (transferRejectError.value) {
+    toast.show({ type: "danger", title: transferRejectError.value });
+  }
+}
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -583,6 +662,28 @@ onMounted(() => {
       </div>
     </section>
 
+    <!-- ===== TABS ===== -->
+    <section v-reveal class="glass-card p-1.5 inline-flex gap-1 w-fit">
+      <button
+        type="button" @click="activeTab = 'subscriptions'"
+        class="px-4 py-2 rounded-full text-[12px] font-bold transition-colors"
+        :class="activeTab === 'subscriptions' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+      >{{ t("owner_subscribers.tab_subscriptions") }}</button>
+      <button
+        type="button" @click="activeTab = 'transfers'"
+        class="px-4 py-2 rounded-full text-[12px] font-bold transition-colors flex items-center gap-1.5"
+        :class="activeTab === 'transfers' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+      >
+        {{ t("owner_subscribers.tab_transfers") }}
+        <span v-if="transferPagination.total > 0 && transferStatusFilter === 'pending'" class="min-w-[18px] h-[18px] px-1 rounded-full bg-[#D9534F] text-white text-[10px] font-bold grid place-items-center">{{ transferPagination.total }}</span>
+      </button>
+    </section>
+
+    <!-- FIX: كل قسم الاشتراكات (KPI/شريط الأدوات/الجدول/النوافذ) صار متل
+         بقية الصفحات متعددة التبويبات بالتطبيق (owner.invoices مثلًا) —
+         v-if/v-else-if صريح بدل v-else، تجنبًا لنفس باغ ISSUE-012 (ظهور
+         تبويبين معًا) اللي انصلح بجولة سابقة. -->
+    <template v-if="activeTab === 'subscriptions'">
     <!-- ===== KPI CARDS (بنفس هوية لوحة تحكم الأدمن: .kpi-card / .kpi-icon) ===== -->
     <section v-reveal>
       <div v-if="isLoading && !subscriptions.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
@@ -992,5 +1093,114 @@ onMounted(() => {
         </section>
       </div>
     </Teleport>
+    </template>
+
+    <!-- ===== تبويب: طلبات نقل العداد ===== -->
+    <template v-else-if="activeTab === 'transfers'">
+      <section v-reveal class="glass-card p-5 lg:p-6">
+        <h2 class="text-[15px] font-extrabold mb-1">{{ t("owner_subscribers.transfer_requests_title") }}</h2>
+        <p class="text-[12px] text-[#777a74]">{{ t("owner_subscribers.transfer_requests_subtitle") }}</p>
+      </section>
+
+      <section v-reveal class="glass-card p-4">
+        <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap w-fit">
+          <button
+            v-for="pill in TRANSFER_STATUS_PILLS" :key="pill.value" type="button"
+            @click="transferStatusFilter = pill.value; onTransferFilterChange()"
+            class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+            :class="transferStatusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+          >{{ pill.label }}</button>
+        </div>
+      </section>
+
+      <section v-reveal class="glass-card p-4 overflow-hidden">
+        <div v-if="isLoadingTransfers" class="space-y-2">
+          <div v-for="i in 4" :key="i" class="h-16 rounded-lg thumb-loading"></div>
+        </div>
+        <div v-else-if="transferLoadError" class="text-center py-8 text-[12px] text-[#D9534F]">{{ transferLoadError }}</div>
+        <div v-else-if="!transferRequests.length" class="text-center py-10">
+          <ZoomOut class="text-2xl text-[#c9cdc2] mb-2" aria-hidden="true" />
+          <p class="text-[12px] text-[#9a9d97]">{{ t("owner_subscribers.transfer_no_matching_requests") }}</p>
+        </div>
+        <div v-else class="space-y-3">
+          <div
+            v-for="reqItem in transferRequests" :key="reqItem.id"
+            class="rounded-xl border border-[#eee8da] dark:border-white/10 p-4"
+            :class="{ 'opacity-50 pointer-events-none': isApprovingTransfer || isRejectingTransfer }"
+          >
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="font-bold text-[13px]">{{ reqItem.subscriber_name ?? "—" }}</h3>
+                  <span class="status-chip" :class="TRANSFER_STATUS_META[reqItem.status]?.chip">{{ transferStatusLabel(reqItem.status) }}</span>
+                </div>
+                <p class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-0.5">{{ reqItem.generator_name ?? "—" }}</p>
+              </div>
+              <div class="flex items-center gap-3 text-[11.5px]">
+                <span class="text-[#6B6B6B] dark:text-[#a8aaa5]">{{ t("owner_subscribers.transfer_from_meter_label") }}: <b class="font-mono">{{ reqItem.from_meter?.meter_number ?? "—" }}</b></span>
+                <ArrowRightLeft class="text-[10px] text-[#9a9d97]" aria-hidden="true" />
+                <span class="text-[#6B6B6B] dark:text-[#a8aaa5]">{{ t("owner_subscribers.transfer_to_meter_label") }}: <b class="font-mono">{{ reqItem.to_meter?.meter_number ?? "—" }}</b></span>
+              </div>
+            </div>
+
+            <p v-if="reqItem.reason" class="text-[12px] text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/60 dark:bg-white/5 rounded-lg p-2.5 mt-3">
+              <strong>{{ t("owner_subscribers.transfer_reason_label") }}:</strong> {{ reqItem.reason }}
+            </p>
+            <p v-if="reqItem.status === 'rejected' && reqItem.rejection_reason" class="text-[12px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg p-2.5 mt-2">
+              <strong>{{ t("owner_subscribers.transfer_rejection_reason_label") }}:</strong> {{ reqItem.rejection_reason }}
+            </p>
+
+            <div v-if="reqItem.status === 'pending'" class="flex items-center gap-2 mt-3 pt-3 border-t border-[#eee8da] dark:border-white/10">
+              <button
+                type="button" @click="handleApproveTransfer(reqItem)" :disabled="isApprovingTransfer"
+                class="flex-1 inline-flex items-center justify-center gap-2 py-2 rounded-lg text-[12px] font-semibold text-white bg-gradient-to-l from-[#3E582E] to-[#52733D] transition"
+              >
+                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isApprovingTransfer" /><Check aria-hidden="true" v-else />
+                {{ isApprovingTransfer ? t("owner_subscribers.transfer_approving_ellipsis") : t("owner_subscribers.transfer_approve_action") }}
+              </button>
+              <button
+                type="button" @click="openRejectTransfer(reqItem)" :disabled="isRejectingTransfer"
+                class="flex-1 py-2 rounded-lg text-[12px] font-semibold text-[#D9534F] border border-[#D9534F]/30 hover:bg-[#D9534F]/10 transition"
+              >
+                {{ t("owner_subscribers.transfer_reject_action") }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== نافذة رفض طلب النقل (بسبب مطلوب) ===================== -->
+      <Teleport to="body">
+        <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+          <div v-if="rejectTransferTarget" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="closeRejectTransfer">
+            <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-sm shadow-2xl overflow-hidden p-5">
+              <h3 class="text-[14.5px] font-extrabold mb-1.5">{{ t("owner_subscribers.transfer_reject_modal_title") }}</h3>
+              <p class="text-[12px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-3">{{ t("owner_subscribers.transfer_reject_modal_desc") }}</p>
+              <textarea
+                v-model="transferRejectReason"
+                rows="4"
+                required
+                maxlength="500"
+                :placeholder="t('owner_subscribers.transfer_reject_reason_placeholder')"
+                class="w-full rounded-lg border border-[#e7e2d6] dark:border-white/10 bg-transparent px-3.5 py-2.5 text-[12.5px] resize-none outline-none focus:ring-2 focus:ring-[#D9534F]/20 focus:border-[#D9534F]"
+              ></textarea>
+              <p v-if="!transferRejectReason.trim()" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-1">{{ t("owner_subscribers.transfer_reject_reason_required_error") }}</p>
+              <div class="flex items-center gap-2.5 mt-4">
+                <button type="button" @click="closeRejectTransfer" class="flex-1 text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">
+                  {{ t("owner_subscribers.transfer_reject_cancel_action") }}
+                </button>
+                <button
+                  type="button" @click="handleRejectTransfer" :disabled="!transferRejectReason.trim() || isRejectingTransfer"
+                  class="flex-1 text-[12.5px] font-bold px-4 py-2.5 rounded-full bg-[#D9534F] text-white shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isRejectingTransfer" /><X aria-hidden="true" v-else />
+                  {{ t("owner_subscribers.transfer_reject_confirm_action") }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+    </template>
   </div>
 </template>

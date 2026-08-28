@@ -261,7 +261,7 @@ onMounted(() => {
               </p>
 
               <RouterLink
-                :to="{ name: 'subscriber.generator' }"
+                :to="{ name: 'generators.show', params: { id: generatorStatus.generator_id } }"
                 class="inline-flex items-center gap-1.5 mt-4 text-[11.5px] font-bold text-[#52733D] dark:text-[#8cc35a] hover:underline"
               >
                 {{ t("subscriber_dashboard.view_generator_schedule") }}

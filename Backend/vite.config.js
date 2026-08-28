@@ -77,6 +77,35 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
+    build: {
+        rollupOptions: {
+            output: {
+                // FIX: main "app" chunk كان 949 كيلوبايت (فوق حد التحذير
+                // الافتراضي 500 كيلوبايت لـ Vite) بدون أي code-splitting
+                // للمكتبات الخارجية الكبيرة. chart.js وleaflet مقسومين
+                // أصلًا لوحدهم (dynamic import() موجود مسبقًا بمكان آخر
+                // بالكود)، فبنكمّل نفس المبدأ يدويًا على باقي المكتبات
+                // الكبيرة اللي كانت لسا داخل الحزمة الرئيسية. التقسيم
+                // بالاسم فقط (مو بترتيب التنفيذ)، فـ Rollup بيتكفّل تلقائيًا
+                // بترتيب تحميل الحزم المتداخلة بشكل صحيح.
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return;
+                    if (id.includes('primevue') || id.includes('primeicons')) return 'primevue-vendor';
+                    if (id.includes('/three/') || id.includes('\\three\\')) return 'three-vendor';
+                    if (id.includes('motion')) return 'motion-vendor';
+                    if (id.includes('@fortawesome')) return 'fontawesome-vendor';
+                    if (id.includes('jspdf') || id.includes('html2canvas')) return 'pdf-vendor';
+                    if (id.includes('datatables') || id.includes('@tanstack/vue-table')) return 'datatables-vendor';
+                    if (id.includes('laravel-echo') || id.includes('pusher-js')) return 'realtime-vendor';
+                    if (
+                        id.includes('/vue/') || id.includes('\\vue\\') ||
+                        id.includes('vue-router') || id.includes('pinia') || id.includes('vue-i18n')
+                    ) return 'vue-vendor';
+                    return 'vendor';
+                },
+            },
+        },
+    },
     server: {
         // Pin the dev server to IPv4 loopback explicitly. Without this, Vite
         // resolves the bare "localhost" host and — on Windows machines where

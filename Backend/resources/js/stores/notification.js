@@ -21,11 +21,12 @@ export const useNotificationStore = defineStore("notification", {
         const response = await notificationService.getAll({ page });
         const payload = response.data ?? {};
         this.notifications = payload.data ?? [];
+        const meta = payload.meta ?? payload;
         this.pagination = {
-          current_page: payload.current_page ?? 1,
-          last_page: payload.last_page ?? 1,
-          total: payload.total ?? this.notifications.length,
-          per_page: payload.per_page ?? 15,
+          current_page: meta.current_page ?? 1,
+          last_page: meta.last_page ?? 1,
+          total: meta.total ?? this.notifications.length,
+          per_page: meta.per_page ?? 15,
         };
         // عدّاد غير المقروء يبقى إجماليًا حقيقيًا عبر endpoint مخصص، وليس
         // مبنيًا على الصفحة الحالية المعروضة فقط.

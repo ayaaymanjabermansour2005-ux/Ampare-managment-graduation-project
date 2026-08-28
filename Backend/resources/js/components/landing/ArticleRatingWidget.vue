@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import articleCommentService from "@/services/articleCommentService";
+import { useToastStore } from "@/stores/toast";
 import { CircleCheck, Star } from "@lucide/vue";
 
 const props = defineProps({
@@ -9,6 +10,7 @@ const props = defineProps({
 });
 
 const { t, locale } = useI18n();
+const toast = useToastStore();
 
 const average = ref(0);
 const count = ref(0);
@@ -39,6 +41,13 @@ async function submitRating(star) {
     average.value = data.data.average;
     count.value = data.data.count;
     myRating.value = data.data.my_rating;
+  } catch (err) {
+    // FIX: (item 17) كان بدون catch — فشل الإرسال (429 rate limit، شبكة)
+    // كان unhandled promise rejection صامت بدون أي إشارة للمستخدم.
+    toast.show({
+      type: "error",
+      message: err.response?.data?.message ?? t("landing.articles_page.rate_error"),
+    });
   } finally {
     isSubmitting.value = false;
   }

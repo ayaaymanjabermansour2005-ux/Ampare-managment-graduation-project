@@ -88,8 +88,24 @@ const KPI_CARDS = computed(() => {
     { key: "complaints_open_count", icon: "fa-comment-dots", c1: "#D9534F", c2: "#8A6D1F" },
     { key: "technicians_count", icon: "fa-screwdriver-wrench", c1: "#52733D", c2: "#3E582E" },
     { key: "new_service_requests_count", icon: "fa-hand-holding-hand", c1: "#FFC107", c2: "#a3760a" },
+    // FIX: إضافة (item 11) — هذين الحقلين كانا موجودين أصلًا بنفس رد
+    // /admin/dashboard/stats المستخدَم هون (stats.value يحتوي كامل الرد
+    // بدون تصفية)، بس ما كانا معروضين بأي مكان بلوحة التحكم الرئيسية —
+    // كانا معروضين فقط بمكوّن AdminStatsGrid.vue المعزول (زيرو استخدام).
+    // دمجناهم هون بدل إعادة استخدام AdminStatsGrid نفسه لنتفادى نداء API
+    // مكرر لنفس الـ endpoint بنفس الصفحة.
+    { key: "invoices_issued_count", icon: "fa-file-invoice", c1: "#17A2B8", c2: "#0f6c7d" },
+    { key: "invoices_paid_count", icon: "fa-circle-check", c1: "#28A745", c2: "#1f7a37" },
   ];
 });
+
+// FIX: (item 11) stats.total_revenue_ils — نفس الملاحظة أعلاه: كان موجود
+// بالرد أصلًا وغير معروض إلا بـ AdminStatsGrid.vue المعزول. عرض عملة
+// بصيغة مختلفة عن بطاقات KPI الرقمية العادية (v-count-up)، فمنعرضه ببطاقة
+// مميّزة منفصلة بدل إقحامه بنفس شبكة KPI_CARDS.
+const totalRevenueDisplay = computed(() =>
+  stats.value ? Number(stats.value.total_revenue_ils ?? 0).toFixed(2) : "0.00",
+);
 
 /* ---------------- أولويات اليوم (مبنية على stats الحقيقية) ---------------- */
 const TODAY_PRIORITIES = computed(() => {
@@ -618,6 +634,14 @@ onMounted(async () => {
           <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-2.5">{{ t(`kpi.${card.key}`) }}</div>
           <div class="bar-track"><div class="bar-fill" style="width:100%; opacity:.35" :style="{ background: card.c1 }"></div></div>
         </div>
+      </div>
+
+      <!-- FIX: (item 11) بطاقة الإيراد الإجمالي — كانت موجودة فقط بمكوّن
+           AdminStatsGrid.vue المعزول، دُمجت هون كجزء من نفس تدفق بيانات
+           لوحة التحكم الرئيسية (stats الحقيقي نفسه، بدون نداء API إضافي). -->
+      <div v-if="!isLoadingStats && stats" class="glass-card !bg-gradient-to-l !from-[#3E582E]/10 !via-[#52733D]/10 !to-[#8A6D1F]/10 dark:!from-[#3E582E]/25 dark:!via-[#52733D]/20 dark:!to-[#8A6D1F]/20 p-5 mt-3.5 flex items-center justify-between">
+        <p class="text-[12.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5]">{{ t("admin_stats_grid.total_revenue_label") }}</p>
+        <p class="font-mono text-2xl font-extrabold text-[#3E582E] dark:text-[#8cc35a]">{{ totalRevenueDisplay }} ₪</p>
       </div>
     </section>
 

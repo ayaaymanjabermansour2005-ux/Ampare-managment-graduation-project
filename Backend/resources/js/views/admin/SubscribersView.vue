@@ -361,7 +361,10 @@ const exportParams = computed(() => ({
   search: subscriptionSearchTerm.value.trim() || undefined,
 }));
 const exportExcelUrl = computed(() => exportUrl("excel", exportParams.value));
-const exportPdfUrl = computed(() => exportUrl("pdf", exportParams.value));
+// FIX-031: زر "تصدير PDF" اتحذف نهائيًا (مش بس تعطيل) — ما في endpoint
+// بالباك اند لتصدير PDF لقائمة الاشتراكات (راجع التقرير). لو أُضيف
+// الـ endpoint مستقبلاً، الزر لازم يُعاد بناؤه من الصفر بربط حقيقي،
+// مش بإعادة تفعيل هاد الكود.
 
 /* ---------------- فرز عبر رؤوس الأعمدة (أيقونة تصاعدي/تنازلي - نفس أسلوب صفحتَي المولدات والمشتركين) ---------------- */
 const subscriptionSortKey = ref("");
@@ -909,12 +912,21 @@ onUnmounted(() => {
 });
 
 async function handleUnlock(subscriber) {
-  await unlockSubscriber(subscriber.id);
-  toast.show({
-    type: "success",
-    title: t("users_page.unlocked_toast_title"),
-    message: t("users_page.unlocked_message", { name: subscriber.name }),
-  });
+  // FIX: (item 13) نفس النمط المطبَّق سابقًا بـ UsersView.vue (FIX-015).
+  try {
+    await unlockSubscriber(subscriber.id);
+    toast.show({
+      type: "success",
+      title: t("users_page.unlocked_toast_title"),
+      message: t("users_page.unlocked_message", { name: subscriber.name }),
+    });
+  } catch (err) {
+    toast.show({
+      type: "error",
+      title: t("users_page.unlocked_toast_title"),
+      message: err.response?.data?.message ?? t("common.unexpected_error_retry"),
+    });
+  }
 }
 
 /* ---------------- أدوات كلمة السر (رابط إعادة تعيين / تعيين مباشر)     ---------------- */
@@ -1635,9 +1647,6 @@ onMounted(() => {
           <template v-else>
             <a :href="exportExcelUrl" target="_blank" rel="noopener" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
               <FileSpreadsheet aria-hidden="true" /> {{ t("owner_applications_page.export_excel_title") }}
-            </a>
-            <a :href="exportPdfUrl" target="_blank" rel="noopener" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
-              <FileText aria-hidden="true" /> {{ t("subscriptions_page.export_pdf") }}
             </a>
             <button type="button" @click="openAddModal" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
               <Plus aria-hidden="true" /> {{ t("subscriptions_page.add_subscription_button") }}

@@ -1,6 +1,4 @@
-import axios from "axios";
 import http from "./http";
-import { getLocale } from "@/i18n";
 
 export default {
   adminList(params = {}) {
@@ -23,24 +21,15 @@ export default {
   },
 
   publicList(slug, params = {}) {
-    return axios.get(`/api/articles/${slug}/comments`, {
-      params,
-      headers: { "Accept-Language": getLocale() },
-    });
+    return http.get(`/articles/${slug}/comments`, { baseURL: "/api", params });
   },
   publicStore(slug, payload) {
-    return axios.post(`/api/articles/${slug}/comments`, payload, {
-      headers: { "Accept-Language": getLocale() },
-    });
+    return http.post(`/articles/${slug}/comments`, payload, { baseURL: "/api" });
   },
   ratingShow(slug) {
-    return axios.get(`/api/articles/${slug}/rating`, {
-      headers: { "Accept-Language": getLocale() },
-    });
+    return http.get(`/articles/${slug}/rating`, { baseURL: "/api" });
   },
   ratingStore(slug, rating) {
-    return axios.post(`/api/articles/${slug}/rating`, { rating }, {
-      headers: { "Accept-Language": getLocale() },
-    });
+    return http.post(`/articles/${slug}/rating`, { rating }, { baseURL: "/api" });
   },
 };

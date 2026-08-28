@@ -37,4 +37,13 @@ export default {
   reissue(id) {
     return http.post(`/invoices/${id}/reissue`);
   },
+
+  // FIX: (item 14) الباك اند فيه GET /invoices/export أصلًا (نفس الأسلوب
+  // المستخدَم بـ paymentService.exportUrl/meterReadingService.exportUrl)
+  // بس ما كان له method هون، فالتبويب المجاور (الدفعات) كان فيه زر تصدير
+  // شغّال والفواتير لأ.
+  exportUrl(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return `/api/v1/invoices/export${query ? `?${query}` : ""}`;
+  },
 };

@@ -89,8 +89,9 @@ export function useAiChat() {
   async function sendMessage(text, file) {
     if (!activeSession.value) return false;
 
+    const tempId = `temp-${Date.now()}`;
     messages.value.push({
-      id: `temp-${Date.now()}`,
+      id: tempId,
       role: "user",
       content: text,
       created_at: new Date().toISOString(),
@@ -107,6 +108,10 @@ export function useAiChat() {
       messages.value.push(data.data);
       return true;
     } catch (err) {
+      // FIX-006: الرسالة التفاؤلية (optimistic) تتحذف لو الإرسال فشل فعليًا،
+      // بدل ما تضل ظاهرة بالواجهة وكأنها انبعتت بنجاح.
+      const tempIndex = messages.value.findIndex((m) => m.id === tempId);
+      if (tempIndex !== -1) messages.value.splice(tempIndex, 1);
       sendError.value =
         err.response?.data?.message ?? t("owner_ai_chat.send_error");
       return false;

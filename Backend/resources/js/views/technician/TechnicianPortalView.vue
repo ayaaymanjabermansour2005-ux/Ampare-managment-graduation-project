@@ -27,6 +27,20 @@ watch(activeTab, (val) => {
   router.replace({ query: { ...route.query, tab: val } });
 });
 
+// FIX: لما تتغيّر ?tab= بالرابط (مثلاً من التنقّل السفلي
+// TechnicianBottomNav)، ما كان في مزامنة عكسية لـ activeTab — فيو راوتر
+// بيعيد استخدام نفس الـ component instance لما يتغيّر بس الـ query لنفس
+// الـ route، فـ setup() ما بيعيد التشغيل، وتضل المحتوى المعروض عالقة على
+// آخر تبويب كان ظاهر رغم إنّ التنقّل السفلي وعنوان الرابط تحدّثوا.
+watch(
+  () => route.query.tab,
+  (val) => {
+    if (TABS.value.some((tab) => tab.key === val) && val !== activeTab.value) {
+      activeTab.value = val;
+    }
+  },
+);
+
 const activeComponent = computed(() => {
   if (activeTab.value === "readings") return MeterReadingsView;
   if (activeTab.value === "payments") return TechnicianPaymentsView;

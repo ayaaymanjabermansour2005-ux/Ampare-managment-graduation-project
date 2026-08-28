@@ -22,8 +22,20 @@ function toggleLanguage() {
 
 const dir = computed(() => (locale.value === "ar" ? "rtl" : "ltr"));
 
+// FIX: كل الصفحات ما عدا "register" و"login" كانت توّرث subtitle_login
+// ("مرحبًا بعودتك") بالغلط — الـ keys الصحيحة (subtitle_owner_application/
+// subtitle_forgot_password/subtitle_reset_password) كانت موجودة أصلًا
+// بملفات الترجمة لكن غير مربوطة هون.
+const SUBTITLE_BY_ROUTE = {
+  register: "auth.subtitle_register",
+  "register.subscriber": "auth.subtitle_register",
+  "register.owner": "auth.subtitle_owner_application",
+  "forgot-password": "auth.subtitle_forgot_password",
+  "reset-password": "auth.subtitle_reset_password",
+};
+
 const pageSubtitle = computed(() =>
-  route.name === "register" ? t("auth.subtitle_register") : t("auth.subtitle_login")
+  t(SUBTITLE_BY_ROUTE[route.name] ?? "auth.subtitle_login")
 );
 
 const widthLevel = computed(() => {

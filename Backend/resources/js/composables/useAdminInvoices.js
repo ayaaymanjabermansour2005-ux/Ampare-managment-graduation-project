@@ -22,9 +22,10 @@ export function useAdminInvoices() {
       const { data } = await invoiceService.list(params);
       const payload = data.data;
       invoices.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("invoices_page.load_error");

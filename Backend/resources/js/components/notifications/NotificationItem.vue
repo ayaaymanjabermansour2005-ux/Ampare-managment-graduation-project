@@ -41,19 +41,29 @@ const NOTIF_ICONS = {
 };
 const notifMeta = computed(() => NOTIF_ICONS[props.notification.type] || { icon: "fa-bell", color: "#52733D" });
 
+// FIX: كان في نوعين رابطين لمسارات غير موجودة أصلاً بالراوتر —
+// "subscriber.complaints" و"owner.payments" — فالضغط على إشعار شكوى
+// (كمشترك) أو إشعار دفعة (كمالك مولد) كان يفشل بصمت (router.push على اسم
+// مسار غير موجود). الشكاوى فعليًا تبويب داخل subscriber.support، والدفعات
+// تبويب داخل owner.invoices — بنفس نمط query.tab المستخدم فعليًا بهاذين
+// الصفحتين.
 const LINK_ROUTE_MAP = {
   invoice: {
-    subscriber: "subscriber.invoices",
-    generator_owner: "owner.invoices",
+    subscriber: { name: "subscriber.invoices" },
+    generator_owner: { name: "owner.invoices" },
   },
-  payment: { generator_owner: "owner.payments" },
-  complaint: { subscriber: "subscriber.complaints" },
-  fault: { generator_owner: "owner.generators" },
-  subscription: { subscriber: "subscriber.subscription" },
+  payment: {
+    generator_owner: { name: "owner.invoices", query: { tab: "payments" } },
+  },
+  complaint: {
+    subscriber: { name: "subscriber.support", query: { tab: "complaints" } },
+  },
+  fault: { generator_owner: { name: "owner.generators" } },
+  subscription: { subscriber: { name: "subscriber.subscription" } },
   conversation: null,
 };
 
-function resolveRouteName(linkType) {
+function resolveRouteTarget(linkType) {
   const rolesMap = LINK_ROUTE_MAP[linkType];
   if (!rolesMap) return null;
 
@@ -68,11 +78,11 @@ async function handleClick() {
     emit("read", props.notification.id);
   }
 
-  const routeName = resolveRouteName(props.notification.link_type);
-  if (routeName) {
+  const target = resolveRouteTarget(props.notification.link_type);
+  if (target) {
     router.push({
-      name: routeName,
-      query: { highlight: props.notification.link_id },
+      name: target.name,
+      query: { ...(target.query ?? {}), highlight: props.notification.link_id },
     });
   }
 

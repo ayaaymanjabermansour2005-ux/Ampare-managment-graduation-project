@@ -2,13 +2,16 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import GeneratorStatus from "./GeneratorStatus.vue";
-import { Clock, Info, Pencil, QrCode, Trash2, Users } from "@lucide/vue";
+import { Activity, Clock, Info, Pencil, QrCode, Trash2, Users } from "@lucide/vue";
 
 const props = defineProps({
   generator: { type: Object, required: true },
 });
 
-const emit = defineEmits(["edit", "delete", "show-qr", "view-details"]);
+// FIX: بطاقات الشبكة (grid view) ما كان فيها زر تشخيص المولد أصلًا، خلافًا
+// لعرض الجدول (table view) اللي فيه هذا الزر — فميزة التشخيص كانت مفقودة
+// كليًا لمن يستخدم عرض الشبكة.
+const emit = defineEmits(["edit", "delete", "show-qr", "view-details", "diagnostics"]);
 
 const { t } = useI18n();
 
@@ -76,6 +79,10 @@ const locationLabel = computed(() => {
         <span class="row-actions-divider"></span>
         <button type="button" class="action-btn action-btn--view" :title="t('owner_generators.details')" :aria-label="t('owner_generators.details')" @click="emit('view-details', generator)">
           <Info aria-hidden="true" />
+        </button>
+        <span class="row-actions-divider"></span>
+        <button type="button" class="action-btn action-btn--view !text-[#17A2B8]" :title="t('generator_diagnostics.title')" :aria-label="t('generator_diagnostics.title')" @click="emit('diagnostics', generator)">
+          <Activity aria-hidden="true" />
         </button>
         <span class="row-actions-divider"></span>
         <button type="button" class="action-btn action-btn--plan" :title="t('owner_generators.qr_code')" :aria-label="t('owner_generators.qr_code')" @click="emit('show-qr', generator)">

@@ -33,10 +33,14 @@ const dir = computed(() => (locale.value === "ar" ? "rtl" : "ltr"));
 <template>
   <div class="admin-shell" :dir="dir" :class="{ dark: ui.isDark }">
     <div class="min-h-screen flex bg-[#f8faf7] dark:bg-[#0f1112] text-[#333] dark:text-[#eee] transition-colors duration-500">
-      <AppSidebar />
+      <!-- FIX: (item 18) كانت هذه الطبقة الوحيدة من الثلاث (Base/Dashboard/Admin)
+           بدون print-hidden — الفواتير المطبوعة من صفحات owner/subscriber/
+           technician (اللي بتستخدم هاي الطبقة) كانت تُطبَع مع السايدبار
+           والنافبار ظاهرين، خلافًا للطبقتين الأخريين. -->
+      <AppSidebar class="print-hidden" />
 
       <div :class="mainAreaClasses">
-        <AppNavbar>
+        <AppNavbar class="print-hidden">
           <template #mobile-toggle>
             <button
               type="button"

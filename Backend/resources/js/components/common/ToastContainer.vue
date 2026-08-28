@@ -54,11 +54,11 @@ const TYPE_META = {
   backdrop-filter: blur(18px) saturate(1.3);
   -webkit-backdrop-filter: blur(18px) saturate(1.3);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-left: 3px solid var(--toast-accent, #8A6D1F);
+  border-inline-start: 3px solid var(--toast-accent, #8A6D1F);
 }
 :global(.dark) .toast-card {
   background: linear-gradient(135deg, rgba(37, 40, 38, 0.92) 0%, rgba(31, 33, 34, 0.88) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 3px solid var(--toast-accent, #8A6D1F);
+  border-inline-start: 3px solid var(--toast-accent, #8A6D1F);
 }
 </style>

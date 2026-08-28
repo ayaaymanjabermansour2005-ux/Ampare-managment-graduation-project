@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useThemeSync } from '@/composables/useThemeSync'
 
+const { t } = useI18n()
 const uiStore = useThemeSync()
 const isDark = computed(() => uiStore.isDark)
 
@@ -26,7 +28,6 @@ const currentYear = computed(() => new Date().getFullYear())
 // نفس مسار الشعار المستخدَم بباقي الموقع (HeroSection.vue وغيره) — ملف
 // public عادي، وليس Vite asset import (لا يوجد resources/js/assets/branding).
 const logoSrc = '/images/logo.png'
-const loadingLabel = 'جاري التحميل'
 
 function hideSplash() {
   const elapsed = Date.now() - startedAt.value
@@ -84,7 +85,7 @@ function onAfterLeave() {
         <div class="splash-logo-wrap">
           <img
             :src="logoSrc"
-            :alt="$t ? $t('splash.logoAlt') : 'أمبير AMPERE'"
+            :alt="t('splash.logoAlt')"
             width="220"
             height="220"
           />
@@ -93,7 +94,7 @@ function onAfterLeave() {
         <div class="splash-divider" aria-hidden="true"></div>
 
         <p class="splash-loading-text">
-          <span>{{ loadingLabel }}</span>
+          <span>{{ t('splash.loading') }}</span>
           <span class="splash-dots" aria-hidden="true">
             <span></span><span></span><span></span>
           </span>
@@ -101,7 +102,7 @@ function onAfterLeave() {
       </div>
 
       <p class="splash-copyright">
-        © {{ currentYear }} أمبير. جميع الحقوق محفوظة.
+        {{ t('splash.copyright', { year: currentYear }) }}
       </p>
     </div>
   </Transition>

@@ -17,10 +17,11 @@ export function useAdminArticleComments() {
       const { data } = await articleCommentService.adminList({ page, status: statusFilter.value });
       const payload = data.data;
       comments.value = payload.data ?? payload;
+      const meta = payload.meta ?? payload;
       pagination.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? comments.value.length,
+        current_page: meta.current_page ?? 1,
+        last_page: meta.last_page ?? 1,
+        total: meta.total ?? comments.value.length,
       };
     } catch (err) {
       error.value = err.response?.data?.message ?? t("article_comments_page.load_error");

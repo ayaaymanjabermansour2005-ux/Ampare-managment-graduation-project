@@ -363,11 +363,16 @@ function openCreateComplaint() {
 async function handleCreateComplaint() {
   if (!createForm.value.subject.trim()) return;
   isCreatingComplaint.value = true;
+  createComplaintError.value = null;
   try {
+    // FIX: كانت الدالة تقفل المودال وتعيد تحميل القائمة بدون ما تستدعي
+    // complaintService.create() فعليًا — فبيانات الشكوى المُدخلة كانت
+    // تُهمَل بصمت ويبدو للأدمن إنها انحفظت بنجاح.
+    await complaintService.create(createForm.value);
     isCreateOpen.value = false;
     await fetchComplaints(1);
   } catch (e) {
-    createComplaintError.value = e?.message ?? t("complaints_page.failed_create_complaint");
+    createComplaintError.value = e?.response?.data?.message ?? t("complaints_page.failed_create_complaint");
   } finally {
     isCreatingComplaint.value = false;
   }
