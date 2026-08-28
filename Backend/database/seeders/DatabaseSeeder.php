@@ -30,6 +30,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 
 class DatabaseSeeder extends Seeder
@@ -51,8 +52,26 @@ class DatabaseSeeder extends Seeder
         $this->call(PlatformUsersSeeder::class);
     }
 
+    /**
+     * كلمات مرور الحسابات التجريبية المولَّدة بهذا التشغيل الحالي فقط —
+     * {email => plaintext}. تُستخدم فقط لطباعة جدول اعتماد محلي مرة واحدة
+     * (printSeedCredentials)، ولا تُخزَّن ولا تُسجَّل بأي مكان آخر.
+     *
+     * @var array<string, string>
+     */
+    private array $generatedCredentials = [];
+
     private function seedCoreData(): void
     {
+        // SEC-006: كانت هذه الدالة تُنشئ 7 حسابات (owner1/2, subscriber1/2/3,
+        // technician1/2) بكلمة مرور واحدة ثابتة ومشتركة ('password') بدون أي
+        // حارس بيئة — بيانات تجريبية بالكامل (Owner One/Two، فواتير وهمية...)
+        // لا علاقة لها بأي سيناريو إنتاج حقيقي. نفس الحارس المستخدم أصلًا في
+        // PlatformUsersSeeder.php:73-75.
+        if (app()->environment('production')) {
+            throw new \RuntimeException('DatabaseSeeder::seedCoreData ممنوع تنفيذه على بيئة الإنتاج.');
+        }
+
         // ==================== المستخدمون ====================
         $admin = User::where('email', 'admin@ampare.test')->firstOrFail();
 
@@ -60,7 +79,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'owner1@ampare.test'],
             [
                 'name' => 'Owner One',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('owner1@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -72,7 +91,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'owner2@ampare.test'],
             [
                 'name' => 'Owner Two',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('owner2@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -84,7 +103,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'subscriber1@ampare.test'],
             [
                 'name' => 'Subscriber One',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('subscriber1@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -96,7 +115,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'subscriber2@ampare.test'],
             [
                 'name' => 'Subscriber Two',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('subscriber2@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -108,7 +127,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'subscriber3@ampare.test'],
             [
                 'name' => 'Subscriber Three',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('subscriber3@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -182,7 +201,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'technician1@ampare.test'],
             [
                 'name' => 'Technician One',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('technician1@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -199,7 +218,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'technician2@ampare.test'],
             [
                 'name' => 'Technician Two',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('technician2@ampare.test')),
                 'email_verified_at' => now(),
             ]
         );
@@ -715,7 +734,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'مالك متقدّم للانضمام',
                 'phone' => '0599111222',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('owner-applicant-pending@example.test')),
                 'notes' => 'أمتلك مولدًا بسعة 40 كيلوواط بحي الزيتون.',
                 'generator_name' => 'مولد الزيتون الجديد',
                 'generator_price_per_kw' => 0.45,
@@ -733,7 +752,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'مالك تمت الموافقة عليه',
                 'phone' => '0599333444',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->demoPassword('owner-applicant-approved@example.test')),
                 'notes' => 'طلب تجريبي بحالة معتمدة.',
                 'generator_name' => 'مولد تجريبي معتمد',
                 'generator_price_per_kw' => 0.4,
@@ -826,5 +845,42 @@ class DatabaseSeeder extends Seeder
                 'published_at' => null,
             ]
         );
+
+        $this->printSeedCredentials();
+    }
+
+    /**
+     * SEC-006: كلمة مرور فريدة وقوية عشوائية لكل حساب/سجل تجريبي بدل الاعتماد
+     * على نفس القيمة الثابتة 'password' للجميع. تُبنى فقط عند إنشاء السجل
+     * فعليًا لأول مرة (firstOrCreate لن يستدعي القيمة إن كان السجل موجودًا
+     * مسبقًا، فلا داعي أصلًا لتوليدها بذاك السيناريو، لكن استدعاء الدالة نفسه
+     * غير مكلف)، وتُخزَّن مؤقتًا لطباعتها مرة واحدة بنهاية التشغيل فقط.
+     */
+    private function demoPassword(string $identifier): string
+    {
+        $password = Str::password(16);
+        $this->generatedCredentials[$identifier] = $password;
+
+        return $password;
+    }
+
+    /**
+     * يطبع كلمات المرور المولَّدة هذا التشغيل فقط، وفقط بالـ console المحلي —
+     * أبدًا بملفات الـ log. لا شيء يُطبع لو كل الحسابات كانت موجودة مسبقًا
+     * (firstOrCreate لا يستدعي demoPassword حينها، فالمصفوفة تبقى فارغة).
+     */
+    private function printSeedCredentials(): void
+    {
+        if (! $this->command || empty($this->generatedCredentials)) {
+            return;
+        }
+
+        $rows = [];
+        foreach ($this->generatedCredentials as $identifier => $password) {
+            $rows[] = [$identifier, $password];
+        }
+
+        $this->command->info('==================== بيانات دخول الحسابات التجريبية (DatabaseSeeder) ====================');
+        $this->command->table(['الحساب', 'كلمة المرور'], $rows);
     }
 }

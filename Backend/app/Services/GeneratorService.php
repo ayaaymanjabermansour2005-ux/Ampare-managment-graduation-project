@@ -400,12 +400,20 @@ class GeneratorService
 
     private function resolveLocationFromCoordinates(array &$data, ?Generator $existing): void
     {
-        if (! array_key_exists('latitude', $data) || ! array_key_exists('longitude', $data)) {
+        $hasLatitude = array_key_exists('latitude', $data);
+        $hasLongitude = array_key_exists('longitude', $data);
+
+        if (! $hasLatitude && ! $hasLongitude) {
             return;
         }
 
-        $latitude = $data['latitude'];
-        $longitude = $data['longitude'];
+        $latitude = $hasLatitude ? $data['latitude'] : null;
+        $longitude = $hasLongitude ? $data['longitude'] : null;
+        // BUG-004: always strip these keys once either is present, even when
+        // only one of the two was sent — `latitude`/`longitude` are not
+        // fillable on Generator, so leaving a lone key in $data crashed
+        // create()/update() with a MassAssignmentException instead of a
+        // clean no-op.
         unset($data['latitude'], $data['longitude']);
 
         if ($latitude === null || $longitude === null) {

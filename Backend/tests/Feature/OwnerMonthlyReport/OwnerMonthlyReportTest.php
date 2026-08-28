@@ -68,4 +68,21 @@ class OwnerMonthlyReportTest extends TestCase
         $this->get('/api/v1/owner-monthly-report/download')
             ->assertStatus(401);
     }
+
+    /**
+     * API-001: route now carries `role:admin|generator_owner` middleware. Before
+     * this, any non-admin authenticated user (subscriber/technician included)
+     * reached the controller and got a self-scoped, effectively-empty report
+     * instead of a 403.
+     */
+    public function test_subscriber_cannot_access_owner_monthly_report(): void
+    {
+        $subscriber = User::factory()->create();
+        $subscriber->assignRole(Role::SUBSCRIBER->value);
+
+        Sanctum::actingAs($subscriber);
+
+        $this->get('/api/v1/owner-monthly-report/download')
+            ->assertStatus(403);
+    }
 }

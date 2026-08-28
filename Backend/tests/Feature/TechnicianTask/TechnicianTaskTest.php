@@ -6,6 +6,7 @@ use App\Enums\Role as RoleEnum;
 use App\Models\Fault;
 use App\Models\Generator;
 use App\Models\Technician;
+use App\Models\TechnicianRating;
 use App\Models\TechnicianTask;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -597,5 +598,166 @@ class TechnicianTaskTest extends TestCase
             $fault->fresh()->status->value,
             'فشل هذا الاعتراض متوقّع لحد ما يتم تسجيل Relation::morphMap وتعديل FaultTaskSynchronizer لاستخدام instanceof — راجع التعليق أعلى الدالة.'
         );
+    }
+
+    // ==================== TEST-002: TechnicianRating coverage (had zero tests before this) ====================
+
+    private function makeApprovedTask(User $owner, Generator $generator, Technician $technician): TechnicianTask
+    {
+        return TechnicianTask::factory()->create([
+            'generator_id' => $generator->id,
+            'requested_by' => $owner->id,
+            'technician_id' => $technician->id,
+            'assigned_by' => $owner->id,
+            'status' => 'approved',
+        ]);
+    }
+
+    public function test_owner_can_rate_an_approved_task_for_own_generator(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $response = $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", [
+                'rating' => 5,
+                'comment' => 'عمل ممتاز.',
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertSame(5, $response->json('data.rating'));
+        $this->assertDatabaseHas('technician_ratings', [
+            'technician_task_id' => $task->id,
+            'technician_id' => $technician->id,
+            'rated_by' => $owner->id,
+            'rating' => 5,
+        ]);
+    }
+
+    public function test_admin_can_rate_any_approved_task(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $this->actingAs($admin)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 4])
+            ->assertStatus(201);
+    }
+
+    public function test_owner_cannot_rate_another_owners_task(): void
+    {
+        $owner = $this->makeOwner();
+        $otherOwner = $this->makeOwner();
+        $generator = $this->makeGenerator($otherOwner);
+        $technician = $this->makePrivateTechnician($otherOwner, $generator);
+        $task = $this->makeApprovedTask($otherOwner, $generator, $technician);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 3])
+            ->assertStatus(403);
+    }
+
+    public function test_technician_cannot_rate_their_own_task(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $this->actingAs($technician->user)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 5])
+            ->assertStatus(403);
+    }
+
+    public function test_cannot_rate_a_task_that_is_not_yet_approved(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = TechnicianTask::factory()->create([
+            'generator_id' => $generator->id,
+            'requested_by' => $owner->id,
+            'technician_id' => $technician->id,
+            'assigned_by' => $owner->id,
+            'status' => 'submitted',
+        ]);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 5])
+            ->assertStatus(403);
+
+        $this->assertDatabaseMissing('technician_ratings', ['technician_task_id' => $task->id]);
+    }
+
+    /**
+     * A second rating attempt is blocked at the policy level (`rate()`
+     * returns false once `$task->rating()->exists()`), so the response is a
+     * 403, not a 422 — the Action's own duplicate check
+     * (RateTechnicianTaskAction::execute) is unreachable defense-in-depth,
+     * not the live code path. Documenting the actual observed behavior here.
+     */
+    public function test_cannot_rate_the_same_task_twice(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 5])
+            ->assertStatus(201);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 2])
+            ->assertStatus(403);
+
+        $this->assertSame(1, TechnicianRating::where('technician_task_id', $task->id)->count());
+    }
+
+    public function test_rating_value_must_be_between_1_and_5(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 0])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('rating');
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 6])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('rating');
+    }
+
+    public function test_rating_comment_is_optional(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 3])
+            ->assertStatus(201)
+            ->assertJsonPath('data.comment', null);
+    }
+
+    public function test_unauthenticated_user_cannot_rate_task(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $technician = $this->makePrivateTechnician($owner, $generator);
+        $task = $this->makeApprovedTask($owner, $generator, $technician);
+
+        $this->postJson("/api/v1/technician-tasks/{$task->id}/rate", ['rating' => 5])
+            ->assertStatus(401);
     }
 }

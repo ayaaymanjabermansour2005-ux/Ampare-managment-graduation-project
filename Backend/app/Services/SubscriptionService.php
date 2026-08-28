@@ -158,55 +158,76 @@ class SubscriptionService
         });
     }
 
+    /**
+     * BUG-001: قبل هذا الإصلاح، كانت إعادة التحقق من السعة/التعارض تحصل فقط
+     * عند الانتقال Suspended→Active — أبدًا عند Pending→Active، وهو مسار
+     * الموافقة الإدارية الطبيعي. بما أن Subscription::CAPACITY_RESERVING_STATUSES
+     * = ['active'] فقط (بتصميم صحيح ومتعمّد — اشتراك Pending ما بيحجز سعة بعد)،
+     * كان ممكن لاشتراكين Pending ينجحا كلاهما بفحص السعة وقت الإنشاء (كل
+     * واحد لحاله ما زال الثاني Pending)، وبعدين ينجحا كلاهما بالموافقة لأن
+     * لحظة التفعيل الفعلية ما كانت تُعيد الفحص إطلاقًا — فيتجاوز إجمالي
+     * الاشتراكات الفعّالة سعة المولد الحقيقية.
+     *
+     * الإصلاح: قفل صف الاشتراك أولًا (lockForUpdate) والتحقق من صلاحية
+     * الانتقال باستخدام حالته الحقيقية بعد القفل (لا الحالة المحمَّلة قبل
+     * دخول الـ transaction، تفاديًا لسباق منفصل: نفس الاشتراك يُعالَج مرتين
+     * بالتوازي). بعدها، لأي انتقال فعلي إلى Active (سواء من Pending أو من
+     * Suspended — الحالتان الوحيدتان المسموح بالوصول منهما لـ Active أصلًا
+     * حسب ALLOWED_TRANSITIONS)، يُقفَل صف المولد (Generator::lockForUpdate)
+     * وتُعاد نفس فحوصات التعارض/السعة الموجودة أصلًا لمسار Suspended→Active،
+     * بدون أي تغيير بمنطقها — فقط تطبيقها الآن على كل مسار يصل إلى Active.
+     */
     public function updateStatus(Subscription $subscription, string $status): Subscription
     {
-        $current = $subscription->status->value;
+        return DB::transaction(function () use ($subscription, $status) {
+            $locked = Subscription::lockForUpdate()->findOrFail($subscription->id);
+            $current = $locked->status->value;
 
-        if (! in_array($status, self::ALLOWED_TRANSITIONS[$current] ?? [], true)) {
-            throw ValidationException::withMessages([
-                'status' => ["لا يمكن نقل الاشتراك من حالة \"{$current}\" إلى \"{$status}\" مباشرة."],
-            ]);
-        }
+            if (! in_array($status, self::ALLOWED_TRANSITIONS[$current] ?? [], true)) {
+                throw ValidationException::withMessages([
+                    'status' => ["لا يمكن نقل الاشتراك من حالة \"{$current}\" إلى \"{$status}\" مباشرة."],
+                ]);
+            }
 
-        if ($status === SubscriptionStatus::Active->value && $subscription->generator?->capacity_kw !== null && $subscription->requested_capacity_kw === null) {
-            throw ValidationException::withMessages([
-                'requested_capacity_kw' => ['لا يمكن الموافقة على هذا الاشتراك — المولد له حد سعة أقصى، ويجب أن يحدّد المشترك السعة المطلوبة أولًا. تواصل مع المشترك لطلب تعديل الطلب.'],
-            ]);
-        }
+            if ($status === SubscriptionStatus::Active->value) {
+                $locked->loadMissing('generator', 'subscriberMeter');
 
-        return DB::transaction(function () use ($subscription, $status, $current) {
-            if ($current === SubscriptionStatus::Suspended->value && $status === SubscriptionStatus::Active->value) {
-                $lockedGenerator = Generator::lockForUpdate()->findOrFail($subscription->generator_id);
-                $subscription->loadMissing('subscriberMeter');
+                if ($locked->generator?->capacity_kw !== null && $locked->requested_capacity_kw === null) {
+                    throw ValidationException::withMessages([
+                        'requested_capacity_kw' => ['لا يمكن الموافقة على هذا الاشتراك — المولد له حد سعة أقصى، ويجب أن يحدّد المشترك السعة المطلوبة أولًا. تواصل مع المشترك لطلب تعديل الطلب.'],
+                    ]);
+                }
+
+                $lockedGenerator = Generator::lockForUpdate()->findOrFail($locked->generator_id);
 
                 $this->capacityService->assertNoDuplicateContract(
                     $lockedGenerator,
-                    $subscription->subscriberMeter,
-                    $subscription->schedule,
-                    $subscription->service_start_time,
-                    $subscription->service_end_time,
-                    excludeSubscriptionId: $subscription->id
+                    $locked->subscriberMeter,
+                    $locked->schedule,
+                    $locked->service_start_time,
+                    $locked->service_end_time,
+                    excludeSubscriptionId: $locked->id
                 );
 
-                if ($subscription->requested_capacity_kw) {
+                if ($locked->requested_capacity_kw) {
                     $this->capacityService->assertCapacityAvailable(
                         $lockedGenerator,
-                        $subscription->schedule,
-                        $subscription->service_start_time,
-                        $subscription->service_end_time,
-                        (float) $subscription->requested_capacity_kw,
-                        excludeSubscriptionId: $subscription->id
+                        $locked->schedule,
+                        $locked->service_start_time,
+                        $locked->service_end_time,
+                        (float) $locked->requested_capacity_kw,
+                        excludeSubscriptionId: $locked->id
                     );
                 }
             }
 
-            $subscription->forceFill(['status' => $status])->save();
+            $locked->forceFill(['status' => $status])->save();
 
             if ($status === SubscriptionStatus::Active->value) {
-                SubscriptionApproved::dispatch($subscription);
+                SubscriptionApproved::dispatch($locked);
             }
 
-            return $subscription->fresh(['subscriberMeter.subscriber.neighborhood', 'subscriberMeter.subscriber.user', 'generator.owner']);
+            return $locked->fresh(['subscriberMeter.subscriber.neighborhood', 'subscriberMeter.subscriber.user', 'generator.owner']);
         });
     }
 }

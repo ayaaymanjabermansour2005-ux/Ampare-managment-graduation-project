@@ -179,10 +179,25 @@ class InvoiceService
         );
     }
 
+    /**
+     * BUG-002: قبل هذا الإصلاح، كانت هذه الدالة تعمل `refresh()` بدون قفل
+     * أي صف — و`ApprovePaymentAction` (على خلاف `CreatePaymentAction` و
+     * `ProcessGatewayPaymentAction`، اللتين تقفلان صف الفاتورة بالفعل قبل
+     * استدعاء هذه الدالة) كانت تقفل صف الـ Payment فقط، لا صف الـ Invoice.
+     * دفعتان معتمدتان بالتوازي على نفس الفاتورة يقدر كل واحدة تحسب paidSum
+     * من نسخة قديمة (قبل التزام الأخرى)، فتنتج حالة فاتورة غير صحيحة
+     * (lost update).
+     *
+     * الإصلاح: قفل صف الفاتورة هنا مباشرة (`lockForUpdate`) بدل الاعتماد
+     * على أن كل Caller يقفلها بنفسه مسبقًا — يضمن أن أي طريق حالي أو
+     * مستقبلي يمرّ من هنا يحصل نفس الضمانة تلقائيًا. القفل المكرر من
+     * الـ Callers اللي أصلًا يقفلون الفاتورة (نفس الصف، نفس الـ transaction)
+     * غير ضار — مجرد إعادة تأكيد لقفل موجود أصلًا، ليس خطأ.
+     */
     public function recalculateStatus(Invoice $invoice): Invoice
     {
         return DB::transaction(function () use ($invoice) {
-            $invoice->refresh();
+            $invoice = Invoice::lockForUpdate()->findOrFail($invoice->id);
 
             $paidSum = (float) $invoice->payments()->where('status', PaymentStatus::Paid)->sum('amount_ils');
             $finalAmountIls = (float) $invoice->final_amount_ils;

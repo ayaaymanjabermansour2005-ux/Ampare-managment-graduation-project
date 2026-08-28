@@ -4,6 +4,7 @@ namespace Tests\Feature\Generator;
 
 use App\Enums\Role as RoleEnum;
 use App\Models\Generator;
+use App\Models\Location;
 use App\Models\Subscriber;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
@@ -414,5 +415,200 @@ class GeneratorTest extends TestCase
 
         $this->getJson("/api/v1/generators/{$generator->id}/timeline")
             ->assertStatus(401);
+    }
+
+    // ==================== TEST-002: Location resolution coverage (GeneratorService::resolveLocationFromCoordinates) ====================
+
+    public function test_creating_generator_with_coordinates_and_no_location_id_creates_a_new_location(): void
+    {
+        $owner = $this->makeOwner();
+
+        $response = $this->actingAs($owner)
+            ->postJson('/api/v1/generators', $this->validPayload([
+                'latitude' => 31.35,
+                'longitude' => 34.3,
+            ]));
+
+        $response->assertStatus(201);
+        $locationId = $response->json('data.location.id');
+        $this->assertNotNull($locationId);
+        $this->assertSame('غزة', $response->json('data.location.city'));
+        $this->assertDatabaseHas('locations', [
+            'id' => $locationId,
+            'city' => 'غزة',
+            'neighborhood_id' => null,
+            'address' => null,
+            'latitude' => 31.35,
+            'longitude' => 34.3,
+        ]);
+    }
+
+    public function test_creating_generator_with_coordinates_and_existing_location_id_updates_that_location_instead_of_creating_a_new_one(): void
+    {
+        $owner = $this->makeOwner();
+        $location = Location::factory()->create(['latitude' => 30.0, 'longitude' => 33.0]);
+
+        $countBefore = Location::count();
+
+        $response = $this->actingAs($owner)
+            ->postJson('/api/v1/generators', $this->validPayload([
+                'location_id' => $location->id,
+                'latitude' => 31.4,
+                'longitude' => 34.4,
+            ]));
+
+        $response->assertStatus(201);
+        $this->assertSame($countBefore, Location::count());
+        $this->assertSame($location->id, $response->json('data.location.id'));
+        $this->assertDatabaseHas('locations', [
+            'id' => $location->id,
+            'latitude' => 31.4,
+            'longitude' => 34.4,
+        ]);
+    }
+
+    public function test_creating_generator_without_coordinates_or_location_id_leaves_location_null(): void
+    {
+        $owner = $this->makeOwner();
+
+        $response = $this->actingAs($owner)
+            ->postJson('/api/v1/generators', $this->validPayload());
+
+        $response->assertStatus(201);
+        $this->assertNull($response->json('data.location'));
+        $this->assertNull(Generator::find($response->json('data.id'))->location_id);
+    }
+
+    public function test_creating_generator_with_only_one_coordinate_provided_leaves_location_null(): void
+    {
+        $owner = $this->makeOwner();
+
+        $response = $this->actingAs($owner)
+            ->postJson('/api/v1/generators', $this->validPayload([
+                'latitude' => 31.35,
+            ]));
+
+        $response->assertStatus(201);
+        $this->assertNull(Generator::find($response->json('data.id'))->location_id);
+    }
+
+    /**
+     * BUG-004: `latitude`/`longitude` are not fillable on Generator, and
+     * GeneratorService::resolveLocationFromCoordinates() only stripped them
+     * from $data when BOTH keys were present. Sending exactly one of the two
+     * (e.g. a partial map-picker payload) left the lone key in $data and
+     * crashed Generator::update() with a MassAssignmentException (an
+     * uncontrolled 500) instead of a clean no-op.
+     */
+    public function test_updating_generator_with_only_one_coordinate_provided_does_not_crash_and_leaves_location_untouched(): void
+    {
+        $owner = $this->makeOwner();
+        $location = Location::factory()->create(['latitude' => 30.0, 'longitude' => 33.0]);
+        $generator = Generator::factory()->create(['owner_id' => $owner->id, 'location_id' => $location->id]);
+
+        $response = $this->actingAs($owner)
+            ->patchJson("/api/v1/generators/{$generator->id}", [
+                'longitude' => 34.6,
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertSame($location->id, $generator->fresh()->location_id);
+        $this->assertDatabaseHas('locations', [
+            'id' => $location->id,
+            'latitude' => 30.0,
+            'longitude' => 33.0,
+        ]);
+    }
+
+    public function test_updating_generator_with_new_coordinates_updates_its_existing_location_in_place(): void
+    {
+        $owner = $this->makeOwner();
+        $location = Location::factory()->create(['latitude' => 30.0, 'longitude' => 33.0]);
+        $generator = Generator::factory()->create(['owner_id' => $owner->id, 'location_id' => $location->id]);
+
+        $countBefore = Location::count();
+
+        $response = $this->actingAs($owner)
+            ->patchJson("/api/v1/generators/{$generator->id}", [
+                'latitude' => 31.6,
+                'longitude' => 34.6,
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertSame($countBefore, Location::count());
+        $this->assertSame($location->id, $generator->fresh()->location_id);
+        $this->assertDatabaseHas('locations', [
+            'id' => $location->id,
+            'latitude' => 31.6,
+            'longitude' => 34.6,
+        ]);
+    }
+
+    public function test_updating_generator_without_coordinate_keys_leaves_its_location_untouched(): void
+    {
+        $owner = $this->makeOwner();
+        $location = Location::factory()->create(['latitude' => 30.0, 'longitude' => 33.0]);
+        $generator = Generator::factory()->create(['owner_id' => $owner->id, 'location_id' => $location->id]);
+
+        $response = $this->actingAs($owner)
+            ->patchJson("/api/v1/generators/{$generator->id}", [
+                'name' => 'اسم جديد للمولد',
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertSame($location->id, $generator->fresh()->location_id);
+        $this->assertDatabaseHas('locations', [
+            'id' => $location->id,
+            'latitude' => 30.0,
+            'longitude' => 33.0,
+        ]);
+    }
+
+    // ==================== API-001: map-points coverage (no prior tests) ====================
+
+    public function test_owner_map_points_only_includes_own_generators(): void
+    {
+        $owner = $this->makeOwner();
+        $ownGenerator = Generator::factory()->create(['owner_id' => $owner->id]);
+        Generator::factory()->create();
+
+        $response = $this->actingAs($owner)->getJson('/api/v1/generators/map-points');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($ownGenerator->id) || $ids->isEmpty());
+    }
+
+    public function test_admin_map_points_includes_generators_with_coordinates(): void
+    {
+        $admin = $this->makeAdmin();
+        $location = Location::factory()->create(['latitude' => 31.4, 'longitude' => 34.4]);
+        Generator::factory()->create(['location_id' => $location->id]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/generators/map-points');
+
+        $response->assertOk();
+        $this->assertNotEmpty($response->json('data'));
+    }
+
+    public function test_unauthenticated_user_cannot_access_map_points(): void
+    {
+        $this->getJson('/api/v1/generators/map-points')->assertStatus(401);
+    }
+
+    public function test_updating_generator_with_null_coordinates_leaves_its_existing_location_id_untouched(): void
+    {
+        $owner = $this->makeOwner();
+        $location = Location::factory()->create();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id, 'location_id' => $location->id]);
+
+        $response = $this->actingAs($owner)
+            ->patchJson("/api/v1/generators/{$generator->id}", [
+                'latitude' => null,
+                'longitude' => null,
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertSame($location->id, $generator->fresh()->location_id);
     }
 }

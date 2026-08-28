@@ -279,4 +279,42 @@ class PlatformCommissionTest extends TestCase
     {
         $this->getJson('/api/v1/platform-commissions')->assertStatus(401);
     }
+
+    // ==================== DB-003: PlatformCommission soft-delete consistency ====================
+
+    public function test_platform_commission_supports_soft_deletes_like_its_sibling_financial_tables(): void
+    {
+        $owner = $this->makeOwner();
+        [$commission] = $this->makeCommission($owner);
+
+        $commission->delete();
+
+        // Excluded from default (non-trashed) queries, exactly like
+        // Invoice/Payment/TechnicianPayment already behave.
+        $this->assertNull(PlatformCommission::find($commission->id));
+
+        // But not actually gone — a real soft delete, not a hard delete;
+        // the platform's own revenue ledger must remain auditable.
+        $trashed = PlatformCommission::withTrashed()->find($commission->id);
+        $this->assertNotNull($trashed);
+        $this->assertNotNull($trashed->deleted_at);
+
+        $this->assertDatabaseHas('platform_commissions', [
+            'id' => $commission->id,
+        ]);
+    }
+
+    public function test_owner_no_longer_sees_a_soft_deleted_commission_in_their_list(): void
+    {
+        $owner = $this->makeOwner();
+        [$commission] = $this->makeCommission($owner);
+
+        $commission->delete();
+
+        $response = $this->actingAs($owner)->getJson('/api/v1/platform-commissions');
+
+        $response->assertOk();
+        $ids = collect($response->json('data.data') ?? $response->json('data'))->pluck('id');
+        $this->assertNotContains($commission->id, $ids);
+    }
 }

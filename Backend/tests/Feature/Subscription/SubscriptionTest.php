@@ -209,6 +209,80 @@ class SubscriptionTest extends TestCase
             ->assertJsonValidationErrors('generator_id');
     }
 
+    // ==================== DB-001: duplicate_guard_key must not block a slot freed by soft-delete ====================
+
+    public function test_a_soft_deleted_subscription_no_longer_blocks_a_new_one_with_the_same_combination(): void
+    {
+        [$user, , $meter] = $this->makeSubscriberUser();
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+
+        $original = Subscription::factory()->create([
+            'subscriber_meter_id' => $meter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'status' => 'pending',
+        ]);
+
+        // Before DB-001's fix, this exact scenario would have left a
+        // permanent "ghost lock": the generated duplicate_guard_key stayed
+        // non-null for a soft-deleted row still in a blocking status,
+        // permanently reserving the slot even though the row is gone from
+        // every normal query.
+        $original->delete();
+        $this->assertNotNull($original->fresh()->deleted_at);
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/subscriptions', $this->validPayload($generator, $meter, ['schedule' => 'day']))
+            ->assertStatus(201);
+
+        $this->assertSame(
+            1,
+            Subscription::withoutTrashed()
+                ->where('subscriber_meter_id', $meter->id)
+                ->where('generator_id', $generator->id)
+                ->where('schedule', 'day')
+                ->count(),
+            'Exactly one non-deleted subscription should exist for this combination — the new one.'
+        );
+        $this->assertSame(
+            1,
+            Subscription::onlyTrashed()
+                ->where('subscriber_meter_id', $meter->id)
+                ->where('generator_id', $generator->id)
+                ->where('schedule', 'day')
+                ->count(),
+            'The original soft-deleted row must still exist (soft delete, not hard delete).'
+        );
+    }
+
+    public function test_two_non_deleted_subscriptions_with_the_same_combination_are_still_correctly_rejected(): void
+    {
+        // Regression guard for the fix itself: confirms adding `deleted_at
+        // IS NULL` to the generated column did not accidentally weaken the
+        // duplicate check for the normal (non-deleted) case — this is
+        // effectively the same assertion as the pre-existing
+        // test_cannot_create_duplicate_contract_for_same_meter_generator_and_schedule
+        // above, re-stated here explicitly as part of DB-001's own test
+        // suite so a future reader sees both sides of this fix together.
+        [$user, , $meter] = $this->makeSubscriberUser();
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+
+        Subscription::factory()->create([
+            'subscriber_meter_id' => $meter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'night',
+            'billing_cycle' => 'monthly',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/subscriptions', $this->validPayload($generator, $meter, ['schedule' => 'night']))
+            ->assertStatus(409);
+    }
+
     public function test_can_create_second_contract_on_same_meter_with_different_schedule(): void
     {
         [$user,, $meter] = $this->makeSubscriberUser();
@@ -507,6 +581,244 @@ class SubscriptionTest extends TestCase
             ->assertOk();
 
         $this->assertSame('active', $suspendedSubscription->fresh()->status->value);
+    }
+
+    // ==================== BUG-001: capacity/duplicate re-check on Pending→Active ====================
+    // Before the fix, SubscriptionService::updateStatus() only re-ran the
+    // capacity/duplicate-contract checks for Suspended→Active — never for
+    // Pending→Active, the normal admin/owner approval path. The tests above
+    // (test_reactivating_suspended_subscription_*) already proved the
+    // Suspended path was correct; these prove the same guarantee now holds
+    // for Pending→Active too, which is where the real oversell bug lived.
+
+    public function test_approving_pending_subscription_fails_when_another_active_subscription_already_consumed_the_capacity(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner, ['capacity_kw' => 10]);
+
+        [,, $activeMeter] = $this->makeSubscriberUser();
+        Subscription::factory()->create([
+            'subscriber_meter_id' => $activeMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 8,
+            'status' => 'active',
+        ]);
+
+        [,, $pendingMeter] = $this->makeSubscriberUser();
+        $pendingSubscription = Subscription::factory()->create([
+            'subscriber_meter_id' => $pendingMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 5,
+            'status' => 'pending',
+        ]);
+
+        // Before the fix, this request would wrongly succeed (200) since
+        // Pending→Active never re-checked capacity — the generator would be
+        // oversold to 13kW on a 10kW-rated unit. This must now be rejected.
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/subscriptions/{$pendingSubscription->id}/status", ['status' => 'active'])
+            ->assertStatus(422);
+
+        // No partial activation: the pending subscription must remain
+        // exactly as it was before the rejected attempt.
+        $this->assertSame('pending', $pendingSubscription->fresh()->status->value);
+    }
+
+    public function test_approving_pending_subscription_succeeds_when_capacity_is_actually_available(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner, ['capacity_kw' => 10]);
+
+        [,, $activeMeter] = $this->makeSubscriberUser();
+        Subscription::factory()->create([
+            'subscriber_meter_id' => $activeMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 4,
+            'status' => 'active',
+        ]);
+
+        [,, $pendingMeter] = $this->makeSubscriberUser();
+        $pendingSubscription = Subscription::factory()->create([
+            'subscriber_meter_id' => $pendingMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 5,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/subscriptions/{$pendingSubscription->id}/status", ['status' => 'active'])
+            ->assertOk();
+
+        $this->assertSame('active', $pendingSubscription->fresh()->status->value);
+    }
+
+    public function test_two_pending_subscriptions_competing_for_the_same_remaining_capacity_only_the_first_approval_succeeds(): void
+    {
+        // This is the exact scenario BUG-001 described: two Pending
+        // subscriptions on the same generator, neither counted as "reserved"
+        // capacity at creation time (Subscription::CAPACITY_RESERVING_STATUSES
+        // = ['active'] only, by design), each individually within capacity,
+        // but jointly exceeding it once both would be active.
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner, ['capacity_kw' => 10]);
+
+        [,, $meterA] = $this->makeSubscriberUser();
+        $subscriptionA = Subscription::factory()->create([
+            'subscriber_meter_id' => $meterA->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 6,
+            'status' => 'pending',
+        ]);
+
+        [,, $meterB] = $this->makeSubscriberUser();
+        $subscriptionB = Subscription::factory()->create([
+            'subscriber_meter_id' => $meterB->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 6,
+            'status' => 'pending',
+        ]);
+
+        // First approval: 6kW of 10kW — succeeds.
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/subscriptions/{$subscriptionA->id}/status", ['status' => 'active'])
+            ->assertOk();
+        $this->assertSame('active', $subscriptionA->fresh()->status->value);
+
+        // Second approval: would bring the total to 12kW of 10kW — must now
+        // be rejected (this is the exact request that used to silently
+        // succeed before the fix, since the generator lock+recheck never ran
+        // for Pending→Active).
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/subscriptions/{$subscriptionB->id}/status", ['status' => 'active'])
+            ->assertStatus(422);
+        $this->assertSame('pending', $subscriptionB->fresh()->status->value);
+
+        // The core invariant the master prompt asks to prove directly:
+        // active_subscriptions_capacity <= generator.capacity_kw, always.
+        $activeCapacity = Subscription::where('generator_id', $generator->id)
+            ->where('status', 'active')
+            ->sum('requested_capacity_kw');
+        $this->assertLessThanOrEqual((float) $generator->capacity_kw, (float) $activeCapacity);
+    }
+
+    public function test_generator_capacity_exactly_equal_to_total_requested_on_approval_succeeds(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner, ['capacity_kw' => 10]);
+
+        [,, $activeMeter] = $this->makeSubscriberUser();
+        Subscription::factory()->create([
+            'subscriber_meter_id' => $activeMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 6,
+            'status' => 'active',
+        ]);
+
+        [,, $pendingMeter] = $this->makeSubscriberUser();
+        $pendingSubscription = Subscription::factory()->create([
+            'subscriber_meter_id' => $pendingMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 4, // 6 + 4 = 10, exactly the cap — must be allowed, not rejected.
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/subscriptions/{$pendingSubscription->id}/status", ['status' => 'active'])
+            ->assertOk();
+
+        $this->assertSame('active', $pendingSubscription->fresh()->status->value);
+    }
+
+    public function test_generator_capacity_exceeded_by_one_kw_on_approval_is_rejected(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner, ['capacity_kw' => 10]);
+
+        [,, $activeMeter] = $this->makeSubscriberUser();
+        Subscription::factory()->create([
+            'subscriber_meter_id' => $activeMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 6,
+            'status' => 'active',
+        ]);
+
+        [,, $pendingMeter] = $this->makeSubscriberUser();
+        $pendingSubscription = Subscription::factory()->create([
+            'subscriber_meter_id' => $pendingMeter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 5, // 6 + 5 = 11, exactly 1kW over the 10kW cap.
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/subscriptions/{$pendingSubscription->id}/status", ['status' => 'active'])
+            ->assertStatus(422);
+
+        $this->assertSame('pending', $pendingSubscription->fresh()->status->value);
+    }
+
+    public function test_duplicate_contract_recheck_service_rejects_a_colliding_combination(): void
+    {
+        // A genuine two-Pending-rows-on-the-same-combo integration scenario
+        // is not constructible here: `subscriptions.uq_subscriptions_duplicate_guard`
+        // (a STORED generated column, unique-indexed, scoped to exactly
+        // status IN ('pending','active') — see the audit's own DB-001
+        // finding) makes it physically impossible for two rows sharing the
+        // same subscriber_meter_id/generator_id/schedule/times to coexist in
+        // this database with both in a duplicate-blocking status — confirmed
+        // empirically: attempting exactly that insert in an earlier version
+        // of this test failed with a UniqueConstraintViolationException
+        // *before* SubscriptionService::updateStatus() was ever reached.
+        //
+        // This proves the DB is the authoritative, unconditional guard for
+        // this specific invariant — stronger than any application-level
+        // check could be. `GeneratorCapacityService::assertNoDuplicateContract()`
+        // (the exact method updateStatus()'s widened Pending→Active branch
+        // now calls) is still real, correct defense-in-depth, tested here
+        // directly against a genuine collision it's given, rather than via
+        // an unreachable full HTTP round-trip.
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner, ['capacity_kw' => 100]);
+        [,, $meter] = $this->makeSubscriberUser();
+
+        Subscription::factory()->create([
+            'subscriber_meter_id' => $meter->id,
+            'generator_id' => $generator->id,
+            'schedule' => 'day',
+            'billing_cycle' => 'monthly',
+            'requested_capacity_kw' => 5,
+            'status' => 'active',
+        ]);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(\App\Services\GeneratorCapacityService::class)->assertNoDuplicateContract(
+            $generator->fresh(),
+            $meter,
+            \App\Enums\OperatingSchedule::from('day'),
+            null,
+            null
+        );
     }
 
     public function test_subscriber_cannot_update_subscription_status(): void

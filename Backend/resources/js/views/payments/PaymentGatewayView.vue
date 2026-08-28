@@ -37,6 +37,11 @@ const selectedMethodId = ref(null);
 const isVerifying = ref(false);
 const fileError = ref(null);
 
+// FRONT-001: نفس الفحص المستخدم لإخفاء زر البطاقة — موجود هون كمان لمنع أي
+// حالة نظرية يوصل فيها selectedType لقيمة 'card' ببناء إنتاج (الزر الوحيد
+// اللي بيضبطها أصلًا مخفي، لكن هاد فحص دفاعي إضافي رخيص لا يضر).
+const isProductionBuild = import.meta.env.PROD;
+
 const form = reactive({
   amount: 0,
   walletNumber: "",
@@ -136,6 +141,8 @@ const canSubmit = computed(() => {
     return false;
 
   if (selectedType.value === "card") {
+    if (isProductionBuild) return false;
+
     return (
       cardForm.card_number.length >= 13 &&
       cardForm.card_holder_name.trim().length > 0 &&
@@ -334,8 +341,15 @@ onMounted(async () => {
           >{{ t("payment_gateway.payment_method_label") }}</label
         >
         <div class="flex gap-3 flex-wrap">
-          <!-- بطاقة: متاحة دائمًا (بوابة المنصة، بلا حاجة لإعداد مسبق من المالك) -->
+          <!-- FRONT-001: بطاقة الدفع التجريبية (بوابة محاكاة، بلا Stripe حقيقي)
+               مخفية بالكامل في أي بناء إنتاج (import.meta.env.PROD) — الـ
+               backend أصلًا يرفضها بـ ProcessGatewayPaymentAction عند
+               app()->environment('production')، لكن ذلك الرفض بيصير بعد ما
+               المستخدم يعبّي النموذج ويحاول الدفع، وهو تجربة استخدام مربكة.
+               إخفاؤها هون من الواجهة أوضح: "معطّلة بالكامل" فعليًا لا "تظهر
+               وتفشل لاحقًا". -->
           <button
+            v-if="!isProductionBuild"
             type="button"
             @click="chooseType('card')"
             :class="[

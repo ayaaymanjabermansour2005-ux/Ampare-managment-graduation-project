@@ -33,11 +33,16 @@ return new class extends Migration
             $table->index(['subscriber_meter_id', 'status']);
         });
 
+        // `deleted_at IS NULL` is included here (not just `status IN (...)`) so a
+        // soft-deleted subscription never occupies this uniqueness slot — matching
+        // the identical pattern used by every other active-record guard in this
+        // migration set (`subscriber_meters.meter_number_active_guard`,
+        // `technicians.user_id_active_guard`, `users.email_active_guard`).
         DB::statement("
             ALTER TABLE subscriptions
             ADD COLUMN duplicate_guard_key VARCHAR(150)
             GENERATED ALWAYS AS (
-                CASE WHEN status IN ('pending', 'active')
+                CASE WHEN status IN ('pending', 'active') AND deleted_at IS NULL
                 THEN CONCAT(
                     subscriber_meter_id, '-',
                     generator_id, '-',

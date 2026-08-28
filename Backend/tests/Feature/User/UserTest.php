@@ -338,4 +338,85 @@ class UserTest extends TestCase
     {
         $this->getJson('/api/v1/users/export')->assertStatus(401);
     }
+
+    // ==================== API-001: owners/subscribers stats & export (no prior test coverage) ====================
+
+    public function test_admin_can_view_owners_stats(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/users/owners-stats')
+            ->assertOk();
+    }
+
+    public function test_non_admin_cannot_view_owners_stats(): void
+    {
+        $owner = $this->makeOwner();
+
+        $this->actingAs($owner)
+            ->getJson('/api/v1/users/owners-stats')
+            ->assertStatus(403);
+    }
+
+    public function test_unauthenticated_user_cannot_view_owners_stats(): void
+    {
+        $this->getJson('/api/v1/users/owners-stats')->assertStatus(401);
+    }
+
+    public function test_admin_can_export_owners(): void
+    {
+        \Maatwebsite\Excel\Facades\Excel::fake();
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/users/owners-export')
+            ->assertOk();
+    }
+
+    public function test_non_admin_cannot_export_owners(): void
+    {
+        $owner = $this->makeOwner();
+
+        $this->actingAs($owner)
+            ->getJson('/api/v1/users/owners-export')
+            ->assertStatus(403);
+    }
+
+    public function test_admin_can_view_subscribers_stats(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/users/subscribers-stats')
+            ->assertOk();
+    }
+
+    public function test_non_admin_cannot_view_subscribers_stats(): void
+    {
+        $owner = $this->makeOwner();
+
+        $this->actingAs($owner)
+            ->getJson('/api/v1/users/subscribers-stats')
+            ->assertStatus(403);
+    }
+
+    public function test_admin_can_export_subscribers(): void
+    {
+        \Maatwebsite\Excel\Facades\Excel::fake();
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/users/subscribers-export')
+            ->assertOk();
+    }
+
+    public function test_non_admin_cannot_export_subscribers(): void
+    {
+        $owner = $this->makeOwner();
+
+        $this->actingAs($owner)
+            ->getJson('/api/v1/users/subscribers-export')
+            ->assertStatus(403);
+    }
 }

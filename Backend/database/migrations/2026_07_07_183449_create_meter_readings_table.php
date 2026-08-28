@@ -58,8 +58,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('meter_readings');
-        Schema::table('meter_readings', function (Blueprint $table) {
-            $table->dropIndex(['subscription_id', 'status']);
-        });
     }
 };

@@ -230,6 +230,161 @@ class PaymentTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('amount');
     }
 
+    // ==================== TEST-001: idempotency replay (EnsureIdempotency) ====================
+    // The original audit's own finding: the idempotency middleware + DB
+    // primary-key enforcement is specifically built to prevent double-
+    // charging on client retry, but no test previously proved it actually
+    // dedupes — postPayment() (above) sends a *fresh* UUID key on every
+    // call, never the same key twice, so the replay path was never
+    // exercised by any existing test.
+
+    public function test_repeating_the_same_idempotency_key_and_payload_does_not_create_a_second_payment(): void
+    {
+        ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $key = Str::uuid()->toString();
+        $payload = [
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 50,
+            'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+        ];
+
+        $first = $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', $payload);
+        $first->assertStatus(201);
+        $this->assertSame(1, Payment::count());
+
+        $second = $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', $payload);
+
+        // The stored prior response is replayed verbatim — same status,
+        // same data. assertEquals (not assertSame): MySQL's native JSON
+        // column type canonicalizes/re-orders object keys on storage, so
+        // the replayed response's array key order legitimately differs
+        // from the fresh one even though every value is identical —
+        // confirmed by direct inspection before choosing this assertion,
+        // not assumed. Order-independent equality is what actually matters
+        // here, not incidental key ordering.
+        $second->assertStatus(201);
+        $this->assertEquals($first->json(), $second->json());
+
+        // The real proof: the underlying operation did NOT run twice.
+        $this->assertSame(1, Payment::count());
+    }
+
+    public function test_reusing_an_idempotency_key_from_a_different_user_is_rejected(): void
+    {
+        ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $key = Str::uuid()->toString();
+
+        $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', [
+                'invoice_id' => $invoice->id,
+                'payment_method_id' => $method->id,
+                'amount' => 50,
+                'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+            ])->assertStatus(201);
+
+        $otherSubscriber = User::factory()->create();
+        $otherSubscriber->assignRole(RoleEnum::SUBSCRIBER->value);
+
+        $this->actingAs($otherSubscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', [
+                'invoice_id' => $invoice->id,
+                'payment_method_id' => $method->id,
+                'amount' => 50,
+                'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+            ])->assertStatus(409);
+
+        $this->assertSame(1, Payment::count());
+    }
+
+    public function test_reusing_an_idempotency_key_on_a_different_route_is_rejected(): void
+    {
+        ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $key = Str::uuid()->toString();
+
+        $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', [
+                'invoice_id' => $invoice->id,
+                'payment_method_id' => $method->id,
+                'amount' => 50,
+                'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+            ])->assertStatus(201);
+
+        // Same key, genuinely different idempotency-gated route
+        // ('payments/gateway', not 'payments') — the EnsureIdempotency
+        // middleware runs before route-model-binding/FormRequest
+        // validation, so the route-mismatch check fires first regardless
+        // of this second request's payload shape; an empty payload is
+        // enough to prove the rejection is about the route, not a
+        // validation failure.
+        $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments/gateway', [])
+            ->assertStatus(409);
+
+        $this->assertSame(1, Payment::count());
+    }
+
+    public function test_reusing_an_idempotency_key_with_a_genuinely_different_payload_still_replays_the_original_response(): void
+    {
+        // Documents actual, current behavior rather than assumed behavior:
+        // EnsureIdempotency scopes replay by (key, user, route) only — it
+        // does NOT hash/compare the request payload. Reusing a key with a
+        // *different* payload on the same route/user does not error and
+        // does not process the new payload; it silently replays the first
+        // call's stored response. This is a legitimate, common idempotency
+        // design (matches e.g. Stripe's behavior when a key is reused with
+        // a differing request), but is a real, testable, previously-
+        // unverified behavior — recorded here as-is, not fixed, since
+        // TEST-001's scope is proving replay works, not changing its rules.
+        ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $key = Str::uuid()->toString();
+
+        $first = $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', [
+                'invoice_id' => $invoice->id,
+                'payment_method_id' => $method->id,
+                'amount' => 50,
+                'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+            ]);
+        $first->assertStatus(201);
+
+        $second = $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', [
+                'invoice_id' => $invoice->id,
+                'payment_method_id' => $method->id,
+                'amount' => 30, // genuinely different amount — still replayed as the first (50) response.
+                'attachments' => [UploadedFile::fake()->image('proof2.jpg')],
+            ]);
+
+        // assertEquals, not assertSame — see the sibling replay test above
+        // for why (MySQL JSON column key-order canonicalization).
+        $this->assertEquals($first->json(), $second->json());
+        $this->assertSame(1, Payment::count());
+        $this->assertSame(50.0, (float) Payment::first()->amount);
+    }
+
     public function test_owner_can_approve_pending_payment(): void
     {
         ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
@@ -324,6 +479,103 @@ class PaymentTest extends TestCase
         $this->assertSame('rejected', $payment->fresh()->status->value);
         $this->assertSame('المبلغ لا يطابق الفاتورة.', $payment->fresh()->rejection_reason);
     }
+
+    // ==================== BUG-002: invoice status recalculation under concurrent payment approval ====================
+
+    public function test_rejecting_a_payment_does_not_change_the_invoice_status(): void
+    {
+        ['owner' => $owner, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $payment = Payment::factory()->create([
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 100,
+            'amount_ils' => 100,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/payments/{$payment->id}/reject", ['reason' => 'لا يطابق.'])
+            ->assertOk();
+
+        $this->assertSame('pending', $invoice->fresh()->status->value);
+    }
+
+    public function test_partial_payment_approval_leaves_invoice_partially_paid(): void
+    {
+        ['owner' => $owner, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $payment = Payment::factory()->create([
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 40,
+            'amount_ils' => 40,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/payments/{$payment->id}/approve")
+            ->assertOk();
+
+        $this->assertSame('partially_paid', $invoice->fresh()->status->value);
+    }
+
+    public function test_two_sequential_partial_payment_approvals_result_in_a_fully_paid_invoice(): void
+    {
+        ['owner' => $owner, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+
+        $firstPayment = Payment::factory()->create([
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 60,
+            'amount_ils' => 60,
+            'status' => 'pending',
+        ]);
+        $secondPayment = Payment::factory()->create([
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 40,
+            'amount_ils' => 40,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)->patchJson("/api/v1/payments/{$firstPayment->id}/approve")->assertOk();
+        $this->assertSame('partially_paid', $invoice->fresh()->status->value);
+
+        $this->actingAs($owner)->patchJson("/api/v1/payments/{$secondPayment->id}/approve")->assertOk();
+        $this->assertSame('paid', $invoice->fresh()->status->value);
+
+        // The invariant this fix protects: the invoice's recorded status must
+        // always genuinely reflect the true sum of its Paid payments — not a
+        // stale snapshot from whichever approval happened to commit last.
+        $trueSum = Payment::where('invoice_id', $invoice->id)->where('status', 'paid')->sum('amount_ils');
+        $this->assertSame(100.0, (float) $trueSum);
+    }
+
+    public function test_admin_adjustment_payment_also_recalculates_invoice_status_correctly(): void
+    {
+        // Exercises the OTHER pre-existing recalculateStatus() call site
+        // (CreatePaymentAction::createAdjustmentPayment), which already
+        // locked the invoice before this fix — confirming the fix's
+        // internal lockForUpdate() doesn't break that already-correct path.
+        ['invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $admin = $this->makeAdmin();
+
+        $this->postPayment($admin, [
+            'invoice_id' => $invoice->id,
+            'amount' => 100,
+        ])->assertCreated();
+
+        $this->assertSame('paid', $invoice->fresh()->status->value);
+    }
+
+    // Note: the real cross-connection concurrency proof for this fix lives in
+    // a dedicated file, PaymentInvoiceConcurrencyTest.php, NOT here — this
+    // class uses RefreshDatabase (an uncommitted outer transaction per
+    // test), which a genuinely separate DB connection cannot see into or
+    // lock against. See that file for why, mirroring BUG-001's identical
+    // constraint and solution (SubscriptionCapacityConcurrencyTest.php).
 
     public function test_owner_requests_correction_then_subscriber_resubmits(): void
     {

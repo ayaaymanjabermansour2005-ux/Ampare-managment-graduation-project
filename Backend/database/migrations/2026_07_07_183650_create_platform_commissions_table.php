@@ -22,6 +22,7 @@ return new class extends Migration
             $table->timestamp('earned_at')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
             $table->index(['owner_id', 'status']);
         });
 

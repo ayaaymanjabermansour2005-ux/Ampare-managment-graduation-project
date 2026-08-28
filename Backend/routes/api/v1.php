@@ -181,9 +181,12 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
     Route::get('preferences', [UserPreferenceController::class, 'index']);
     Route::patch('preferences', [UserPreferenceController::class, 'update']);
 
-    Route::get('owner/dashboard/stats', [RoleDashboardController::class, 'ownerStats']);
-    Route::get('subscriber/dashboard/stats', [RoleDashboardController::class, 'subscriberStats']);
-    Route::get('technician/dashboard/stats', [RoleDashboardController::class, 'technicianStats']);
+    Route::get('owner/dashboard/stats', [RoleDashboardController::class, 'ownerStats'])
+        ->middleware('role:generator_owner');
+    Route::get('subscriber/dashboard/stats', [RoleDashboardController::class, 'subscriberStats'])
+        ->middleware('role:subscriber');
+    Route::get('technician/dashboard/stats', [RoleDashboardController::class, 'technicianStats'])
+        ->middleware('role:technician');
     Route::get('plans', [PlanController::class, 'index']);
     Route::patch('users/{user}/plan', [PlanController::class, 'assign']);
 
@@ -296,7 +299,8 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
     Route::post('generators', [GeneratorController::class, 'store'])
         ->middleware('permission:generators.create');
 
-    Route::get('/generators/map-points', [GeneratorController::class, 'mapPoints']);
+    Route::get('/generators/map-points', [GeneratorController::class, 'mapPoints'])
+        ->middleware('permission:generators.view');
     Route::get('generators/{generator}', [GeneratorController::class, 'show'])
         ->middleware('permission:generators.view');
 
@@ -323,9 +327,11 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
 
     Route::get('generators/{generator}/health-reports', [GeneratorController::class, 'healthReports'])
         ->middleware('permission:generators.view');
-    Route::get('generators/{generator}/timeline', [GeneratorController::class, 'timeline']);
+    Route::get('generators/{generator}/timeline', [GeneratorController::class, 'timeline'])
+        ->middleware('permission:generators.view');
 
-    Route::get('generators/{generator}/quick-scan', [GeneratorController::class, 'quickScan']);
+    Route::get('generators/{generator}/quick-scan', [GeneratorController::class, 'quickScan'])
+        ->middleware('permission:generators.view');
 
     Route::patch('generators/{generator}/verify', [GeneratorController::class, 'verify'])
         ->middleware('permission:generators.update');
@@ -776,7 +782,8 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
     |----------------------------------------------------------------------
     */
 
-    Route::get('owner-monthly-report/download', [OwnerMonthlyReportController::class, 'downloadPdf']);
+    Route::get('owner-monthly-report/download', [OwnerMonthlyReportController::class, 'downloadPdf'])
+        ->middleware('role:admin|generator_owner');
 
     /*
     |----------------------------------------------------------------------
@@ -1022,11 +1029,15 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
     Route::get('users/locked', [UserLockoutController::class, 'lockedIndex'])
         ->middleware('permission:users.unlock');
 
-    Route::get('users/owners-stats', [UserController::class, 'ownersStats']);
+    Route::get('users/owners-stats', [UserController::class, 'ownersStats'])
+        ->middleware('permission:users.view');
 
-    Route::get('users/owners-export', [UserController::class, 'exportOwners']);
-    Route::get('users/subscribers-stats', [UserController::class, 'subscribersStats']);
-    Route::get('users/subscribers-export', [UserController::class, 'exportSubscribers']);
+    Route::get('users/owners-export', [UserController::class, 'exportOwners'])
+        ->middleware('permission:users.view');
+    Route::get('users/subscribers-stats', [UserController::class, 'subscribersStats'])
+        ->middleware('permission:users.view');
+    Route::get('users/subscribers-export', [UserController::class, 'exportSubscribers'])
+        ->middleware('permission:users.view');
     // export لازم تُسجَّل قبل /{user} (نفس السبب في faults/export).
     Route::get('users/export', [UserController::class, 'export'])
         ->middleware('permission:users.view');
