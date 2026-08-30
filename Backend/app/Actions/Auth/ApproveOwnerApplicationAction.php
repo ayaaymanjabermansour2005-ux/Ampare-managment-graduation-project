@@ -68,7 +68,7 @@ class ApproveOwnerApplicationAction
                 ->withProperties(['owner_application_id' => $application->id])
                 ->log('owner_application_approved');
 
-            $owner->notify(new OwnerApplicationApprovedNotification());
+            $owner->notify(new OwnerApplicationApprovedNotification);
 
             return $application->fresh(['reviewedBy', 'createdUser']);
         });

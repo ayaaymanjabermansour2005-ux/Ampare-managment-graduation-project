@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\CommissionTier;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<CommissionTier>
@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class CommissionTierFactory extends Factory
 {
     protected $model = CommissionTier::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

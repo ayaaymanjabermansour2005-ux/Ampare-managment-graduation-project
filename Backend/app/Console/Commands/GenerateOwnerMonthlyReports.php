@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class GenerateOwnerMonthlyReports extends Command
 {
     protected $signature = 'reports:owner-monthly {--month=}';
+
     protected $description = 'يولّد ويرسل التقرير الشهري لكل مالك مولد نشط';
 
     public function handle(): int

@@ -161,7 +161,7 @@ class TechnicianPaymentTest extends TestCase
     {
         $owner = $this->makeOwner();
         [, $technicianA] = $this->makeTechnicianFor($owner);
-        [$technicianBUser, ] = $this->makeTechnicianFor($owner);
+        [$technicianBUser] = $this->makeTechnicianFor($owner);
 
         $payment = TechnicianPayment::factory()->create([
             'technician_id' => $technicianA->id,
@@ -239,7 +239,7 @@ class TechnicianPaymentTest extends TestCase
     {
         $owner = $this->makeOwner();
         [, $technicianA] = $this->makeTechnicianFor($owner);
-        [$technicianBUser, ] = $this->makeTechnicianFor($owner);
+        [$technicianBUser] = $this->makeTechnicianFor($owner);
 
         $payment = TechnicianPayment::factory()->create([
             'technician_id' => $technicianA->id,

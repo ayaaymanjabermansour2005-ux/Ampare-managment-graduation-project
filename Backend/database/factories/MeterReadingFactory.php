@@ -6,8 +6,8 @@ use App\Enums\MeterReadingStatus;
 use App\Models\MeterReading;
 use App\Models\Subscription;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<MeterReading>
@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class MeterReadingFactory extends Factory
 {
     protected $model = MeterReading::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

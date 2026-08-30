@@ -14,9 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterUserAction
 {
-    /**
-     * @param  bool  $autoVerify  
-     */
     public function execute(RegisterUserData $data, bool $autoVerify = false): User
     {
         if (! in_array(Setting::get('allow_subscriber_registration', '1'), ['1', 1, true, 'true'], true)) {

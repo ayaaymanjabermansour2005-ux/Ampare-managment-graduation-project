@@ -30,7 +30,7 @@ class GeneratorService
     {
         $query = Generator::query()
             ->withCount([
-                'subscriptions' => fn($q) => $q->where('status', SubscriptionStatus::Active),
+                'subscriptions' => fn ($q) => $q->where('status', SubscriptionStatus::Active),
             ])
             ->withSum(['invoices as monthly_revenue_ils' => function ($q) {
                 $q->where('invoices.status', InvoiceStatus::Paid->value)
@@ -55,7 +55,7 @@ class GeneratorService
         } elseif ($user->isTechnician()) {
             $query->whereHas(
                 'technicians',
-                fn($q) => $q->where('technicians.user_id', $user->id)
+                fn ($q) => $q->where('technicians.user_id', $user->id)
             );
         } else {
             $query->whereRaw('1 = 0');
@@ -64,7 +64,7 @@ class GeneratorService
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhereHas('location', fn($locQ) => $locQ->where('city', 'like', "%{$search}%"));
+                    ->orWhereHas('location', fn ($locQ) => $locQ->where('city', 'like', "%{$search}%"));
             });
         }
         if ($status) {
@@ -72,7 +72,7 @@ class GeneratorService
         }
 
         if ($city) {
-            $query->whereHas('location', fn($q) => $q->where('city', $city));
+            $query->whereHas('location', fn ($q) => $q->where('city', $city));
         }
 
         return $query->latest()->paginate($perPage);
@@ -88,7 +88,7 @@ class GeneratorService
                 return $query->where('owner_id', $user->id);
             }
             if ($user->isTechnician()) {
-                return $query->whereHas('technicians', fn($q) => $q->where('technicians.user_id', $user->id));
+                return $query->whereHas('technicians', fn ($q) => $q->where('technicians.user_id', $user->id));
             }
 
             return $query->whereRaw('1 = 0');
@@ -110,17 +110,17 @@ class GeneratorService
             ->get(['id', 'tank_capacity_liters']);
 
         $fuelPercentages = $fuelRows
-            ->filter(fn($g) => $g->latestFuelReading)
-            ->map(fn($g) => ((float) $g->latestFuelReading->tank_level_liters / (float) $g->tank_capacity_liters) * 100);
+            ->filter(fn ($g) => $g->latestFuelReading)
+            ->map(fn ($g) => ((float) $g->latestFuelReading->tank_level_liters / (float) $g->tank_capacity_liters) * 100);
 
         $totalSubscribers = Subscription::where('status', SubscriptionStatus::Active->value)
-            ->whereHas('generator', fn($q) => $applyScope($q))
+            ->whereHas('generator', fn ($q) => $applyScope($q))
             ->count();
 
         $totalMonthlyRevenue = Invoice::where('status', InvoiceStatus::Paid->value)
             ->whereMonth('invoices.created_at', now()->month)
             ->whereYear('invoices.created_at', now()->year)
-            ->whereHas('subscription.generator', fn($q) => $applyScope($q))
+            ->whereHas('subscription.generator', fn ($q) => $applyScope($q))
             ->sum('final_amount_ils');
 
         return [
@@ -149,7 +149,7 @@ class GeneratorService
         } elseif ($user->isOwner()) {
             $query->where('owner_id', $user->id);
         } elseif ($user->isTechnician()) {
-            $query->whereHas('technicians', fn($q) => $q->where('technicians.user_id', $user->id));
+            $query->whereHas('technicians', fn ($q) => $q->where('technicians.user_id', $user->id));
         } else {
             return [];
         }
@@ -386,7 +386,7 @@ class GeneratorService
 
         return $generators
             ->filter(
-                fn(Generator $generator) => $this->capacityService->canAccept(
+                fn (Generator $generator) => $this->capacityService->canAccept(
                     $generator,
                     $meter,
                     $scheduleEnum,
@@ -491,7 +491,7 @@ class GeneratorService
         } elseif ($user->isTechnician()) {
             $query->whereHas(
                 'technicians',
-                fn($q) => $q->where('technicians.user_id', $user->id)
+                fn ($q) => $q->where('technicians.user_id', $user->id)
             );
         } else {
             $query->whereRaw('1 = 0');
@@ -499,7 +499,7 @@ class GeneratorService
 
         return $query
             ->get(['id', 'name', 'name_en', 'status', 'location_id'])
-            ->map(fn($g) => [
+            ->map(fn ($g) => [
                 'id' => $g->id,
                 'name' => $g->name,
                 'name_en' => $g->name_en,

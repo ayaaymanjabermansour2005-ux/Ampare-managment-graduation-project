@@ -103,8 +103,8 @@ class TechnicianService
     private function assertNoActiveTasks(Technician $technician, string $action): void
     {
         $activeStatuses = array_map(
-            fn(TechnicianTaskStatus $s) => $s->value,
-            array_filter(TechnicianTaskStatus::cases(), fn($s) => $s->isActive())
+            fn (TechnicianTaskStatus $s) => $s->value,
+            array_filter(TechnicianTaskStatus::cases(), fn ($s) => $s->isActive())
         );
 
         $activeTasksCount = $technician->tasks()

@@ -18,8 +18,8 @@ class AiChatSessionResource extends JsonResource
                 'name' => $this->generator?->name,
             ],
             'messages' => AiChatMessageResource::collection($this->whenLoaded('messages')),
-            'fault_prediction_id' => $this->whenLoaded('faultPrediction', fn() => $this->faultPrediction?->id),
-            'fault_id' => $this->whenLoaded('fault', fn() => $this->fault?->id),
+            'fault_prediction_id' => $this->whenLoaded('faultPrediction', fn () => $this->faultPrediction?->id),
+            'fault_id' => $this->whenLoaded('fault', fn () => $this->fault?->id),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

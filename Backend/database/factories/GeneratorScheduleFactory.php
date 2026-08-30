@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Models\Generator;
 use App\Models\GeneratorSchedule;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<GeneratorSchedule>
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class GeneratorScheduleFactory extends Factory
 {
     protected $model = GeneratorSchedule::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

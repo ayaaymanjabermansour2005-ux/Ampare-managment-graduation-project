@@ -3,12 +3,11 @@
 namespace Tests\Feature\Notification;
 
 use App\Enums\Role as RoleEnum;
-use App\Models\Complaint;
+use App\Events\FaultReported;
 use App\Models\Fault;
 use App\Models\Generator;
 use App\Models\User;
 use App\Models\UserPreference;
-use App\Notifications\ComplaintResolvedNotification;
 use App\Notifications\FaultReportedNotification;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -58,7 +57,7 @@ class NotificationPreferenceGateTest extends TestCase
             'reported_at' => now(),
         ]);
 
-        event(new \App\Events\FaultReported($fault));
+        event(new FaultReported($fault));
 
         Notification::assertSentTo($owner, FaultReportedNotification::class);
     }
@@ -87,7 +86,7 @@ class NotificationPreferenceGateTest extends TestCase
             'reported_at' => now(),
         ]);
 
-        event(new \App\Events\FaultReported($fault));
+        event(new FaultReported($fault));
 
         Notification::assertNotSentTo($owner, FaultReportedNotification::class);
     }

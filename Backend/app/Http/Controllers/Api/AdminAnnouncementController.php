@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Role;
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\AdminAnnouncementNotification;
 use App\Policies\AdminDashboardPolicy;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
-use App\Http\Controllers\Controller;
-
 
 class AdminAnnouncementController extends Controller
 {
@@ -42,7 +42,7 @@ class AdminAnnouncementController extends Controller
         $recipientsCount = (clone $usersQuery)->count();
 
         $usersQuery->chunk(200, function ($users) use ($validated) {
-            \Illuminate\Support\Facades\Notification::send(
+            Notification::send(
                 $users,
                 new AdminAnnouncementNotification($validated['title'], $validated['message'])
             );

@@ -191,7 +191,7 @@ class GeneratorDiagnosticTest extends TestCase
 
     public function test_analyze_creates_fault_prediction_with_parsed_json(): void
     {
-        $this->bindAiProvider(fn() => json_encode([
+        $this->bindAiProvider(fn () => json_encode([
             'risk_percentage' => 78,
             'predicted_fault_type' => 'ارتفاع حرارة المحرك',
             'recommendation' => 'افحصي نظام التبريد فورًا.',
@@ -220,7 +220,7 @@ class GeneratorDiagnosticTest extends TestCase
 
     public function test_analyze_falls_back_gracefully_on_invalid_json(): void
     {
-        $this->bindAiProvider(fn() => 'هذا رد غير منظم مش JSON إطلاقًا.');
+        $this->bindAiProvider(fn () => 'هذا رد غير منظم مش JSON إطلاقًا.');
 
         $owner = $this->makeOwner();
         $generator = Generator::factory()->create(['owner_id' => $owner->id]);
@@ -243,7 +243,7 @@ class GeneratorDiagnosticTest extends TestCase
 
     public function test_analyze_handles_provider_failure_gracefully(): void
     {
-        $this->bindAiProvider(fn() => '', throws: true);
+        $this->bindAiProvider(fn () => '', throws: true);
 
         $owner = $this->makeOwner();
         $generator = Generator::factory()->create(['owner_id' => $owner->id]);
@@ -260,7 +260,7 @@ class GeneratorDiagnosticTest extends TestCase
 
     public function test_cannot_analyze_same_reading_twice(): void
     {
-        $this->bindAiProvider(fn() => json_encode([
+        $this->bindAiProvider(fn () => json_encode([
             'risk_percentage' => 10,
             'predicted_fault_type' => null,
             'recommendation' => 'لا يوجد خطر واضح.',

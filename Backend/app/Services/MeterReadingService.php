@@ -7,6 +7,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Generator;
 use App\Models\MeterReading;
 use App\Models\Subscription;
+use App\Models\Technician;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -41,7 +42,7 @@ class MeterReadingService
         // Only meaningful (and only ever applied) for Owner/Admin callers —
         // the base scope above already prevents cross-owner leakage.
         if ($technicianId) {
-            $technicianUserId = \App\Models\Technician::whereKey($technicianId)->value('user_id');
+            $technicianUserId = Technician::whereKey($technicianId)->value('user_id');
             $query->where('created_by', $technicianUserId);
         }
 

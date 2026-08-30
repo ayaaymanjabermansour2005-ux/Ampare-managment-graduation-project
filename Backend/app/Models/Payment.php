@@ -55,7 +55,6 @@ class Payment extends Model
         return $this->belongsTo(PaymentMethod::class);
     }
 
-
     public function processedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by');

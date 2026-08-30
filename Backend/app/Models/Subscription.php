@@ -25,7 +25,6 @@ class Subscription extends Model
 
     public const DUPLICATE_BLOCKING_STATUSES = ['pending', 'active'];
 
-
     protected $fillable = [
         'subscriber_meter_id',
         'generator_id',

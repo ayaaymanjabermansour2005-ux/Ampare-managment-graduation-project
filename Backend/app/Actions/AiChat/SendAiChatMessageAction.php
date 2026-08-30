@@ -61,7 +61,7 @@ final class SendAiChatMessageAction
 
                     return [
                         'role' => $m->role->value,
-                        'content' => $m->content . ($m->id === $userMessage->id && $file ? ' [مرفق ملف/صورة مع هذه الرسالة]' : ''),
+                        'content' => $m->content.($m->id === $userMessage->id && $file ? ' [مرفق ملف/صورة مع هذه الرسالة]' : ''),
                     ];
                 })
                 ->all();
@@ -122,7 +122,7 @@ PROMPT;
 
         $parts = [];
 
-        $brand = trim(($generator->manufacturer ?? '') . ' ' . ($generator->model ?? ''));
+        $brand = trim(($generator->manufacturer ?? '').' '.($generator->model ?? ''));
         if ($brand !== '') {
             $parts[] = "الصانع/الموديل: {$brand}";
         }

@@ -20,7 +20,7 @@ class ArticleResource extends JsonResource
             'content_en' => $this->when(! $request->routeIs('articles.public-index'), $this->content_en),
             'cover_image_url' => $this->cover_image_url,
             'images' => AttachmentResource::collection($this->whenLoaded('attachments')),
-            'author_name' => $this->whenLoaded('author', fn() => $this->author?->name),
+            'author_name' => $this->whenLoaded('author', fn () => $this->author?->name),
             'is_published' => $this->is_published,
             'published_at' => $this->published_at?->toDateString(),
         ];

@@ -27,6 +27,6 @@ class OwnerRatingFactory extends Factory
 
     public function lowRating(): static
     {
-        return $this->state(fn() => ['rating' => fake()->numberBetween(1, 2)]);
+        return $this->state(fn () => ['rating' => fake()->numberBetween(1, 2)]);
     }
 }

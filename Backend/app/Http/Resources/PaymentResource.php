@@ -24,16 +24,16 @@ class PaymentResource extends JsonResource
             'note' => $this->note,
             'status' => $this->status,
 
-            'subscriber' => $this->whenLoaded('invoice', fn() => [
+            'subscriber' => $this->whenLoaded('invoice', fn () => [
                 'name' => $this->invoice?->subscription?->subscriberMeter?->subscriber?->user?->name,
                 'phone' => $this->invoice?->subscription?->subscriberMeter?->subscriber?->user?->phone,
             ]),
-            'generator' => $this->whenLoaded('invoice', fn() => [
+            'generator' => $this->whenLoaded('invoice', fn () => [
                 'id' => $this->invoice?->subscription?->generator?->id,
                 'name' => $this->invoice?->subscription?->generator?->name,
             ]),
 
-            'processed_by' => $this->whenLoaded('processedBy', fn() => [
+            'processed_by' => $this->whenLoaded('processedBy', fn () => [
                 'id' => $this->processedBy?->id,
                 'name' => $this->processedBy?->name,
             ]),
@@ -41,14 +41,14 @@ class PaymentResource extends JsonResource
 
             'rejection_reason' => $this->rejection_reason,
 
-            'reviewed_by' => $this->whenLoaded('reviewedBy', fn() => [
+            'reviewed_by' => $this->whenLoaded('reviewedBy', fn () => [
                 'id' => $this->reviewedBy?->id,
                 'name' => $this->reviewedBy?->name,
             ]),
             'reviewed_at' => $this->reviewed_at?->toDateTimeString(),
             'review_note' => $this->review_note,
 
-            'reviews' => $this->whenLoaded('reviews', fn() => $this->reviews->map(fn($review) => [
+            'reviews' => $this->whenLoaded('reviews', fn () => $this->reviews->map(fn ($review) => [
                 'id' => $review->id,
                 'status' => $review->status,
                 'reason' => $review->reason,

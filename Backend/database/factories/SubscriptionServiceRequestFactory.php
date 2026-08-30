@@ -37,12 +37,12 @@ class SubscriptionServiceRequestFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function approved(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'approved',
             'reviewed_at' => now(),
         ]);
@@ -50,7 +50,7 @@ class SubscriptionServiceRequestFactory extends Factory
 
     public function rejected(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'rejected',
             'reviewed_at' => now(),
         ]);

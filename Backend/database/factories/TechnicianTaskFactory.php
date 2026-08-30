@@ -33,12 +33,12 @@ class TechnicianTaskFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function assigned(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'technician_id' => Technician::factory(),
             'assigned_by' => User::factory(),
             'status' => 'assigned',
@@ -48,7 +48,7 @@ class TechnicianTaskFactory extends Factory
 
     public function inProgress(): static
     {
-        return $this->assigned()->state(fn() => [
+        return $this->assigned()->state(fn () => [
             'status' => 'in_progress',
             'started_at' => now(),
         ]);
@@ -56,6 +56,6 @@ class TechnicianTaskFactory extends Factory
 
     public function faultRepair(): static
     {
-        return $this->state(fn() => ['type' => 'fault_repair']);
+        return $this->state(fn () => ['type' => 'fault_repair']);
     }
 }

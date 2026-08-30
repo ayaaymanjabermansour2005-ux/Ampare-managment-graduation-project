@@ -35,8 +35,8 @@ use App\Models\Offer;
 use App\Models\OwnerRating;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
-use App\Models\PlatformCommission;
 use App\Models\Plan;
+use App\Models\PlatformCommission;
 use App\Models\Subscriber;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
@@ -48,6 +48,7 @@ use App\Models\TechnicianTask;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -66,6 +67,7 @@ class PlatformUsersSeeder extends Seeder
 
     /** التوزيع الأساسي المطلوب: 8 مالكين + 12 مشترك = 20 حسابًا. قابل للتعديل من هنا فقط. */
     private const OWNERS_COUNT = 8;
+
     private const SUBSCRIBERS_COUNT = 12;
 
     public function run(): void
@@ -95,7 +97,7 @@ class PlatformUsersSeeder extends Seeder
     // ==================== المالكون ====================
 
     /**
-     * @return array<int, array{user: User, generators: \Illuminate\Support\Collection<int, Generator>}>
+     * @return array<int, array{user: User, generators: Collection<int, Generator>}>
      */
     private function seedOwners($neighborhoods, $plans): array
     {
@@ -210,7 +212,7 @@ class PlatformUsersSeeder extends Seeder
     // ==================== فنيّون إضافيون ====================
 
     /**
-     * @param array<int, array{user: User, generators: \Illuminate\Support\Collection}> $owners
+     * @param  array<int, array{user: User, generators: Collection}>  $owners
      * @return array<int, User>
      */
     private function seedExtraTechnicians(array $owners): array
@@ -285,7 +287,7 @@ class PlatformUsersSeeder extends Seeder
     // ==================== المشتركون ====================
 
     /**
-     * @param array<int, array{user: User, generators: \Illuminate\Support\Collection}> $owners
+     * @param  array<int, array{user: User, generators: Collection}>  $owners
      * @return array<int, User>
      */
     private function seedSubscribers($neighborhoods, array $owners): array
@@ -349,7 +351,7 @@ class PlatformUsersSeeder extends Seeder
                 ['user_id' => $subUser->id],
                 [
                     'neighborhood_id' => $neighborhood->id,
-                    'address' => "منزل رقم ".(10 + $i)." - {$neighborhood->name}",
+                    'address' => 'منزل رقم '.(10 + $i)." - {$neighborhood->name}",
                     'joined_at' => now()->subDays(60 - $i * 3),
                     'beneficiary_type' => $beneficiaryTypes[$i % 2],
                 ]
@@ -366,6 +368,7 @@ class PlatformUsersSeeder extends Seeder
 
             if (empty($ownersWithGenerators)) {
                 $result[] = $subUser;
+
                 continue;
             }
 
@@ -413,7 +416,7 @@ class PlatformUsersSeeder extends Seeder
 
             if (in_array($invStatus, [InvoiceStatus::Paid, InvoiceStatus::PartiallyPaid], true)) {
                 Payment::firstOrCreate(
-                    ['invoice_id' => $invoice->id, 'transaction_reference' => "PU-PAY-".str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)],
+                    ['invoice_id' => $invoice->id, 'transaction_reference' => 'PU-PAY-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)],
                     [
                         'source' => 'subscriber',
                         'amount' => $invStatus === InvoiceStatus::PartiallyPaid ? round($amount * 0.5, 2) : $amount,
@@ -548,9 +551,9 @@ class PlatformUsersSeeder extends Seeder
     // ==================== طباعة بيانات الدخول ====================
 
     /**
-     * @param array<int, array{user: User, generators: \Illuminate\Support\Collection}> $owners
-     * @param array<int, User> $subscribers
-     * @param array<int, User> $technicians
+     * @param  array<int, array{user: User, generators: Collection}>  $owners
+     * @param  array<int, User>  $subscribers
+     * @param  array<int, User>  $technicians
      */
     private function printCredentialsTable(array $owners, array $subscribers, array $technicians): void
     {

@@ -61,7 +61,7 @@ final class SubmitChatAsFaultReportAction
     private function buildDescription(AiChatSession $session): string
     {
         $transcript = $session->messages
-            ->map(fn($m) => sprintf(
+            ->map(fn ($m) => sprintf(
                 '%s: %s',
                 $m->role === AiChatMessageRole::User ? 'المشترك' : 'المساعد الذكي',
                 $m->content

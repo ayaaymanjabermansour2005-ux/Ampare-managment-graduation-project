@@ -30,12 +30,12 @@ class PlatformCommissionFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function earned(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'earned',
             'earned_at' => now(),
         ]);
@@ -43,7 +43,7 @@ class PlatformCommissionFactory extends Factory
 
     public function paid(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'paid',
             'earned_at' => now()->subDay(),
             'paid_at' => now(),

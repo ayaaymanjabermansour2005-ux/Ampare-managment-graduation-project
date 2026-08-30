@@ -15,7 +15,7 @@ class PaymentReferenceGenerator
     public function generate(): string
     {
         for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
-            $reference = self::PREFIX . Str::upper(Str::random(10));
+            $reference = self::PREFIX.Str::upper(Str::random(10));
 
             if (! Payment::withTrashed()->where('transaction_reference', $reference)->exists()) {
                 return $reference;

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Fault;
 
 use App\Enums\Role as RoleEnum;
+use App\Exports\FaultsExport;
 use App\Models\Fault;
 use App\Models\Generator;
 use App\Models\Subscriber;
@@ -15,6 +16,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class FaultTest extends TestCase
@@ -380,7 +382,7 @@ class FaultTest extends TestCase
 
     public function test_admin_can_export_all_faults_without_filters(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         [$owner, $generator] = $this->makeOwnerWithGenerator();
@@ -388,15 +390,15 @@ class FaultTest extends TestCase
 
         $this->actingAs($admin)->get('/api/v1/faults/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'faults-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\FaultsExport $export) => $export->query()->count() === 2
+            fn (FaultsExport $export) => $export->query()->count() === 2
         );
     }
 
     public function test_fault_export_respects_status_filter(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         [$owner, $generator] = $this->makeOwnerWithGenerator();
@@ -407,9 +409,9 @@ class FaultTest extends TestCase
             ->get('/api/v1/faults/export?status=verified')
             ->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'faults-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\FaultsExport $export) {
+            function (FaultsExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->status->value === 'verified';
@@ -419,7 +421,7 @@ class FaultTest extends TestCase
 
     public function test_owner_export_is_scoped_to_own_generators_only(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         [$owner, $generator] = $this->makeOwnerWithGenerator();
         [$otherOwner, $otherGenerator] = $this->makeOwnerWithGenerator();
@@ -428,9 +430,9 @@ class FaultTest extends TestCase
 
         $this->actingAs($owner)->get('/api/v1/faults/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'faults-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\FaultsExport $export) {
+            function (FaultsExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->title === 'عطل مالكي';

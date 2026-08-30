@@ -13,6 +13,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class GeneratorHardeningTest extends TestCase
@@ -33,6 +34,7 @@ class GeneratorHardeningTest extends TestCase
 
         return $owner;
     }
+
     public function test_cannot_deactivate_generator_with_active_subscription(): void
     {
         $owner = $this->makeOwner();
@@ -94,7 +96,7 @@ class GeneratorHardeningTest extends TestCase
     {
         $plan = Plan::create([
             'name' => 'خطة محدودة',
-            'code' => 'lim-' . \Illuminate\Support\Str::random(6),
+            'code' => 'lim-'.Str::random(6),
             'max_generators' => 1,
             'price_monthly' => 0,
             'currency' => 'ILS',
@@ -119,7 +121,7 @@ class GeneratorHardeningTest extends TestCase
     {
         $plan = Plan::create([
             'name' => 'خطة متوسطة',
-            'code' => 'med-' . \Illuminate\Support\Str::random(6),
+            'code' => 'med-'.Str::random(6),
             'max_generators' => 2,
             'price_monthly' => 0,
             'currency' => 'ILS',
@@ -143,7 +145,7 @@ class GeneratorHardeningTest extends TestCase
     {
         $plan = Plan::create([
             'name' => 'خطة غير محدودة',
-            'code' => 'unl-' . \Illuminate\Support\Str::random(6),
+            'code' => 'unl-'.Str::random(6),
             'max_generators' => null,
             'price_monthly' => 0,
             'currency' => 'ILS',

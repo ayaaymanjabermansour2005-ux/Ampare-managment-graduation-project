@@ -25,6 +25,6 @@ class TechnicianFactory extends Factory
 
     public function inactive(): static
     {
-        return $this->state(fn() => ['status' => 'inactive']);
+        return $this->state(fn () => ['status' => 'inactive']);
     }
 }

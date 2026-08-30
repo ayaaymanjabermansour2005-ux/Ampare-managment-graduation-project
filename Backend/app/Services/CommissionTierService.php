@@ -47,7 +47,7 @@ class CommissionTierService
     {
         $query = CommissionTier::query()
             ->where('is_active', true)
-            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->where(function ($q) use ($min, $max) {
                 $q->where('min_generators_count', '<=', $max ?? PHP_INT_MAX)
                     ->where(function ($q2) use ($min) {

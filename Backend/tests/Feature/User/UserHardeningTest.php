@@ -96,7 +96,7 @@ class UserHardeningTest extends TestCase
         $owner = $this->makeOwner();
         $plan = Plan::create([
             'name' => 'خطة الاختبار',
-            'code' => 'test-' . Str::random(6),
+            'code' => 'test-'.Str::random(6),
             'max_generators' => 3,
             'price_monthly' => 100,
             'currency' => 'ILS',
@@ -116,7 +116,7 @@ class UserHardeningTest extends TestCase
         $otherOwner = $this->makeOwner();
         $plan = Plan::create([
             'name' => 'خطة الاختبار',
-            'code' => 'test2-' . Str::random(6),
+            'code' => 'test2-'.Str::random(6),
             'max_generators' => 3,
             'price_monthly' => 100,
             'currency' => 'ILS',

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Offer;
 
 use App\Enums\Role as RoleEnum;
+use App\Exports\OffersExport;
 use App\Models\Generator;
 use App\Models\Offer;
 use App\Models\Subscriber;
@@ -14,6 +15,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class OfferTest extends TestCase
@@ -347,7 +349,7 @@ class OfferTest extends TestCase
 
     public function test_owner_can_export_own_offers(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $owner = $this->makeOwner();
         Offer::create([
@@ -358,15 +360,15 @@ class OfferTest extends TestCase
 
         $this->actingAs($owner)->get('/api/v1/offers/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'offers-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\OffersExport $export) => $export->query()->count() === 1
+            fn (OffersExport $export) => $export->query()->count() === 1
         );
     }
 
     public function test_offer_export_is_scoped_to_own_owner_only(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $owner = $this->makeOwner();
         $otherOwner = $this->makeOwner();
@@ -383,9 +385,9 @@ class OfferTest extends TestCase
 
         $this->actingAs($owner)->get('/api/v1/offers/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'offers-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\OffersExport $export) {
+            function (OffersExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->title === 'عرضي';

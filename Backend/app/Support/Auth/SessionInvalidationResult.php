@@ -2,7 +2,6 @@
 
 namespace App\Support\Auth;
 
-
 final readonly class SessionInvalidationResult
 {
     private function __construct(

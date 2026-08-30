@@ -10,6 +10,7 @@ use App\Models\Subscriber;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Policies\SubscriptionPolicy;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -130,7 +131,7 @@ class OwnerSubscriptionTest extends TestCase
         $foreignGenerator = $this->makeGenerator($otherOwner);
         $ownGenerator = $this->makeGenerator($owner);
 
-        $policy = new \App\Policies\SubscriptionPolicy();
+        $policy = new SubscriptionPolicy;
 
         $this->assertFalse($policy->createByOwner($owner, $foreignGenerator));
         $this->assertTrue($policy->createByOwner($owner, $ownGenerator));

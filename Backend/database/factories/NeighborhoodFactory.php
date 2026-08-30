@@ -12,7 +12,7 @@ class NeighborhoodFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->citySuffix() . ' ' . fake()->unique()->numberBetween(1000, 999999),
+            'name' => fake()->unique()->citySuffix().' '.fake()->unique()->numberBetween(1000, 999999),
         ];
     }
 }

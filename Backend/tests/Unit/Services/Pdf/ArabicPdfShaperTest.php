@@ -16,7 +16,7 @@ class ArabicPdfShaperTest extends TestCase
      */
     public function test_arabic_text_is_converted_to_presentation_form_glyphs(): void
     {
-        $shaper = new ArabicPdfShaper();
+        $shaper = new ArabicPdfShaper;
 
         $shaped = $shaper->shapeHtml('<h1>فاتورة</h1>');
         $shapedText = strip_tags($shaped);
@@ -27,7 +27,7 @@ class ArabicPdfShaperTest extends TestCase
 
     public function test_html_tags_and_attributes_are_left_untouched(): void
     {
-        $shaper = new ArabicPdfShaper();
+        $shaper = new ArabicPdfShaper;
 
         $html = '<div class="header" data-id="1"><h1>فاتورة رقم #12</h1></div>';
         $shaped = $shaper->shapeHtml($html);
@@ -38,7 +38,7 @@ class ArabicPdfShaperTest extends TestCase
 
     public function test_non_arabic_text_is_left_unchanged(): void
     {
-        $shaper = new ArabicPdfShaper();
+        $shaper = new ArabicPdfShaper;
 
         $html = '<p>Invoice #12 — 2026-08-25</p>';
         $shaped = $shaper->shapeHtml($html);
@@ -48,7 +48,7 @@ class ArabicPdfShaperTest extends TestCase
 
     public function test_western_digits_are_preserved_not_converted_to_eastern_arabic_numerals(): void
     {
-        $shaper = new ArabicPdfShaper();
+        $shaper = new ArabicPdfShaper;
 
         $shaped = $shaper->shapeHtml('<p><bdi>1234.56</bdi> ₪</p>');
 
@@ -69,7 +69,7 @@ class ArabicPdfShaperTest extends TestCase
      */
     public function test_decimal_numbers_without_bdi_isolation_get_corrupted_when_mixed_with_arabic(): void
     {
-        $shaper = new ArabicPdfShaper();
+        $shaper = new ArabicPdfShaper;
 
         $shaped = $shaper->shapeHtml('<p>المبلغ: 1234.56</p>');
 

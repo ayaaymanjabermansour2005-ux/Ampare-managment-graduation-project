@@ -27,7 +27,7 @@ class GeneratorsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
     public function query(): Builder
     {
         $query = Generator::query()
-            ->withCount(['subscriptions' => fn($q) => $q->where('status', SubscriptionStatus::Active->value)])
+            ->withCount(['subscriptions' => fn ($q) => $q->where('status', SubscriptionStatus::Active->value)])
             ->withSum(['invoices as monthly_revenue_ils' => function ($q) {
                 $q->where('invoices.status', InvoiceStatus::Paid->value)
                     ->whereMonth('invoices.created_at', now()->month)
@@ -39,17 +39,17 @@ class GeneratorsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
         } elseif ($this->user->isOwner()) {
             $query->where('owner_id', $this->user->id);
         } elseif ($this->user->isTechnician()) {
-            $query->whereHas('technicians', fn($q) => $q->where('technicians.user_id', $this->user->id));
+            $query->whereHas('technicians', fn ($q) => $q->where('technicians.user_id', $this->user->id));
         } else {
             $query->whereRaw('1 = 0');
         }
 
         return $query
-            ->when($this->search, fn($q) => $q->where(function ($sub) {
+            ->when($this->search, fn ($q) => $q->where(function ($sub) {
                 $sub->where('name', 'like', "%{$this->search}%")
-                    ->orWhereHas('location', fn($locQ) => $locQ->where('city', 'like', "%{$this->search}%"));
+                    ->orWhereHas('location', fn ($locQ) => $locQ->where('city', 'like', "%{$this->search}%"));
             }))
-            ->when($this->status, fn($q) => $q->where('status', $this->status))
+            ->when($this->status, fn ($q) => $q->where('status', $this->status))
             ->latest();
     }
 

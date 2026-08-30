@@ -31,7 +31,7 @@ class AiChatTest extends TestCase
 
         $this->seed([RoleSeeder::class, PermissionSeeder::class, RolePermissionSeeder::class]);
 
-        $this->bindAiProvider(fn() => 'رد تجريبي من المساعد الذكي بخصوص المولد.');
+        $this->bindAiProvider(fn () => 'رد تجريبي من المساعد الذكي بخصوص المولد.');
     }
 
     protected function tearDown(): void
@@ -177,7 +177,7 @@ class AiChatTest extends TestCase
 
     public function test_starting_session_with_initial_message_gets_ai_reply(): void
     {
-        $this->bindAiProvider(fn() => 'يبدو أن المشكلة بفلتر الهواء، جربي تنظيفه.');
+        $this->bindAiProvider(fn () => 'يبدو أن المشكلة بفلتر الهواء، جربي تنظيفه.');
 
         [$subscriberUser, $generator] = $this->makeConnectedSubscriber();
 
@@ -228,7 +228,7 @@ class AiChatTest extends TestCase
 
     public function test_ai_provider_failure_returns_graceful_fallback_message(): void
     {
-        $this->bindAiProvider(fn() => '', throws: true);
+        $this->bindAiProvider(fn () => '', throws: true);
 
         [$subscriberUser, $generator] = $this->makeConnectedSubscriber();
         $sessionId = $this->postSession($subscriberUser, ['generator_id' => $generator->id])
@@ -257,7 +257,7 @@ class AiChatTest extends TestCase
 
     public function test_submit_chat_as_prediction_creates_fault_prediction_with_source_chat(): void
     {
-        $this->bindAiProvider(fn() => 'يبدو عطل باحتراق الوقود، ينصح بفحص الحاقن.');
+        $this->bindAiProvider(fn () => 'يبدو عطل باحتراق الوقود، ينصح بفحص الحاقن.');
 
         $owner = $this->makeOwner();
         $generator = Generator::factory()->create(['owner_id' => $owner->id]);

@@ -46,6 +46,7 @@ class UserPreferenceService
     ];
 
     private const TIME_KEYS = ['dnd_start_time', 'dnd_end_time'];
+
     private const DAYS_KEY = 'dnd_days';
 
     private function allowedKeysFor(User $user): array
@@ -70,7 +71,7 @@ class UserPreferenceService
             ->pluck('value', 'key');
 
         return collect($defaults)
-            ->map(fn($default, $key) => $stored->has($key)
+            ->map(fn ($default, $key) => $stored->has($key)
                 ? $this->castLike($default, $stored[$key])
                 : $default)
             ->all();
@@ -116,7 +117,7 @@ class UserPreferenceService
         }
 
         if (array_key_exists(self::DAYS_KEY, $data)) {
-            $days = array_filter(explode(',', (string) $data[self::DAYS_KEY]), fn($d) => $d !== '');
+            $days = array_filter(explode(',', (string) $data[self::DAYS_KEY]), fn ($d) => $d !== '');
 
             foreach ($days as $day) {
                 if (! ctype_digit($day) || (int) $day < 0 || (int) $day > 6) {

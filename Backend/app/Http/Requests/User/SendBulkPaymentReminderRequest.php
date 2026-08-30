@@ -37,7 +37,7 @@ class SendBulkPaymentReminderRequest extends FormRequest
     protected function passedValidation(): void
     {
         $validSubscriberIds = User::whereIn('id', $this->input('subscriber_ids'))
-            ->whereHas('roles', fn($q) => $q->where('name', Role::SUBSCRIBER->value))
+            ->whereHas('roles', fn ($q) => $q->where('name', Role::SUBSCRIBER->value))
             ->pluck('id')
             ->all();
 

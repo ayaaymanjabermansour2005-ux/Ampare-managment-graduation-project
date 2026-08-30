@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'validation_failed' => 'بيانات غير صالحة.',

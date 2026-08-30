@@ -21,11 +21,11 @@ class SubscriptionServiceRequestResource extends JsonResource
             'status' => $this->status,
             'review_note' => $this->review_note,
             'reviewed_at' => $this->reviewed_at?->toDateTimeString(),
-            'reviewed_by_name' => $this->whenLoaded('reviewedBy', fn() => $this->reviewedBy?->name),
+            'reviewed_by_name' => $this->whenLoaded('reviewedBy', fn () => $this->reviewedBy?->name),
             'fee_amount' => $this->fee_amount !== null ? (float) $this->fee_amount : null,
             'fee_currency' => $this->fee_currency,
-            'override_active' => $this->whenLoaded('override', fn() => $this->override?->isActive() ?? false),
-            'invoice' => $this->whenLoaded('invoice', fn() => $this->invoice ? [
+            'override_active' => $this->whenLoaded('override', fn () => $this->override?->isActive() ?? false),
+            'invoice' => $this->whenLoaded('invoice', fn () => $this->invoice ? [
                 'id' => $this->invoice->id,
                 'final_amount' => (float) $this->invoice->final_amount,
                 'currency' => $this->invoice->currency,
@@ -37,7 +37,7 @@ class SubscriptionServiceRequestResource extends JsonResource
                 'generator_id' => $this->subscription?->generator?->id,
                 'generator_name' => $this->subscription?->generator?->name,
             ],
-            'requested_by_name' => $this->whenLoaded('requestedBy', fn() => $this->requestedBy?->name),
+            'requested_by_name' => $this->whenLoaded('requestedBy', fn () => $this->requestedBy?->name),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

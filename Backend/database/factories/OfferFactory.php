@@ -7,8 +7,8 @@ use App\Enums\OfferStatus;
 use App\Enums\OfferTargetMode;
 use App\Models\Offer;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<Offer>
@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class OfferFactory extends Factory
 {
     protected $model = Offer::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

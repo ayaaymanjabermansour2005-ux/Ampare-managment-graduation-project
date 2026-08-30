@@ -18,7 +18,7 @@ class NeighborhoodDashboardService
         $neighborhoods = Neighborhood::query()
             ->withCount([
                 'generators',
-                'generators as active_generators_count' => fn($q) => $q->where('status', GeneratorStatus::Active->value),
+                'generators as active_generators_count' => fn ($q) => $q->where('status', GeneratorStatus::Active->value),
             ])
             ->get();
 
@@ -41,7 +41,7 @@ class NeighborhoodDashboardService
             ->pluck('total', 'neighborhood_id');
 
         return $neighborhoods
-            ->map(fn(Neighborhood $neighborhood) => [
+            ->map(fn (Neighborhood $neighborhood) => [
                 'neighborhood_id' => $neighborhood->id,
                 'neighborhood_name' => $neighborhood->name,
                 'generators_count' => $neighborhood->generators_count,

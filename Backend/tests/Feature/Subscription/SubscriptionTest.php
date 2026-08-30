@@ -2,17 +2,21 @@
 
 namespace Tests\Feature\Subscription;
 
+use App\Enums\OperatingSchedule;
 use App\Enums\Role as RoleEnum;
 use App\Models\Generator;
 use App\Models\Subscriber;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\GeneratorCapacityService;
+use App\Services\Pdf\SubscriptionContractPdfService;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class SubscriptionTest extends TestCase
@@ -810,12 +814,12 @@ class SubscriptionTest extends TestCase
             'status' => 'active',
         ]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
 
-        app(\App\Services\GeneratorCapacityService::class)->assertNoDuplicateContract(
+        app(GeneratorCapacityService::class)->assertNoDuplicateContract(
             $generator->fresh(),
             $meter,
-            \App\Enums\OperatingSchedule::from('day'),
+            OperatingSchedule::from('day'),
             null,
             null
         );
@@ -1072,7 +1076,7 @@ class SubscriptionTest extends TestCase
         [, $subscription] = $this->makeSubscriptionScenario(['status' => 'active']);
 
         app()->setLocale('ar');
-        $service = app(\App\Services\Pdf\SubscriptionContractPdfService::class);
+        $service = app(SubscriptionContractPdfService::class);
         $response = $service->stream($subscription->fresh());
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
@@ -1102,7 +1106,7 @@ class SubscriptionTest extends TestCase
         [, $subscription] = $this->makeSubscriptionScenario(['status' => 'active']);
 
         app()->setLocale('en');
-        $service = app(\App\Services\Pdf\SubscriptionContractPdfService::class);
+        $service = app(SubscriptionContractPdfService::class);
         $response = $service->stream($subscription->fresh());
 
         $this->assertStringStartsWith('%PDF', $response->getContent());

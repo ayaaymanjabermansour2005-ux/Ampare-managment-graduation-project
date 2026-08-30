@@ -70,6 +70,6 @@ class WhatsAppChannel
     {
         $phone = preg_replace('/[^0-9+]/', '', $phone);
 
-        return str_starts_with($phone, '+') ? $phone : '+' . $phone;
+        return str_starts_with($phone, '+') ? $phone : '+'.$phone;
     }
 }

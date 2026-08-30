@@ -6,8 +6,8 @@ use App\Enums\AiChatContextType;
 use App\Models\AiChatSession;
 use App\Models\Generator;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<AiChatSession>
@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class AiChatSessionFactory extends Factory
 {
     protected $model = AiChatSession::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

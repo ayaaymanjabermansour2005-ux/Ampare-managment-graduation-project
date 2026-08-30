@@ -24,22 +24,22 @@ class GeneratorOwnersExport implements FromQuery, ShouldAutoSize, WithHeadings, 
     public function query(): Builder
     {
         return User::query()
-            ->whereHas('roles', fn($q) => $q->where('name', 'generator_owner'))
+            ->whereHas('roles', fn ($q) => $q->where('name', 'generator_owner'))
             ->with('plan')
             ->withCount('generators')
             ->with(['generators' => function ($q) {
-                $q->withCount(['subscriptions as active_subscriptions_count' => fn($sq) => $sq->where('status', SubscriptionStatus::Active->value)])
+                $q->withCount(['subscriptions as active_subscriptions_count' => fn ($sq) => $sq->where('status', SubscriptionStatus::Active->value)])
                     ->withSum(['invoices as monthly_revenue_ils' => function ($sq) {
                         $sq->where('invoices.status', InvoiceStatus::Paid->value)
                             ->whereMonth('invoices.created_at', now()->month)
                             ->whereYear('invoices.created_at', now()->year);
                     }], 'final_amount_ils');
             }])
-            ->when($this->search, fn($q) => $q->where(function ($sub) {
+            ->when($this->search, fn ($q) => $q->where(function ($sub) {
                 $sub->where('name', 'like', "%{$this->search}%")
                     ->orWhere('email', 'like', "%{$this->search}%");
             }))
-            ->when($this->status, fn($q) => $q->where('status', $this->status))
+            ->when($this->status, fn ($q) => $q->where('status', $this->status))
             ->latest();
     }
 

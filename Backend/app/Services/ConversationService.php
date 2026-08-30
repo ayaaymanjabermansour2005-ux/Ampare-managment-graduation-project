@@ -51,10 +51,10 @@ class ConversationService
 
     public function list(User $user, int $perPage = 15): LengthAwarePaginator
     {
-        $unreadCount = fn($q) => $q->where('sender_id', '!=', $user->id)->where('is_read', false);
+        $unreadCount = fn ($q) => $q->where('sender_id', '!=', $user->id)->where('is_read', false);
 
         $query = Conversation::query()
-            ->with(['user1', 'user2', 'messages' => fn($q) => $q->latest()->limit(1)])
+            ->with(['user1', 'user2', 'messages' => fn ($q) => $q->latest()->limit(1)])
             ->withCount(['messages as unread_count' => $unreadCount]);
 
         if (! $user->isAdmin()) {
@@ -67,7 +67,7 @@ class ConversationService
     public function unreadMessagesCount(User $user): int
     {
         return Message::query()
-            ->whereHas('conversation', fn($q) => $q->visibleTo($user))
+            ->whereHas('conversation', fn ($q) => $q->visibleTo($user))
             ->where('sender_id', '!=', $user->id)
             ->where('is_read', false)
             ->count();

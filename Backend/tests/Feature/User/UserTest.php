@@ -3,12 +3,14 @@
 namespace Tests\Feature\User;
 
 use App\Enums\Role as RoleEnum;
+use App\Exports\UsersExport;
 use App\Models\Conversation;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class UserTest extends TestCase
@@ -117,7 +119,7 @@ class UserTest extends TestCase
         $this->assertNotNull($owner->email_verified_at);
 
         $this->actingAs($owner)
-            ->patchJson("/api/v1/users/{$owner->id}", ['email' => 'new-email-' . $owner->id . '@example.com'])
+            ->patchJson("/api/v1/users/{$owner->id}", ['email' => 'new-email-'.$owner->id.'@example.com'])
             ->assertOk();
 
         $this->assertNull($owner->fresh()->email_verified_at);
@@ -203,7 +205,7 @@ class UserTest extends TestCase
         $this->makeOwner();
 
         $response = $this->actingAs($admin)
-            ->getJson('/api/v1/users?role=' . RoleEnum::GENERATOR_OWNER->value);
+            ->getJson('/api/v1/users?role='.RoleEnum::GENERATOR_OWNER->value);
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data.data'));
@@ -287,7 +289,7 @@ class UserTest extends TestCase
 
     public function test_admin_can_export_all_users(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $this->makeOwner();
@@ -297,15 +299,15 @@ class UserTest extends TestCase
 
         $this->actingAs($admin)->get('/api/v1/users/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'users-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\UsersExport $export) => $export->query()->count() === $expectedCount
+            fn (UsersExport $export) => $export->query()->count() === $expectedCount
         );
     }
 
     public function test_user_export_respects_role_filter(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $this->makeOwner();
@@ -315,9 +317,9 @@ class UserTest extends TestCase
             ->get('/api/v1/users/export?role=subscriber')
             ->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'users-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\UsersExport $export) {
+            function (UsersExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->hasRole('subscriber');
@@ -366,7 +368,7 @@ class UserTest extends TestCase
 
     public function test_admin_can_export_owners(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
         $admin = $this->makeAdmin();
 
         $this->actingAs($admin)
@@ -403,7 +405,7 @@ class UserTest extends TestCase
 
     public function test_admin_can_export_subscribers(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
         $admin = $this->makeAdmin();
 
         $this->actingAs($admin)

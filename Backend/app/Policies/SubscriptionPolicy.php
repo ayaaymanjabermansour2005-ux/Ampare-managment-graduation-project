@@ -89,6 +89,7 @@ class SubscriptionPolicy
     {
         return false;
     }
+
     public function rateOwner(User $user, Subscription $subscription): bool
     {
         if (! $user->isSubscriber()) {

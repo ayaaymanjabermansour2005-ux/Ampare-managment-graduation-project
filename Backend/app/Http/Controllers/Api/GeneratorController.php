@@ -81,7 +81,7 @@ class GeneratorController extends Controller
                 $request->input('search'),
                 $request->input('status')
             ),
-            'generators-' . now()->format('Y-m-d') . '.xlsx'
+            'generators-'.now()->format('Y-m-d').'.xlsx'
         );
     }
 

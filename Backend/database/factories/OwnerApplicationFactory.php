@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Enums\OwnerApplicationStatus;
 use App\Models\OwnerApplication;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 class OwnerApplicationFactory extends Factory
 {
     protected $model = OwnerApplication::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

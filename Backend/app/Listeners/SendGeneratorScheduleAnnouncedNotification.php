@@ -28,7 +28,7 @@ class SendGeneratorScheduleAnnouncedNotification implements ShouldQueue
             $q->where('subscriptions.generator_id', $schedule->generator_id)
                 ->where('subscriptions.status', SubscriptionStatus::Active->value);
         })->get()->filter(
-            fn(User $u) => NotificationPreferenceGate::allows($u, 'notify_generator_schedule_announced')
+            fn (User $u) => NotificationPreferenceGate::allows($u, 'notify_generator_schedule_announced')
         );
 
         if ($subscriberUsers->isNotEmpty()) {

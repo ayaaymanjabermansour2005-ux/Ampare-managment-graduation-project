@@ -43,7 +43,7 @@ final class SubmitChatAsFaultPredictionAction
                 'recommendation' => $lastAssistantMessage?->content
                     ?? 'تم رفع المحادثة للمراجعة دون رد واضح من المساعد الذكي.',
                 'input_snapshot' => $session->messages
-                    ->map(fn($m) => ['role' => $m->role->value, 'content' => $m->content])
+                    ->map(fn ($m) => ['role' => $m->role->value, 'content' => $m->content])
                     ->all(),
                 'is_actual_fault' => false,
                 'status' => FaultPredictionStatus::Pending->value,

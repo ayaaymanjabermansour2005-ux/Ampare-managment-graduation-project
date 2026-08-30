@@ -73,7 +73,7 @@ class OfferService
 
     public function update(Offer $offer, array $data): Offer
     {
-        $offer->update(array_filter($data, fn($key) => in_array($key, [
+        $offer->update(array_filter($data, fn ($key) => in_array($key, [
             'title',
             'description',
             'discount_value',
@@ -102,7 +102,7 @@ class OfferService
             ->values();
 
         $query->whereIn('owner_id', $ownerIds)
-            ->where(fn($q) => $this->applyTargetVisibility($q, $subscriber));
+            ->where(fn ($q) => $this->applyTargetVisibility($q, $subscriber));
     }
 
     private function applyTargetVisibility($query, Subscriber $subscriber)
@@ -115,7 +115,7 @@ class OfferService
             })
             ->orWhere(function ($q) use ($subscriber) {
                 $q->where('target_mode', OfferTargetMode::Selected->value)
-                    ->whereHas('targetedSubscribers', fn($q3) => $q3->where('subscribers.id', $subscriber->id));
+                    ->whereHas('targetedSubscribers', fn ($q3) => $q3->where('subscribers.id', $subscriber->id));
             });
     }
 
@@ -138,14 +138,14 @@ class OfferService
             ->where('status', OfferStatus::Active->value)
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
-            ->where(fn($q) => $this->applyTargetVisibility($q, $subscriber))
+            ->where(fn ($q) => $this->applyTargetVisibility($q, $subscriber))
             ->get();
 
         if ($activeOffers->isEmpty()) {
             return null;
         }
 
-        $candidates = $activeOffers->map(fn(Offer $offer) => [
+        $candidates = $activeOffers->map(fn (Offer $offer) => [
             'offer' => $offer,
             'discount_amount' => $this->calculateDiscountAmount($offer, $baseAmount),
         ]);
@@ -159,7 +159,7 @@ class OfferService
         });
 
         $topSpecificity = $bySpecificity->first()['offer']->target_mode;
-        $pool = $candidates->filter(fn($c) => $c['offer']->target_mode === $topSpecificity);
+        $pool = $candidates->filter(fn ($c) => $c['offer']->target_mode === $topSpecificity);
 
         return $pool->sortByDesc('discount_amount')->first();
     }

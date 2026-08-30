@@ -3,8 +3,11 @@
 namespace Tests\Feature\Notification;
 
 use App\Enums\Role as RoleEnum;
+use App\Events\FaultReported;
+use App\Events\GeneratorHealthReportGenerated;
 use App\Models\Fault;
 use App\Models\Generator;
+use App\Models\GeneratorHealthReport;
 use App\Models\User;
 use App\Models\UserPreference;
 use App\Notifications\FaultReportedNotification;
@@ -63,14 +66,14 @@ class DoNotDisturbTest extends TestCase
         [$owner, $generator] = $this->makeOwnerWithGenerator();
         $this->enableDndForAllDayAllWeek($owner);
 
-        $report = \App\Models\GeneratorHealthReport::create([
+        $report = GeneratorHealthReport::create([
             'generator_id' => $generator->id,
             'period_start' => now()->subMonth()->startOfMonth()->toDateString(),
             'period_end' => now()->subMonth()->endOfMonth()->toDateString(),
             'risk_level' => 'low',
             'summary' => 'ملخص تجريبي.',
         ]);
-        event(new \App\Events\GeneratorHealthReportGenerated($report));
+        event(new GeneratorHealthReportGenerated($report));
 
         Notification::assertNotSentTo($owner, GeneratorHealthReportNotification::class);
     }
@@ -92,7 +95,7 @@ class DoNotDisturbTest extends TestCase
             'reported_at' => now(),
         ]);
 
-        event(new \App\Events\FaultReported($fault));
+        event(new FaultReported($fault));
 
         Notification::assertSentTo($owner, FaultReportedNotification::class);
     }
@@ -103,14 +106,14 @@ class DoNotDisturbTest extends TestCase
 
         [$owner, $generator] = $this->makeOwnerWithGenerator();
 
-        $report = \App\Models\GeneratorHealthReport::create([
+        $report = GeneratorHealthReport::create([
             'generator_id' => $generator->id,
             'period_start' => now()->subMonth()->startOfMonth()->toDateString(),
             'period_end' => now()->subMonth()->endOfMonth()->toDateString(),
             'risk_level' => 'low',
             'summary' => 'ملخص تجريبي.',
         ]);
-        event(new \App\Events\GeneratorHealthReportGenerated($report));
+        event(new GeneratorHealthReportGenerated($report));
 
         Notification::assertSentTo($owner, GeneratorHealthReportNotification::class);
     }

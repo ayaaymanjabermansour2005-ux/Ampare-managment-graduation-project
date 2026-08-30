@@ -143,11 +143,11 @@ class PaymentPolicy
 
             $subscriberId =
                 $payment
-                ->invoice
-                ?->subscription
-                ?->subscriberMeter
-                ?->subscriber
-                ?->user_id;
+                    ->invoice
+                    ?->subscription
+                    ?->subscriberMeter
+                    ?->subscriber
+                    ?->user_id;
 
             return (int) $subscriberId === (int) $user->id
                 &&

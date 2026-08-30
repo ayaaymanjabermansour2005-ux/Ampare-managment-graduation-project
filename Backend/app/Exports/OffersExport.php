@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Enums\OfferStatus;
 use App\Enums\OfferTargetMode;
 use App\Models\Offer;
 use App\Models\User;
@@ -69,7 +70,7 @@ class OffersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMappi
         }
 
         if (! $this->includeExpired) {
-            $query->where('status', \App\Enums\OfferStatus::Active->value)
+            $query->where('status', OfferStatus::Active->value)
                 ->where('end_date', '>=', now()->toDateString());
         }
 

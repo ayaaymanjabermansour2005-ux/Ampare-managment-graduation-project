@@ -35,7 +35,7 @@ class PaymentMethodService
         }
 
         if ($search) {
-            $query->whereHas('owner', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->whereHas('owner', fn ($q) => $q->where('name', 'like', "%{$search}%"));
         }
 
         return $query->latest()->paginate($perPage);
@@ -118,7 +118,7 @@ class PaymentMethodService
 
         $missing = array_filter(
             ['bank_name', 'account_name', 'account_number'],
-            fn(string $field) => empty($data[$field] ?? null)
+            fn (string $field) => empty($data[$field] ?? null)
         );
 
         if (! empty($missing)) {

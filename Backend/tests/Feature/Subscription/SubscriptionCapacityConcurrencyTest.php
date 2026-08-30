@@ -15,6 +15,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -57,7 +58,7 @@ class SubscriptionCapacityConcurrencyTest extends TestCase
         // in this suite; `migrate` is a safe no-op if the schema is current.
         Artisan::call('migrate', ['--force' => true]);
 
-        if (\Spatie\Permission\Models\Role::query()->count() === 0) {
+        if (Role::query()->count() === 0) {
             $this->seed([RoleSeeder::class, PermissionSeeder::class, RolePermissionSeeder::class]);
             $this->seededRolesInSetUp = true;
         }

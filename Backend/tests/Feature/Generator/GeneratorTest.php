@@ -347,7 +347,7 @@ class GeneratorTest extends TestCase
         ]);
 
         $response = $this->actingAs($requesterUser)
-            ->getJson('/api/v1/generators/available?' . http_build_query([
+            ->getJson('/api/v1/generators/available?'.http_build_query([
                 'subscriber_meter_id' => $requesterMeter->id,
                 'schedule' => 'day',
                 'requested_capacity_kw' => 5,
@@ -370,7 +370,7 @@ class GeneratorTest extends TestCase
         [, $requesterUser] = $this->makeSubscriberUser();
 
         $response = $this->actingAs($requesterUser)
-            ->getJson('/api/v1/generators/available?' . http_build_query([
+            ->getJson('/api/v1/generators/available?'.http_build_query([
                 'subscriber_meter_id' => $foreignMeter->id,
                 'schedule' => 'day',
                 'requested_capacity_kw' => 5,

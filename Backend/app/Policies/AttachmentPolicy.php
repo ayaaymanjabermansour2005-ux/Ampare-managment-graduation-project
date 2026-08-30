@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\AiChatMessage;
+use App\Models\Article;
 use App\Models\Attachment;
 use App\Models\Complaint;
 use App\Models\Generator;
@@ -88,7 +89,7 @@ class AttachmentPolicy
                 [optional($attachable->conversation)->user1_id, optional($attachable->conversation)->user2_id],
                 true
             ),
-            $attachable instanceof \App\Models\Article => (int) $attachable->author_id === (int) $user->id,
+            $attachable instanceof Article => (int) $attachable->author_id === (int) $user->id,
             default => false,
         };
     }

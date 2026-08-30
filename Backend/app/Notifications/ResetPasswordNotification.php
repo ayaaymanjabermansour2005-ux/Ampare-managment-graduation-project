@@ -27,7 +27,7 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('إعادة تعيين كلمة المرور - Ampare')
-            ->greeting('مرحبًا ' . $notifiable->name)
+            ->greeting('مرحبًا '.$notifiable->name)
             ->line('وصلنا طلب لإعادة تعيين كلمة مرور حسابك. اضغط الزر أدناه لإنشاء كلمة مرور جديدة.')
             ->action('إعادة تعيين كلمة المرور', $resetUrl)
             ->line("هذا الرابط صالح لمدة {$expireMinutes} دقيقة فقط.")

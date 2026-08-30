@@ -30,7 +30,7 @@ class PublicPlatformStatsController extends Controller
             return [
                 'subscribers_count' => Subscriber::count(),
                 'active_generators_count' => Generator::where('status', GeneratorStatus::Active->value)->count(),
-                'owners_count' => User::whereHas('roles', fn($q) => $q->where('name', 'generator_owner'))->count(),
+                'owners_count' => User::whereHas('roles', fn ($q) => $q->where('name', 'generator_owner'))->count(),
                 'meter_readings_count' => MeterReading::count(),
                 'uptime_percentage' => $this->uptimeCalculator->calculate(periodDays: 30),
             ];

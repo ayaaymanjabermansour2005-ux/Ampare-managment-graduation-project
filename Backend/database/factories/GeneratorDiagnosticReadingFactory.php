@@ -7,8 +7,8 @@ use App\Enums\VibrationLevel;
 use App\Models\Generator;
 use App\Models\GeneratorDiagnosticReading;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<GeneratorDiagnosticReading>
@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class GeneratorDiagnosticReadingFactory extends Factory
 {
     protected $model = GeneratorDiagnosticReading::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

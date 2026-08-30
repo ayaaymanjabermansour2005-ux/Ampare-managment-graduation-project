@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Enums\HealthRiskLevel;
 use App\Models\Generator;
 use App\Models\GeneratorHealthReport;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<GeneratorHealthReport>
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class GeneratorHealthReportFactory extends Factory
 {
     protected $model = GeneratorHealthReport::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

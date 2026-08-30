@@ -13,6 +13,9 @@ use App\Models\SubscriberMeter;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Notifications\InvoiceDueSoonNotification;
+use App\Services\InvoiceService;
+use App\Services\Pdf\InvoicePdfService;
+use App\Services\QrCodeService;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -229,7 +232,7 @@ class InvoiceTest extends TestCase
         [, $invoice] = $this->makeInvoiceFor($owner);
 
         app()->setLocale('ar');
-        $service = app(\App\Services\Pdf\InvoicePdfService::class);
+        $service = app(InvoicePdfService::class);
         $response = $service->stream($invoice->fresh());
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
@@ -242,8 +245,8 @@ class InvoiceTest extends TestCase
         $invoice->loadMissing(['subscription.generator.owner', 'subscription.subscriberMeter.subscriber.user', 'payments', 'commission', 'appliedOffer']);
 
         app()->setLocale('en');
-        $invoiceService = app(\App\Services\InvoiceService::class);
-        $qrService = app(\App\Services\QrCodeService::class);
+        $invoiceService = app(InvoiceService::class);
+        $qrService = app(QrCodeService::class);
 
         $html = view('pdf.invoice', [
             'invoice' => $invoice,
@@ -269,7 +272,7 @@ class InvoiceTest extends TestCase
         [, $invoice] = $this->makeInvoiceFor($owner);
 
         app()->setLocale('en');
-        $service = app(\App\Services\Pdf\InvoicePdfService::class);
+        $service = app(InvoicePdfService::class);
         $response = $service->stream($invoice->fresh());
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
@@ -325,7 +328,7 @@ class InvoiceTest extends TestCase
             ->assertOk();
 
         Excel::assertDownloaded(
-            'invoices-' . now()->format('Y-m-d') . '.xlsx',
+            'invoices-'.now()->format('Y-m-d').'.xlsx',
             function (InvoicesExport $export) use ($ownInvoice) {
                 $rows = $export->query()->get();
 
@@ -347,7 +350,7 @@ class InvoiceTest extends TestCase
             ->assertOk();
 
         Excel::assertDownloaded(
-            'invoices-' . now()->format('Y-m-d') . '.xlsx',
+            'invoices-'.now()->format('Y-m-d').'.xlsx',
             function (InvoicesExport $export) use ($ownInvoice) {
                 $rows = $export->query()->get();
 
@@ -517,7 +520,7 @@ class InvoiceTest extends TestCase
         ]);
         $invoice->load('subscription.subscriberMeter.subscriber.user');
 
-        (new SendInvoiceDueSoonNotification())->handle(new InvoiceDueSoon($invoice));
+        (new SendInvoiceDueSoonNotification)->handle(new InvoiceDueSoon($invoice));
 
         Notification::assertSentTo($subscriber, InvoiceDueSoonNotification::class);
     }

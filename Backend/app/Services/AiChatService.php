@@ -31,9 +31,9 @@ class AiChatService
             return Generator::query()
                 ->whereHas(
                     'subscriptions',
-                    fn($q) => $q->whereHas(
+                    fn ($q) => $q->whereHas(
                         'subscriberMeter.subscriber',
-                        fn($q2) => $q2->where('id', $subscriber->id)
+                        fn ($q2) => $q2->where('id', $subscriber->id)
                     )
                 )
                 ->get();

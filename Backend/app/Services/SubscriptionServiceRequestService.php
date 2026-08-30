@@ -15,7 +15,7 @@ class SubscriptionServiceRequestService
 
         if ($user->isAdmin()) {
         } elseif ($user->isOwner()) {
-            $query->whereHas('subscription.generator', fn($q) => $q->where('owner_id', $user->id));
+            $query->whereHas('subscription.generator', fn ($q) => $q->where('owner_id', $user->id));
         } elseif ($user->isSubscriber()) {
             $query->where('requested_by', $user->id);
         } else {

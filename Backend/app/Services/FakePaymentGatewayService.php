@@ -5,7 +5,9 @@ namespace App\Services;
 class FakePaymentGatewayService
 {
     private const DECLINE_CARD = '4000000000000002';
+
     private const INSUFFICIENT_FUNDS_CARD = '4000000000009995';
+
     private const EXPIRED_CARD = '4000000000000069';
 
     /**
@@ -37,7 +39,7 @@ class FakePaymentGatewayService
 
         return [
             'success' => true,
-            'transaction_reference' => 'GTW-' . strtoupper(bin2hex(random_bytes(6))),
+            'transaction_reference' => 'GTW-'.strtoupper(bin2hex(random_bytes(6))),
             'decline_reason' => null,
         ];
     }

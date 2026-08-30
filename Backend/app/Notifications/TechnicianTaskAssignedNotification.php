@@ -29,7 +29,7 @@ class TechnicianTaskAssignedNotification extends Notification implements ShouldQ
             'link_id' => $this->task->id,
             'type' => $this->task->type->value,
             'title' => 'أمر شغل جديد',
-            'message' => 'تم تعيينك على أمر شغل جديد: ' . $this->task->type->label(),
+            'message' => 'تم تعيينك على أمر شغل جديد: '.$this->task->type->label(),
         ];
     }
 

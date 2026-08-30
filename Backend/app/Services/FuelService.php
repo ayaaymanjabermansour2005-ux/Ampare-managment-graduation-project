@@ -140,7 +140,7 @@ class FuelService
 
         $producedKw = (float) MeterReading::whereHas(
             'subscription',
-            fn($q) => $q->where('generator_id', $generator->id)
+            fn ($q) => $q->where('generator_id', $generator->id)
         )
             ->whereBetween('reading_date', [$consumption['start_date'], $consumption['end_date']])
             ->sum('consumed_kw');
@@ -157,9 +157,6 @@ class FuelService
         ];
     }
 
-    /**
-     * @param  FuelReading|null  $preloadedReading     
-     */
     public function checkLowFuelLevel(Generator $generator, ?FuelReading $preloadedReading = null): ?array
     {
         if (! $generator->tank_capacity_liters) {

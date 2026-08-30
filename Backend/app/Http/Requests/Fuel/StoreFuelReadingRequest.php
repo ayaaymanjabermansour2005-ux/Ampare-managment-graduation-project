@@ -21,8 +21,8 @@ class StoreFuelReadingRequest extends FormRequest
             'attachments' => ['nullable', 'array'],
             'attachments.*' => [
                 'file',
-                'max:' . config('attachments.max_size_kb'),
-                'mimetypes:' . implode(',', config('attachments.allowed_mimes')),
+                'max:'.config('attachments.max_size_kb'),
+                'mimetypes:'.implode(',', config('attachments.allowed_mimes')),
             ],
         ];
     }

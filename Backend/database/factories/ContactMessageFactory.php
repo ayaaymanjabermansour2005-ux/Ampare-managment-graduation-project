@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Enums\ContactMessageStatus;
 use App\Enums\ContactMessageSubject;
 use App\Models\ContactMessage;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<ContactMessage>
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ContactMessageFactory extends Factory
 {
     protected $model = ContactMessage::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

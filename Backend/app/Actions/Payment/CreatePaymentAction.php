@@ -122,10 +122,6 @@ final class CreatePaymentAction
         };
     }
 
-    /**
-     *
-     * @return bool      
-     */
     private function assertWithinRemainingBalanceOrOverride(
         Invoice $invoice,
         float $amountIls,
@@ -147,7 +143,7 @@ final class CreatePaymentAction
         if (blank($overrideReason)) {
             throw ValidationException::withMessages([
                 'override_reason' => [
-                    "المبلغ (يعادل {$amountIls} شيكل) أكبر من المتبقي على الفاتورة ({$remainingIls} شيكل). " .
+                    "المبلغ (يعادل {$amountIls} شيكل) أكبر من المتبقي على الفاتورة ({$remainingIls} شيكل). ".
                         'لتسجيل تسوية إدارية تتجاوز الرصيد، يجب توضيح سبب التجاوز.',
                 ],
             ]);

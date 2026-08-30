@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Enums\AiChatMessageRole;
 use App\Models\AiChatMessage;
 use App\Models\AiChatSession;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<AiChatMessage>
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class AiChatMessageFactory extends Factory
 {
     protected $model = AiChatMessage::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

@@ -20,10 +20,10 @@ class OwnerMonthlyReportMail extends Mailable
 
     public function build(): static
     {
-        return $this->subject('تقريرك الشهري — ' . $this->month->translatedFormat('F Y'))
+        return $this->subject('تقريرك الشهري — '.$this->month->translatedFormat('F Y'))
             ->view('emails.owner-monthly-report')
             ->with(['owner' => $this->owner, 'month' => $this->month])
-            ->attachData($this->pdfBinary, 'monthly-report-' . $this->month->format('Y-m') . '.pdf', [
+            ->attachData($this->pdfBinary, 'monthly-report-'.$this->month->format('Y-m').'.pdf', [
                 'mime' => 'application/pdf',
             ]);
     }

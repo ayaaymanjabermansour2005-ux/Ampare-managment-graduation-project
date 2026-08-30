@@ -37,7 +37,7 @@ class PaymentFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function usd(float $rate = 3.70): static
@@ -55,7 +55,7 @@ class PaymentFactory extends Factory
 
     public function paid(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'paid',
             'paid_at' => now(),
         ]);
@@ -63,7 +63,7 @@ class PaymentFactory extends Factory
 
     public function needsCorrection(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'needs_correction',
             'review_note' => 'الإثبات غير واضح، يرجى إعادة الرفع.',
         ]);
@@ -71,7 +71,7 @@ class PaymentFactory extends Factory
 
     public function rejected(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'rejected',
             'rejection_reason' => 'المبلغ لا يطابق الفاتورة.',
         ]);

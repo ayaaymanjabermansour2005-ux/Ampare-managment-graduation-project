@@ -60,7 +60,7 @@ class ResubmitPaymentRequest extends FormRequest
             'attachments.*' => [
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
-                'max:' . config('attachments.max_size_kb'),
+                'max:'.config('attachments.max_size_kb'),
             ],
         ];
     }
@@ -69,7 +69,7 @@ class ResubmitPaymentRequest extends FormRequest
     {
         return [
             'attachments.*.mimes' => 'المرفقات يجب أن تكون JPG أو JPEG أو PNG أو PDF.',
-            'attachments.*.max' => 'حجم كل مرفق يجب ألا يتجاوز ' . round(config('attachments.max_size_kb') / 1024, 1) . ' ميجابايت.',
+            'attachments.*.max' => 'حجم كل مرفق يجب ألا يتجاوز '.round(config('attachments.max_size_kb') / 1024, 1).' ميجابايت.',
         ];
     }
 }

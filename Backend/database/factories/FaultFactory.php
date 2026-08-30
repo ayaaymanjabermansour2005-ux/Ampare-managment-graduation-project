@@ -30,12 +30,12 @@ class FaultFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function verified(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'verified',
             'verified_at' => now(),
         ]);
@@ -43,6 +43,6 @@ class FaultFactory extends Factory
 
     public function inRepair(): static
     {
-        return $this->verified()->state(fn() => ['status' => 'in_repair']);
+        return $this->verified()->state(fn () => ['status' => 'in_repair']);
     }
 }

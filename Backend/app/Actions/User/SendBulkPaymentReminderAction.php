@@ -22,7 +22,7 @@ final class SendBulkPaymentReminderAction
             ->whereIn('status', [InvoiceStatus::Pending->value, InvoiceStatus::Overdue->value])
             ->whereHas(
                 'subscription.subscriberMeter.subscriber.user',
-                fn($q) => $q->whereIn('users.id', $subscriberIds)
+                fn ($q) => $q->whereIn('users.id', $subscriberIds)
             )
             ->with('subscription.subscriberMeter.subscriber.user')
             ->get();

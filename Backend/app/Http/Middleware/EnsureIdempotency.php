@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\IdempotencyKey;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureIdempotency
@@ -108,7 +109,7 @@ class EnsureIdempotency
     private function computePayloadHash(Request $request): string
     {
         $normalize = function ($value) use (&$normalize) {
-            if ($value instanceof \Illuminate\Http\UploadedFile) {
+            if ($value instanceof UploadedFile) {
                 return [
                     '__file__' => true,
                     'name' => $value->getClientOriginalName(),

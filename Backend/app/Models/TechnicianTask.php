@@ -19,6 +19,7 @@ class TechnicianTask extends Model
 {
     /** @use HasFactory<TechnicianTaskFactory> */
     use HasFactory, LogsActivity, SoftDeletes;
+
     protected $fillable = [
         'generator_id',
         'taskable_type',

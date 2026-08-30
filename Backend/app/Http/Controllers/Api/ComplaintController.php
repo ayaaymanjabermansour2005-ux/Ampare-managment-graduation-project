@@ -118,7 +118,6 @@ class ComplaintController extends Controller
         return $this->success(message: 'تم حذف الشكوى بنجاح.');
     }
 
-
     public function storeAttachment(
         StoreComplaintAttachmentRequest $request,
         Complaint $complaint,

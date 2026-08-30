@@ -30,12 +30,12 @@ class SubscriptionFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function usd(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'currency' => 'USD',
             'agreed_price_per_kw' => fake()->randomFloat(2, 0.1, 0.4),
         ]);

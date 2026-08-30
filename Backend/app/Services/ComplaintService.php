@@ -23,11 +23,11 @@ class ComplaintService
                 $q->where('submitted_by', $user->id);
 
                 if ($user->isOwner()) {
-                    $q->orWhereHasMorph('complainable', [Generator::class], fn($g) => $g->where('owner_id', $user->id))
-                        ->orWhereHasMorph('complainable', [Fault::class], fn($g) => $g->whereHas('generator', fn($gg) => $gg->where('owner_id', $user->id)))
-                        ->orWhereHasMorph('complainable', [Subscription::class], fn($g) => $g->whereHas('generator', fn($gg) => $gg->where('owner_id', $user->id)))
-                        ->orWhereHasMorph('complainable', [Invoice::class], fn($g) => $g->whereHas('subscription.generator', fn($gg) => $gg->where('owner_id', $user->id)))
-                        ->orWhereHasMorph('complainable', [Payment::class], fn($g) => $g->whereHas('invoice.subscription.generator', fn($gg) => $gg->where('owner_id', $user->id)));
+                    $q->orWhereHasMorph('complainable', [Generator::class], fn ($g) => $g->where('owner_id', $user->id))
+                        ->orWhereHasMorph('complainable', [Fault::class], fn ($g) => $g->whereHas('generator', fn ($gg) => $gg->where('owner_id', $user->id)))
+                        ->orWhereHasMorph('complainable', [Subscription::class], fn ($g) => $g->whereHas('generator', fn ($gg) => $gg->where('owner_id', $user->id)))
+                        ->orWhereHasMorph('complainable', [Invoice::class], fn ($g) => $g->whereHas('subscription.generator', fn ($gg) => $gg->where('owner_id', $user->id)))
+                        ->orWhereHasMorph('complainable', [Payment::class], fn ($g) => $g->whereHas('invoice.subscription.generator', fn ($gg) => $gg->where('owner_id', $user->id)));
                 }
             });
         }
@@ -35,7 +35,7 @@ class ComplaintService
         if ($search) {
             $query->where(function (Builder $q) use ($search) {
                 $q->where('subject', 'like', "%{$search}%")
-                    ->orWhereHas('submitter', fn($u) => $u->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('submitter', fn ($u) => $u->where('name', 'like', "%{$search}%"));
             });
         }
 

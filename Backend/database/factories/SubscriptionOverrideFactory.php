@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Subscription;
 use App\Models\SubscriptionOverride;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<SubscriptionOverride>
@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class SubscriptionOverrideFactory extends Factory
 {
     protected $model = SubscriptionOverride::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

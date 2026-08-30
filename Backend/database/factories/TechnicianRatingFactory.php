@@ -6,8 +6,8 @@ use App\Models\Technician;
 use App\Models\TechnicianRating;
 use App\Models\TechnicianTask;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<TechnicianRating>
@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class TechnicianRatingFactory extends Factory
 {
     protected $model = TechnicianRating::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

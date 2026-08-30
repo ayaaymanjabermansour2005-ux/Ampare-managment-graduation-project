@@ -4,14 +4,16 @@ namespace Tests\Feature\Attachment;
 
 use App\Contracts\AiChatProviderContract;
 use App\Enums\Role as RoleEnum;
-use App\Exceptions\AiProviderException;
+use App\Models\AiChatMessage;
 use App\Models\Complaint;
 use App\Models\Conversation;
 use App\Models\Generator;
+use App\Models\Message;
 use App\Models\MeterReading;
 use App\Models\Subscriber;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
+use App\Models\Technician;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -19,6 +21,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Mockery;
 use Tests\TestCase;
 
@@ -71,7 +74,7 @@ class AttachmentExpansionTest extends TestCase
 
         $technicianUser = User::factory()->create();
         $technicianUser->assignRole(RoleEnum::TECHNICIAN->value);
-        $technician = \App\Models\Technician::factory()->create([
+        $technician = Technician::factory()->create([
             'user_id' => $technicianUser->id,
             'owner_id' => $owner->id,
         ]);
@@ -131,7 +134,7 @@ class AttachmentExpansionTest extends TestCase
 
         $unrelatedTechnicianUser = User::factory()->create();
         $unrelatedTechnicianUser->assignRole(RoleEnum::TECHNICIAN->value);
-        \App\Models\Technician::factory()->create([
+        Technician::factory()->create([
             'user_id' => $unrelatedTechnicianUser->id,
             'owner_id' => $this->makeOwner()->id,
         ]);
@@ -211,7 +214,7 @@ class AttachmentExpansionTest extends TestCase
         ]);
 
         $response = $this->actingAs($subscriberUser)
-            ->withHeader('Idempotency-Key', \Illuminate\Support\Str::uuid()->toString())
+            ->withHeader('Idempotency-Key', Str::uuid()->toString())
             ->post('/api/v1/ai-chat/sessions', [
                 'generator_id' => $generator->id,
                 'message' => 'شو هاد الصوت الغريب؟',
@@ -220,7 +223,7 @@ class AttachmentExpansionTest extends TestCase
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('attachments', [
-            'attachable_type' => \App\Models\AiChatMessage::class,
+            'attachable_type' => AiChatMessage::class,
             'document_type' => 'chat_attachment',
         ]);
     }
@@ -250,7 +253,7 @@ class AttachmentExpansionTest extends TestCase
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('attachments', [
-            'attachable_type' => \App\Models\Message::class,
+            'attachable_type' => Message::class,
             'document_type' => 'message_attachment',
         ]);
     }

@@ -32,17 +32,17 @@ class InvoicesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMap
 
         if ($this->user->isAdmin()) {
         } elseif ($this->user->isOwner()) {
-            $query->whereHas('subscription.generator', fn($q) => $q->where('owner_id', $this->user->id));
+            $query->whereHas('subscription.generator', fn ($q) => $q->where('owner_id', $this->user->id));
         } elseif ($this->user->isSubscriber()) {
-            $query->whereHas('subscription.subscriberMeter.subscriber', fn($q) => $q->where('user_id', $this->user->id));
+            $query->whereHas('subscription.subscriberMeter.subscriber', fn ($q) => $q->where('user_id', $this->user->id));
         } else {
             $query->whereRaw('1 = 0');
         }
 
         return $query
-            ->when($this->from, fn($q) => $q->whereDate('invoices.created_at', '>=', $this->from))
-            ->when($this->to, fn($q) => $q->whereDate('invoices.created_at', '<=', $this->to))
-            ->when($this->status, fn($q) => $q->where('status', $this->status))
+            ->when($this->from, fn ($q) => $q->whereDate('invoices.created_at', '>=', $this->from))
+            ->when($this->to, fn ($q) => $q->whereDate('invoices.created_at', '<=', $this->to))
+            ->when($this->status, fn ($q) => $q->where('status', $this->status))
             ->latest();
     }
 

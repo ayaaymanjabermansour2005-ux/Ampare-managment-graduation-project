@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Enums\ArticleCommentStatus;
 use App\Models\Article;
 use App\Models\ArticleComment;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<ArticleComment>
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ArticleCommentFactory extends Factory
 {
     protected $model = ArticleComment::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

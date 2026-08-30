@@ -77,7 +77,7 @@ class StoreMeterReadingRequest extends FormRequest
                         ->value('current_reading');
 
                     if ($previousReading !== null && (float) $value < (float) $previousReading) {
-                        $fail('لا يمكن أن تكون القراءة الحالية أقل من آخر قراءة مسجّلة (' . $previousReading . ').');
+                        $fail('لا يمكن أن تكون القراءة الحالية أقل من آخر قراءة مسجّلة ('.$previousReading.').');
                     }
                 },
             ],

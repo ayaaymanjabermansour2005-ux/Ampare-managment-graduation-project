@@ -713,14 +713,14 @@ class PaymentTest extends TestCase
         $response = $this->postPayment($admin, [
             'invoice_id' => $invoice->id,
             'amount' => 150.0,
-            'override_reason' => 'تسوية تصحيحية لخطأ سابق في احتساب الفاتورة رقم ' . $invoice->id . '.',
+            'override_reason' => 'تسوية تصحيحية لخطأ سابق في احتساب الفاتورة رقم '.$invoice->id.'.',
         ]);
 
         $response->assertStatus(201);
 
         $payment = Payment::first();
         $this->assertSame(
-            'تسوية تصحيحية لخطأ سابق في احتساب الفاتورة رقم ' . $invoice->id . '.',
+            'تسوية تصحيحية لخطأ سابق في احتساب الفاتورة رقم '.$invoice->id.'.',
             $payment->review_note
         );
         $this->assertSame($admin->id, $payment->reviewed_by);

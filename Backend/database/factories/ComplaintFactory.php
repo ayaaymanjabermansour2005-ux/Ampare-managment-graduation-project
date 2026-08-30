@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Enums\ComplaintStatus;
 use App\Models\Complaint;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<Complaint>
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ComplaintFactory extends Factory
 {
     protected $model = Complaint::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

@@ -6,8 +6,8 @@ use App\Enums\PaymentReviewStatus;
 use App\Models\Payment;
 use App\Models\PaymentReview;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<PaymentReview>
@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class PaymentReviewFactory extends Factory
 {
     protected $model = PaymentReview::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

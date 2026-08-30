@@ -83,6 +83,6 @@ class PaymentMethod extends Model
             return str_repeat('*', $length);
         }
 
-        return str_repeat('*', $length - 4) . mb_substr($value, -4);
+        return str_repeat('*', $length - 4).mb_substr($value, -4);
     }
 }

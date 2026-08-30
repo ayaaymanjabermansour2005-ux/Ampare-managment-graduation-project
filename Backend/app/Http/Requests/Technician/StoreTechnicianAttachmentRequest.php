@@ -25,8 +25,8 @@ class StoreTechnicianAttachmentRequest extends FormRequest
             'file' => [
                 'required',
                 'file',
-                'max:' . config('attachments.max_size_kb'),
-                'mimetypes:' . implode(',', config('attachments.allowed_mimes')),
+                'max:'.config('attachments.max_size_kb'),
+                'mimetypes:'.implode(',', config('attachments.allowed_mimes')),
             ],
             'description' => ['nullable', 'string', 'max:500'],
         ];

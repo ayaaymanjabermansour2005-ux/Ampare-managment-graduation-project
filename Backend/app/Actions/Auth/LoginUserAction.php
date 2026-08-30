@@ -22,7 +22,7 @@ class LoginUserAction
         $identifierField = $credentials->identifierField();
         $user = User::where($identifierField, $credentials->login)->first();
 
-        $genericError = fn() => throw ValidationException::withMessages([
+        $genericError = fn () => throw ValidationException::withMessages([
             'login' => ['بيانات الدخول غير صحيحة.'],
         ]);
 

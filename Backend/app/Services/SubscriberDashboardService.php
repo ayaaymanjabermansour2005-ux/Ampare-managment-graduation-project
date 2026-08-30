@@ -51,17 +51,17 @@ class SubscriberDashboardService
 
             'pending_invoices_count' => Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('subscriber_meter_id', $meterIds)
+                fn ($q) => $q->whereIn('subscriber_meter_id', $meterIds)
             )->where('status', InvoiceStatus::Pending)->count(),
 
             'overdue_invoices_count' => Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('subscriber_meter_id', $meterIds)
+                fn ($q) => $q->whereIn('subscriber_meter_id', $meterIds)
             )->where('status', InvoiceStatus::Overdue)->count(),
 
             'total_paid_ils' => (float) Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('subscriber_meter_id', $meterIds)
+                fn ($q) => $q->whereIn('subscriber_meter_id', $meterIds)
             )->where('status', InvoiceStatus::Paid)->sum('final_amount_ils'),
 
             'open_complaints_count' => Complaint::where('submitted_by', $user->id)

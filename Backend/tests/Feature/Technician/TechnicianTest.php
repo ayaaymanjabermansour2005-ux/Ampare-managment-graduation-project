@@ -3,6 +3,7 @@
 namespace Tests\Feature\Technician;
 
 use App\Enums\Role as RoleEnum;
+use App\Exports\TechniciansExport;
 use App\Models\Generator;
 use App\Models\Subscriber;
 use App\Models\Technician;
@@ -13,6 +14,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -566,7 +568,7 @@ class TechnicianTest extends TestCase
 
     public function test_admin_can_export_all_technicians(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $owner = $this->makeOwner();
@@ -576,15 +578,15 @@ class TechnicianTest extends TestCase
 
         $this->actingAs($admin)->get('/api/v1/technicians/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'technicians-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\TechniciansExport $export) => $export->query()->count() === 2
+            fn (TechniciansExport $export) => $export->query()->count() === 2
         );
     }
 
     public function test_owner_export_is_scoped_to_own_technicians_only(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $owner = $this->makeOwner();
         $otherOwner = $this->makeOwner();
@@ -593,9 +595,9 @@ class TechnicianTest extends TestCase
 
         $this->actingAs($owner)->get('/api/v1/technicians/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'technicians-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\TechniciansExport $export) use ($ownTechnician) {
+            function (TechniciansExport $export) use ($ownTechnician) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->id === $ownTechnician->id;

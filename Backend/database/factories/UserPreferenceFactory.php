@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\User;
 use App\Models\UserPreference;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<UserPreference>
@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class UserPreferenceFactory extends Factory
 {
     protected $model = UserPreference::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

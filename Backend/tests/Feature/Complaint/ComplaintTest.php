@@ -3,6 +3,7 @@
 namespace Tests\Feature\Complaint;
 
 use App\Enums\Role as RoleEnum;
+use App\Exports\ComplaintsExport;
 use App\Models\Complaint;
 use App\Models\Generator;
 use App\Models\Subscriber;
@@ -13,6 +14,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class ComplaintTest extends TestCase
@@ -495,7 +497,7 @@ class ComplaintTest extends TestCase
 
     public function test_admin_can_export_all_complaints_without_filters(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $submitter = User::factory()->create();
@@ -515,15 +517,15 @@ class ComplaintTest extends TestCase
 
         $this->actingAs($admin)->get('/api/v1/complaints/export')->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'complaints-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\ComplaintsExport $export) => $export->query()->count() === 2
+            fn (ComplaintsExport $export) => $export->query()->count() === 2
         );
     }
 
     public function test_export_respects_status_filter(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $submitter = User::factory()->create();
@@ -539,9 +541,9 @@ class ComplaintTest extends TestCase
             ->get('/api/v1/complaints/export?status=resolved')
             ->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'complaints-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\ComplaintsExport $export) {
+            function (ComplaintsExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->status->value === 'resolved';
@@ -551,7 +553,7 @@ class ComplaintTest extends TestCase
 
     public function test_export_respects_date_range_filter(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $submitter = User::factory()->create();
@@ -569,9 +571,9 @@ class ComplaintTest extends TestCase
             ->get('/api/v1/complaints/export?date_from='.now()->subDays(2)->toDateString())
             ->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'complaints-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\ComplaintsExport $export) {
+            function (ComplaintsExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->subject === 'حديثة';
@@ -581,7 +583,7 @@ class ComplaintTest extends TestCase
 
     public function test_export_with_search_and_status_combined_returns_empty_when_no_match(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $admin = $this->makeAdmin();
         $submitter = User::factory()->create();
@@ -594,15 +596,15 @@ class ComplaintTest extends TestCase
             ->get('/api/v1/complaints/export?search=عطل&status=resolved')
             ->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'complaints-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\ComplaintsExport $export) => $export->query()->count() === 0
+            fn (ComplaintsExport $export) => $export->query()->count() === 0
         );
     }
 
     public function test_subscriber_export_is_scoped_to_own_complaints_only(): void
     {
-        \Maatwebsite\Excel\Facades\Excel::fake();
+        Excel::fake();
 
         $owner = $this->makeOwner();
         [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
@@ -618,9 +620,9 @@ class ComplaintTest extends TestCase
             ->get('/api/v1/complaints/export')
             ->assertOk();
 
-        \Maatwebsite\Excel\Facades\Excel::assertDownloaded(
+        Excel::assertDownloaded(
             'complaints-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\ComplaintsExport $export) {
+            function (ComplaintsExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->subject === 'شكواي';

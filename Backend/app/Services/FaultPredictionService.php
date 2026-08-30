@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\FaultPredictionSource;
 use App\Enums\FaultPredictionStatus;
 use App\Enums\FaultPriority;
 use App\Enums\FaultSource;
@@ -24,7 +23,7 @@ class FaultPredictionService
 
         if ($user->isAdmin()) {
         } elseif ($user->isOwner()) {
-            $query->whereHas('generator', fn(Builder $q) => $q->where('owner_id', $user->id));
+            $query->whereHas('generator', fn (Builder $q) => $q->where('owner_id', $user->id));
         } else {
             $query->whereRaw('1 = 0');
         }
@@ -58,7 +57,7 @@ class FaultPredictionService
                 'generator_id' => $generator->id,
                 'fault_prediction_id' => $prediction->id,
                 'source' => FaultSource::AiPrediction->value,
-                'title' => 'عطل متوقع: ' . $prediction->prediction_type,
+                'title' => 'عطل متوقع: '.$prediction->prediction_type,
                 'description' => $prediction->recommendation ?? 'تم اكتشافه عبر نظام التوقع الذكي.',
                 'priority' => FaultPriority::High->value,
                 'status' => FaultStatus::Verified,

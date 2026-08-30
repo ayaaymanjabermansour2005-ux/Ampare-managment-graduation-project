@@ -81,7 +81,7 @@ class FuelServiceTest extends TestCase
 
         $meter = SubscriberMeter::create([
             'subscriber_id' => $subscriber->id,
-            'meter_number' => 'FUEL-TEST-' . uniqid(),
+            'meter_number' => 'FUEL-TEST-'.uniqid(),
             'status' => 'active',
         ]);
 

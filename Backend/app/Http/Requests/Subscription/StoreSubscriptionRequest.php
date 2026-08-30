@@ -5,10 +5,10 @@ namespace App\Http\Requests\Subscription;
 use App\Enums\BillingCycle;
 use App\Enums\OperatingSchedule;
 use App\Models\Subscription;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class StoreSubscriptionRequest extends FormRequest
 {

@@ -20,8 +20,8 @@ class StoreSubscriptionServiceRequestRequest extends FormRequest
             'subscription_id' => ['required', 'integer', 'exists:subscriptions,id'],
             'request_type' => ['required', Rule::enum(ServiceRequestType::class)],
             'event_type' => [
-                Rule::requiredIf(fn() => $this->input('request_type') === 'event'),
-                Rule::excludeIf(fn() => $this->input('request_type') !== 'event'),
+                Rule::requiredIf(fn () => $this->input('request_type') === 'event'),
+                Rule::excludeIf(fn () => $this->input('request_type') !== 'event'),
                 Rule::enum(ServiceRequestEventType::class),
             ],
             'description' => ['required', 'string', 'max:1000'],

@@ -20,7 +20,7 @@ class OwnerMonthlyReportService
         $end = $month->copy()->endOfMonth();
         $generatorIds = Generator::where('owner_id', $owner->id)->pluck('id');
 
-        $revenue = Invoice::whereHas('subscription.generator', fn($q) => $q->where('owner_id', $owner->id))
+        $revenue = Invoice::whereHas('subscription.generator', fn ($q) => $q->where('owner_id', $owner->id))
             ->where('status', InvoiceStatus::Paid->value)
             ->whereBetween('created_at', [$start, $end])
             ->sum('final_amount_ils');

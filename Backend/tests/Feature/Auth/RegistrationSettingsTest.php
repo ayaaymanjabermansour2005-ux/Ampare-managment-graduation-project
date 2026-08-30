@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Enums\Role as RoleEnum;
 use App\Enums\UserStatus;
+use App\Models\Neighborhood;
 use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -25,7 +26,7 @@ class RegistrationSettingsTest extends TestCase
 
     private function validPayload(): array
     {
-        $neighborhood = \App\Models\Neighborhood::factory()->create();
+        $neighborhood = Neighborhood::factory()->create();
 
         return [
             'name' => 'مستخدم تجريبي',

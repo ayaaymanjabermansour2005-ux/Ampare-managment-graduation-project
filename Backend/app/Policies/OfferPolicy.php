@@ -51,6 +51,7 @@ class OfferPolicy
         if (! $user->can('offers.update')) {
             return false;
         }
+
         return $user->isOwner()
             && $offer->owner_id === $user->id
             && $offer->status === OfferStatus::Active;
@@ -83,7 +84,7 @@ class OfferPolicy
         }
 
         $isRelatedToOwner = $subscriber->subscriptions()
-            ->whereHas('generator', fn($g) => $g->where('owner_id', $offer->owner_id))
+            ->whereHas('generator', fn ($g) => $g->where('owner_id', $offer->owner_id))
             ->exists();
 
         if (! $isRelatedToOwner) {

@@ -7,15 +7,19 @@ use App\Enums\PaymentMethodType;
 use App\Enums\Role as RoleEnum;
 use App\Enums\SubscriptionMeterTransferStatus;
 use App\Models\Article;
+use App\Models\Complaint;
 use App\Models\ContactMessage;
+use App\Models\Conversation;
+use App\Models\Fault;
 use App\Models\Generator;
 use App\Models\Invoice;
 use App\Models\Location;
+use App\Models\Message;
 use App\Models\MeterReading;
 use App\Models\Neighborhood;
-use App\Models\Conversation;
-use App\Models\Message;
+use App\Models\Offer;
 use App\Models\OwnerApplication;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\Subscriber;
@@ -32,7 +36,6 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -47,7 +50,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
         ]);
 
-        Model::unguarded(fn() => $this->seedCoreData());
+        Model::unguarded(fn () => $this->seedCoreData());
         $this->call(DemoAccountsSeeder::class);
         $this->call(PlatformUsersSeeder::class);
     }
@@ -541,7 +544,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // ==================== أعطال تجريبية (تغطية حالات متعدّدة) ====================
-        \App\Models\Fault::firstOrCreate(
+        Fault::firstOrCreate(
             ['generator_id' => $generatorA->id, 'title' => 'انقطاع متكرر بمولد الرمال'],
             [
                 'reported_by' => $subUser1->id,
@@ -553,7 +556,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Fault::firstOrCreate(
+        Fault::firstOrCreate(
             ['generator_id' => $generatorA->id, 'title' => 'صوت غريب من المحرك'],
             [
                 'reported_by' => $subUser2->id,
@@ -568,7 +571,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Fault::firstOrCreate(
+        Fault::firstOrCreate(
             ['generator_id' => $generatorB->id, 'title' => 'انخفاض في الجهد الكهربائي'],
             [
                 'reported_by' => $subUser3->id,
@@ -585,7 +588,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // ==================== شكاوى تجريبية (تغطية حالات متعدّدة) ====================
-        \App\Models\Complaint::firstOrCreate(
+        Complaint::firstOrCreate(
             ['submitted_by' => $subUser1->id, 'subject' => 'تأخر في الرد على الاستفسارات'],
             [
                 'description' => 'راسلت المالك من كم يوم وما في رد لسا.',
@@ -593,7 +596,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Complaint::firstOrCreate(
+        Complaint::firstOrCreate(
             ['submitted_by' => $subUser2->id, 'subject' => 'خطأ بقراءة العداد'],
             [
                 'description' => 'القراءة المسجَّلة أعلى بكتير من الاستهلاك الفعلي.',
@@ -601,7 +604,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Complaint::firstOrCreate(
+        Complaint::firstOrCreate(
             ['submitted_by' => $subUser3->id, 'subject' => 'مشكلة بموعد الصيانة'],
             [
                 'description' => 'تم الاتفاق على موعد صيانة ولم يحضر الفني.',
@@ -613,7 +616,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // ==================== عروض تجريبية ====================
-        \App\Models\Offer::firstOrCreate(
+        Offer::firstOrCreate(
             ['owner_id' => $owner1->id, 'title' => 'خصم الشتاء 10%'],
             [
                 'description' => 'خصم موسمي لكل المشتركين الحاليين.',
@@ -626,7 +629,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Offer::firstOrCreate(
+        Offer::firstOrCreate(
             ['owner_id' => $owner2->id, 'title' => 'عرض انتهى بالفعل'],
             [
                 'description' => 'عرض تجريبي منتهي، للتأكد من إخفائه من العروض الفعّالة.',
@@ -655,7 +658,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Payment::firstOrCreate(
+        Payment::firstOrCreate(
             ['invoice_id' => $invoicePaid->id, 'transaction_reference' => 'DEMO-PAY-0001'],
             [
                 'source' => 'subscriber', 'amount' => 20, 'currency' => 'ILS',
@@ -696,7 +699,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Payment::firstOrCreate(
+        Payment::firstOrCreate(
             ['invoice_id' => $invoicePartial->id, 'transaction_reference' => 'DEMO-PAY-0002'],
             [
                 'source' => 'subscriber', 'amount' => 12, 'currency' => 'ILS',

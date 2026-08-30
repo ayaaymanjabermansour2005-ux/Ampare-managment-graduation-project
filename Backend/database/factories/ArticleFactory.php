@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Article;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 class ArticleFactory extends Factory
 {
     protected $model = Article::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

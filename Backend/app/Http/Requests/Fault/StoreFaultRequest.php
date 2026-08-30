@@ -41,7 +41,7 @@ class StoreFaultRequest extends FormRequest
 
                     if ($user->isSubscriber()) {
                         $hasSubscription = $generator?->subscriptions()
-                            ->whereHas('subscriberMeter.subscriber', fn($q) => $q->where('user_id', $user->id))
+                            ->whereHas('subscriberMeter.subscriber', fn ($q) => $q->where('user_id', $user->id))
                             ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::Pending->value])
                             ->exists();
 

@@ -35,7 +35,7 @@ class InvoiceFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     public function usd(float $rate = 3.70): static
@@ -53,12 +53,12 @@ class InvoiceFactory extends Factory
 
     public function paid(): static
     {
-        return $this->state(fn() => ['status' => 'paid']);
+        return $this->state(fn () => ['status' => 'paid']);
     }
 
     public function overdue(): static
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => 'overdue',
             'due_date' => now()->subDays(5),
         ]);

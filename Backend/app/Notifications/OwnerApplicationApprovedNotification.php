@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -24,11 +25,11 @@ class OwnerApplicationApprovedNotification extends Notification implements Shoul
 
     public function toMail(object $notifiable): MailMessage
     {
-        $loginUrl = rtrim(config('app.frontend_url', config('app.url')), '/') . '/login';
+        $loginUrl = rtrim(config('app.frontend_url', config('app.url')), '/').'/login';
 
         return (new MailMessage)
             ->subject('تمت الموافقة على طلب انضمامك كصاحب مولد - أمبير')
-            ->greeting('مرحبًا ' . $notifiable->name . ' 🎉')
+            ->greeting('مرحبًا '.$notifiable->name.' 🎉')
             ->line('تمت مراجعة طلب انضمامك كصاحب مولد على منصة أمبير، وتمت الموافقة عليه.')
             ->line('يمكنك الآن تسجيل الدخول باستخدام بريدك الإلكتروني وكلمة السر يلي حددتها أثناء تقديم الطلب.')
             ->line('مولدك اللي قدّمت بياناته أثناء التسجيل تمت إضافته لحسابك، وهو الآن قيد المراجعة الفنية النهائية من فريقنا — بيوصلك إشعار منفصل فور تفعيله بالكامل.')
@@ -50,8 +51,8 @@ class OwnerApplicationApprovedNotification extends Notification implements Shoul
         ];
     }
 
-    public function toBroadcast(object $notifiable): \Illuminate\Notifications\Messages\BroadcastMessage
+    public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new \Illuminate\Notifications\Messages\BroadcastMessage($this->toArray($notifiable));
+        return new BroadcastMessage($this->toArray($notifiable));
     }
 }

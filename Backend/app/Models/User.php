@@ -22,7 +22,6 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\PlatformCommission;
 
 class User extends Authenticatable implements MustVerifyEmailContract
 {

@@ -77,18 +77,18 @@ return new class extends Migration
                 ->index();
         });
 
-        DB::statement("
+        DB::statement('
             ALTER TABLE users
             ADD COLUMN email_active_guard VARCHAR(255)
             GENERATED ALWAYS AS (CASE WHEN deleted_at IS NULL THEN email ELSE NULL END) STORED
-        ");
+        ');
         DB::statement('ALTER TABLE users ADD UNIQUE INDEX uq_users_email_active_guard (email_active_guard)');
 
-        DB::statement("
+        DB::statement('
             ALTER TABLE users
             ADD COLUMN phone_active_guard VARCHAR(255)
             GENERATED ALWAYS AS (CASE WHEN deleted_at IS NULL THEN phone ELSE NULL END) STORED
-        ");
+        ');
         DB::statement('ALTER TABLE users ADD UNIQUE INDEX uq_users_phone_active_guard (phone_active_guard)');
 
         DB::statement("

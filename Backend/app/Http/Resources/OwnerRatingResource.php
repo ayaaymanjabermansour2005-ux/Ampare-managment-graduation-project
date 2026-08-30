@@ -15,7 +15,7 @@ class OwnerRatingResource extends JsonResource
             'owner_id' => $this->owner_id,
             'rating' => $this->rating,
             'comment' => $this->comment,
-            'rated_by' => $this->whenLoaded('rater', fn() => [
+            'rated_by' => $this->whenLoaded('rater', fn () => [
                 'id' => $this->rater->id,
                 'name' => $this->rater->name,
             ]),

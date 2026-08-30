@@ -25,20 +25,20 @@ class SubscribersExport implements FromQuery, ShouldAutoSize, WithHeadings, With
     public function query(): Builder
     {
         return User::query()
-            ->whereHas('roles', fn($q) => $q->where('name', 'subscriber'))
+            ->whereHas('roles', fn ($q) => $q->where('name', 'subscriber'))
             ->with([
                 'subscriber.subscriptions.generator',
-                'subscriber.subscriptions.invoices' => fn($q) => $q->whereIn('invoices.status', [
+                'subscriber.subscriptions.invoices' => fn ($q) => $q->whereIn('invoices.status', [
                     InvoiceStatus::Pending->value,
                     InvoiceStatus::Overdue->value,
                     InvoiceStatus::PartiallyPaid->value,
                 ]),
             ])
-            ->when($this->search, fn($q) => $q->where(function ($sub) {
+            ->when($this->search, fn ($q) => $q->where(function ($sub) {
                 $sub->where('name', 'like', "%{$this->search}%")
                     ->orWhere('email', 'like', "%{$this->search}%");
             }))
-            ->when($this->status, fn($q) => $q->where('status', $this->status))
+            ->when($this->status, fn ($q) => $q->where('status', $this->status))
             ->latest();
     }
 

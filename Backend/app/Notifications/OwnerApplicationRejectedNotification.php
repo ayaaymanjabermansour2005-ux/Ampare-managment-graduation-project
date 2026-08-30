@@ -32,11 +32,11 @@ class OwnerApplicationRejectedNotification extends Notification implements Shoul
     {
         $message = (new MailMessage)
             ->subject('بخصوص طلب انضمامك كصاحب مولد - أمبير')
-            ->greeting('مرحبًا ' . $this->application->name)
+            ->greeting('مرحبًا '.$this->application->name)
             ->line('راجعنا طلب انضمامك كصاحب مولد على منصة أمبير، وللأسف ما قدرنا نوافق عليه بهاي المرحلة.');
 
         if (! blank($this->reason)) {
-            $message->line('السبب: ' . $this->reason);
+            $message->line('السبب: '.$this->reason);
         }
 
         return $message
@@ -51,6 +51,6 @@ class OwnerApplicationRejectedNotification extends Notification implements Shoul
             $message .= "\nالسبب: {$this->reason}";
         }
 
-        return $message . "\nتقدر تتواصل معنا أو تعيد تقديم الطلب ببيانات محدّثة.";
+        return $message."\nتقدر تتواصل معنا أو تعيد تقديم الطلب ببيانات محدّثة.";
     }
 }

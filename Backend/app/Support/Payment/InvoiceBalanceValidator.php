@@ -6,22 +6,17 @@ use App\Enums\PaymentStatus;
 use App\Models\Invoice;
 use App\Support\Money;
 
-
 final class InvoiceBalanceValidator
 {
     private const SCALE = 2;
 
-    /**
-     *
-     * @param  int|null  $excludingPaymentId  
-     */
     public function remainingIls(Invoice $invoice, ?int $excludingPaymentId = null): float
     {
         $paidIls = (float) $invoice->payments()
             ->where('status', PaymentStatus::Paid)
             ->when(
                 $excludingPaymentId,
-                fn($q) => $q->where('id', '!=', $excludingPaymentId)
+                fn ($q) => $q->where('id', '!=', $excludingPaymentId)
             )
             ->sum('amount_ils');
 

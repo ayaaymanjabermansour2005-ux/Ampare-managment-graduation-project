@@ -22,7 +22,7 @@ class CommissionRateResolver
                 ->where('is_active', true)
                 ->orderBy('min_generators_count')
                 ->get()
-                ->first(fn(CommissionTier $tier) => $tier->matches($generatorsCount));
+                ->first(fn (CommissionTier $tier) => $tier->matches($generatorsCount));
 
             if ($tier) {
                 return (float) $tier->commission_rate;

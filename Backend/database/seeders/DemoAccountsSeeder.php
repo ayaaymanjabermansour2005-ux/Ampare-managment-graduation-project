@@ -23,7 +23,7 @@ class DemoAccountsSeeder extends Seeder
 {
     public function run(): void
     {
-        Model::unguarded(fn() => $this->seed());
+        Model::unguarded(fn () => $this->seed());
     }
 
     private function seed(): void

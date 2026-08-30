@@ -28,11 +28,11 @@ return new class extends Migration
             $table->index(['owner_id', 'status']);
         });
 
-        DB::statement("
+        DB::statement('
             ALTER TABLE technicians
             ADD COLUMN user_id_active_guard BIGINT UNSIGNED
             GENERATED ALWAYS AS (CASE WHEN deleted_at IS NULL THEN user_id ELSE NULL END) STORED
-        ");
+        ');
         DB::statement('ALTER TABLE technicians ADD UNIQUE INDEX uq_technicians_user_id_active_guard (user_id_active_guard)');
 
         DB::statement("

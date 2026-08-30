@@ -5,6 +5,8 @@ namespace Tests\Feature\Generator;
 use App\Enums\Role as RoleEnum;
 use App\Models\Generator;
 use App\Models\User;
+use App\Notifications\GeneratorRejectedNotification;
+use App\Notifications\GeneratorVerifiedNotification;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -90,7 +92,7 @@ class GeneratorVerificationTest extends TestCase
         $this->assertSame($admin->id, $generator->fresh()->verified_by);
         $this->assertNotNull($generator->fresh()->verified_at);
 
-        Notification::assertSentTo($owner, \App\Notifications\GeneratorVerifiedNotification::class);
+        Notification::assertSentTo($owner, GeneratorVerifiedNotification::class);
     }
 
     public function test_owner_cannot_verify_own_generator(): void
@@ -142,7 +144,7 @@ class GeneratorVerificationTest extends TestCase
         $this->assertSame('rejected', $generator->fresh()->status->value);
         $this->assertSame('رخصة التشغيل غير واضحة، يرجى إعادة الرفع.', $generator->fresh()->rejection_reason);
 
-        Notification::assertSentTo($owner, \App\Notifications\GeneratorRejectedNotification::class);
+        Notification::assertSentTo($owner, GeneratorRejectedNotification::class);
     }
 
     public function test_reject_requires_reason(): void

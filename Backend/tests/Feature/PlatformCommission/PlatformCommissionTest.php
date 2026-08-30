@@ -183,7 +183,7 @@ class PlatformCommissionTest extends TestCase
         $this->makeCommission($owner, 'earned');
 
         $this->actingAs($owner)
-            ->get('/api/v1/platform-commissions/report-pdf?' . http_build_query([
+            ->get('/api/v1/platform-commissions/report-pdf?'.http_build_query([
                 'from' => now()->subMonth()->toDateString(),
                 'to' => now()->toDateString(),
             ]))
@@ -206,7 +206,7 @@ class PlatformCommissionTest extends TestCase
         $this->makeCommission($owner, 'earned');
 
         $this->actingAs($admin)
-            ->get('/api/v1/platform-commissions/report-pdf?' . http_build_query(['owner_id' => $owner->id]))
+            ->get('/api/v1/platform-commissions/report-pdf?'.http_build_query(['owner_id' => $owner->id]))
             ->assertOk();
     }
 
@@ -217,7 +217,7 @@ class PlatformCommissionTest extends TestCase
         $this->makeCommission($otherOwner, 'earned');
 
         $this->actingAs($owner)
-            ->get('/api/v1/platform-commissions/report-pdf?' . http_build_query(['owner_id' => $otherOwner->id]))
+            ->get('/api/v1/platform-commissions/report-pdf?'.http_build_query(['owner_id' => $otherOwner->id]))
             ->assertOk();
     }
 
@@ -237,8 +237,8 @@ class PlatformCommissionTest extends TestCase
             ->assertOk();
 
         Excel::assertDownloaded(
-            'commissions-' . now()->format('Y-m-d') . '.xlsx',
-            fn(PlatformCommissionsExport $export) => $export->query()->count() === 2
+            'commissions-'.now()->format('Y-m-d').'.xlsx',
+            fn (PlatformCommissionsExport $export) => $export->query()->count() === 2
         );
     }
 
@@ -257,7 +257,7 @@ class PlatformCommissionTest extends TestCase
             ->assertOk();
 
         Excel::assertDownloaded(
-            'commissions-' . now()->format('Y-m-d') . '.xlsx',
+            'commissions-'.now()->format('Y-m-d').'.xlsx',
             function (PlatformCommissionsExport $export) use ($ownCommission) {
                 $rows = $export->query()->get();
 

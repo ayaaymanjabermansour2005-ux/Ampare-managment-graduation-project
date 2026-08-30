@@ -28,7 +28,7 @@ class ConversationTest extends TestCase
     }
 
     /**
-     * @return array{0: User, 1: User}   
+     * @return array{0: User, 1: User}
      */
     private function makeRelatedOwnerAndSubscriber(): array
     {
@@ -71,7 +71,7 @@ class ConversationTest extends TestCase
     }
 
     /**
-     * @return array{0: User, 1: Technician}  
+     * @return array{0: User, 1: Technician}
      */
     private function makePrivateTechnicianForOwner(User $owner): array
     {
@@ -355,7 +355,7 @@ class ConversationTest extends TestCase
             'id' => $conversationId,
         ]);
 
-        $conversation = \App\Models\Conversation::findOrFail($conversationId);
+        $conversation = Conversation::findOrFail($conversationId);
         $this->assertTrue(
             in_array($owner->id, [$conversation->user1_id, $conversation->user2_id], true)
         );
@@ -377,7 +377,7 @@ class ConversationTest extends TestCase
             ])
             ->assertStatus(201);
 
-        $conversation = \App\Models\Conversation::findOrFail($response->json('data.id'));
+        $conversation = Conversation::findOrFail($response->json('data.id'));
         $this->assertTrue(
             in_array($owner->id, [$conversation->user1_id, $conversation->user2_id], true)
         );

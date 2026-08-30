@@ -22,7 +22,7 @@ class UpdateOwnerCommissionSettingsRequest extends FormRequest
                 'numeric',
                 'min:0',
                 'max:100',
-                Rule::requiredIf(fn() => $this->input('commission_mode') === CommissionMode::Fixed->value),
+                Rule::requiredIf(fn () => $this->input('commission_mode') === CommissionMode::Fixed->value),
             ],
         ];
     }

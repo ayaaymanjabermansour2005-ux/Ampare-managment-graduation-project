@@ -24,11 +24,11 @@ return new class extends Migration
             $table->index(['subscriber_id', 'status']);
         });
 
-        DB::statement("
+        DB::statement('
             ALTER TABLE subscriber_meters
             ADD COLUMN meter_number_active_guard VARCHAR(50)
             GENERATED ALWAYS AS (CASE WHEN deleted_at IS NULL THEN meter_number ELSE NULL END) STORED
-        ");
+        ');
         DB::statement('ALTER TABLE subscriber_meters ADD UNIQUE INDEX uq_subscriber_meters_number_active_guard (meter_number_active_guard)');
 
         DB::statement("

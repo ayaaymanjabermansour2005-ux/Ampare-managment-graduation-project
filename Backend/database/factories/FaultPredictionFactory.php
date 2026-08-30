@@ -4,10 +4,10 @@ namespace Database\Factories;
 
 use App\Enums\FaultPredictionSource;
 use App\Enums\FaultPredictionStatus;
-use App\Models\Generator;
 use App\Models\FaultPrediction;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Generator;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<FaultPrediction>
@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class FaultPredictionFactory extends Factory
 {
     protected $model = FaultPrediction::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

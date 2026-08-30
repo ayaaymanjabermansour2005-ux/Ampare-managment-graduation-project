@@ -38,7 +38,7 @@ class UserFactory extends Factory
 
     public function newModel(array $attributes = [])
     {
-        return Model::unguarded(fn() => parent::newModel($attributes));
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 
     /**
@@ -46,18 +46,18 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
     }
 
     public function inactive(): static
     {
-        return $this->state(fn() => ['status' => UserStatus::Inactive->value]);
+        return $this->state(fn () => ['status' => UserStatus::Inactive->value]);
     }
 
     public function suspended(): static
     {
-        return $this->state(fn() => ['status' => UserStatus::Suspended->value]);
+        return $this->state(fn () => ['status' => UserStatus::Suspended->value]);
     }
 }

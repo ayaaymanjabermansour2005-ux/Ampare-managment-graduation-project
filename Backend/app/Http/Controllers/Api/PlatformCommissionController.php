@@ -81,6 +81,7 @@ class PlatformCommissionController extends Controller
         }
 
         $owner = User::findOrFail($ownerId);
+
         return $pdfService->download($owner, $request->input('from'), $request->input('to'));
     }
 
@@ -94,7 +95,7 @@ class PlatformCommissionController extends Controller
                 $request->input('from'),
                 $request->input('to')
             ),
-            'commissions-' . now()->format('Y-m-d') . '.xlsx'
+            'commissions-'.now()->format('Y-m-d').'.xlsx'
         );
     }
 }

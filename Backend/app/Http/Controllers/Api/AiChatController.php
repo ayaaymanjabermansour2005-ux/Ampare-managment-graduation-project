@@ -122,7 +122,6 @@ class AiChatController extends Controller
         );
     }
 
-
     public function submitAsFaultReport(
         AiChatSession $aiChatSession,
         SubmitChatAsFaultReportAction $action

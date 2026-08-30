@@ -19,7 +19,7 @@ node_modules/
 vendor/
 *.log
 .claude/
-
+.docs/audit
 
 # Archives
 Backend.rar

@@ -30,6 +30,6 @@ class OwnerMonthlyReportPdfService
 
     protected function fileName(User $owner, Carbon $month): string
     {
-        return 'monthly-report-' . $owner->id . '-' . $month->format('Y-m') . '.pdf';
+        return 'monthly-report-'.$owner->id.'-'.$month->format('Y-m').'.pdf';
     }
 }

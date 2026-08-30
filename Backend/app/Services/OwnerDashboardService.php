@@ -34,22 +34,22 @@ class OwnerDashboardService
 
             'pending_invoices_count' => Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('generator_id', $generatorIds)
+                fn ($q) => $q->whereIn('generator_id', $generatorIds)
             )->where('status', InvoiceStatus::Pending)->count(),
 
             'overdue_invoices_count' => Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('generator_id', $generatorIds)
+                fn ($q) => $q->whereIn('generator_id', $generatorIds)
             )->where('status', InvoiceStatus::Overdue)->count(),
 
             'total_revenue_ils' => (float) Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('generator_id', $generatorIds)
+                fn ($q) => $q->whereIn('generator_id', $generatorIds)
             )->where('status', InvoiceStatus::Paid)->sum('final_amount_ils'),
 
             'outstanding_invoices_total_ils' => (float) Invoice::whereHas(
                 'subscription',
-                fn($q) => $q->whereIn('generator_id', $generatorIds)
+                fn ($q) => $q->whereIn('generator_id', $generatorIds)
             )->whereIn('status', [
                 InvoiceStatus::Pending->value,
                 InvoiceStatus::PartiallyPaid->value,
@@ -58,7 +58,7 @@ class OwnerDashboardService
 
             'pending_payments_count' => Payment::whereHas(
                 'invoice.subscription',
-                fn($q) => $q->whereIn('generator_id', $generatorIds)
+                fn ($q) => $q->whereIn('generator_id', $generatorIds)
             )->where('status', PaymentStatus::Pending)->count(),
 
             'open_faults_count' => Fault::whereIn('generator_id', $generatorIds)

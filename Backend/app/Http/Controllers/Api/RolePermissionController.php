@@ -18,7 +18,7 @@ class RolePermissionController extends Controller
     {
         abort_unless($policy->view(auth()->user()), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
 
-        $roles = Role::with('permissions')->get()->map(fn($role) => [
+        $roles = Role::with('permissions')->get()->map(fn ($role) => [
             'id' => $role->id,
             'name' => $role->name,
             'permissions' => $role->permissions->pluck('name'),

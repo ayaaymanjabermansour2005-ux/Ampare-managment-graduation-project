@@ -24,9 +24,9 @@ class InvoiceDueSoonNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('فاتورتك على وشك الاستحقاق')
-            ->greeting('مرحبًا ' . $notifiable->name)
+            ->greeting('مرحبًا '.$notifiable->name)
             ->line("لديك فاتورة بقيمة {$this->invoice->final_amount} {$this->invoice->currency->value} مستحقة بتاريخ {$this->invoice->due_date->format('Y-m-d')}.")
-            ->action('عرض الفاتورة', rtrim(config('app.frontend_url', config('app.url')), '/') . '/invoices/' . $this->invoice->id)
+            ->action('عرض الفاتورة', rtrim(config('app.frontend_url', config('app.url')), '/').'/invoices/'.$this->invoice->id)
             ->line('يرجى السداد قبل الموعد لتفادي أي تأخير.');
     }
 

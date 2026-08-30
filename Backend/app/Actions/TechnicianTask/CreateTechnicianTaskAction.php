@@ -29,7 +29,7 @@ final class CreateTechnicianTaskAction
         }
 
         return DB::transaction(function () use ($data, $generator, $technician, $user) {
-            $task = new TechnicianTask();
+            $task = new TechnicianTask;
 
             $task->forceFill([
                 'generator_id' => $generator->id,

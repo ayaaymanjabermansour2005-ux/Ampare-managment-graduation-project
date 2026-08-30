@@ -12,16 +12,13 @@ use Illuminate\Validation\ValidationException;
 
 class ExchangeRateService
 {
-    /**
-     * @return float|null 
-     */
     public function usdToIls(): ?float
     {
         return Cache::remember('exchange_rate:usd_ils', now()->addMinutes(5), function () {
             try {
                 $response = Http::timeout(5)
                     ->retry(2, 200)
-                    ->get(config('services.exchange_rate.base_url') . '/latest', [
+                    ->get(config('services.exchange_rate.base_url').'/latest', [
                         'from' => 'USD',
                         'to' => 'ILS',
                     ]);

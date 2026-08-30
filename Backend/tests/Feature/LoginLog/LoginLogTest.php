@@ -3,6 +3,7 @@
 namespace Tests\Feature\LoginLog;
 
 use App\Enums\Role as RoleEnum;
+use App\Exports\LoginLogsExport;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -67,7 +68,7 @@ class LoginLogTest extends TestCase
 
         Excel::assertDownloaded(
             'login-logs-'.now()->format('Y-m-d').'.xlsx',
-            fn (\App\Exports\LoginLogsExport $export) => $export->query()->count() === 2
+            fn (LoginLogsExport $export) => $export->query()->count() === 2
         );
     }
 
@@ -84,7 +85,7 @@ class LoginLogTest extends TestCase
 
         Excel::assertDownloaded(
             'login-logs-'.now()->format('Y-m-d').'.xlsx',
-            function (\App\Exports\LoginLogsExport $export) {
+            function (LoginLogsExport $export) {
                 $rows = $export->query()->get();
 
                 return $rows->count() === 1 && $rows->first()->description === 'login_failed';

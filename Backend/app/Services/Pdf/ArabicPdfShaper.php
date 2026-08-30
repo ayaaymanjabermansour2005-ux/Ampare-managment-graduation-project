@@ -16,7 +16,7 @@ class ArabicPdfShaper
 {
     public function shapeHtml(string $html): string
     {
-        $arabic = new Arabic();
+        $arabic = new Arabic;
 
         return (string) preg_replace_callback(
             '/>([^<]+)</u',

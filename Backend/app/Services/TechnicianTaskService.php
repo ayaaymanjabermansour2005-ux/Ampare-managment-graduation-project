@@ -14,9 +14,9 @@ class TechnicianTaskService
 
         if ($user->isAdmin()) {
         } elseif ($user->isOwner()) {
-            $query->whereHas('generator', fn($q) => $q->where('owner_id', $user->id));
+            $query->whereHas('generator', fn ($q) => $q->where('owner_id', $user->id));
         } elseif ($user->isTechnician()) {
-            $query->whereHas('technician', fn($q) => $q->where('user_id', $user->id));
+            $query->whereHas('technician', fn ($q) => $q->where('user_id', $user->id));
         } else {
             $query->whereRaw('1 = 0');
         }

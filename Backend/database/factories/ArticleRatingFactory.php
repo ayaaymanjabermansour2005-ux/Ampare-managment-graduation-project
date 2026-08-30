@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Article;
 use App\Models\ArticleRating;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<ArticleRating>
@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ArticleRatingFactory extends Factory
 {
     protected $model = ArticleRating::class;
+
     public function newModel(array $attributes = [])
     {
         return Model::unguarded(fn () => parent::newModel($attributes));

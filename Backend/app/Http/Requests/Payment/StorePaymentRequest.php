@@ -49,7 +49,7 @@ class StorePaymentRequest extends FormRequest
     }
 
     /**
-     * @return array{amount_ils: float, remaining_ils: float, is_within_balance: bool}|null 
+     * @return array{amount_ils: float, remaining_ils: float, is_within_balance: bool}|null
      */
     protected function balanceCheck(): ?array
     {
@@ -241,7 +241,7 @@ class StorePaymentRequest extends FormRequest
             'attachments.*' => [
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
-                'max:' . config('attachments.max_size_kb'),
+                'max:'.config('attachments.max_size_kb'),
             ],
 
             'transaction_reference' => [
@@ -294,7 +294,7 @@ class StorePaymentRequest extends FormRequest
 
                     if (! $check['is_within_balance'] && blank($value)) {
                         $fail(
-                            "المبلغ (يعادل {$check['amount_ils']} شيكل) أكبر من الرصيد المتبقي على الفاتورة ({$check['remaining_ils']} شيكل). " .
+                            "المبلغ (يعادل {$check['amount_ils']} شيكل) أكبر من الرصيد المتبقي على الفاتورة ({$check['remaining_ils']} شيكل). ".
                                 'لتسجيل تسوية إدارية تتجاوز الرصيد، يجب إدخال سبب التجاوز.'
                         );
                     }
@@ -342,7 +342,7 @@ class StorePaymentRequest extends FormRequest
 
             'attachments.*.mimes' => 'المرفقات يجب أن تكون JPG أو JPEG أو PNG أو PDF.',
 
-            'attachments.*.max' => 'حجم كل مرفق يجب ألا يتجاوز ' . round(config('attachments.max_size_kb') / 1024, 1) . ' ميجابايت.',
+            'attachments.*.max' => 'حجم كل مرفق يجب ألا يتجاوز '.round(config('attachments.max_size_kb') / 1024, 1).' ميجابايت.',
             'transaction_reference.max' => 'رقم مرجع العملية لا يجوز أن يتجاوز 100 حرف.',
             'transaction_reference.unique' => 'رقم مرجع العملية هذا مستخدم مسبقًا في دفعة أخرى.',
 
