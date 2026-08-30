@@ -14,9 +14,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -55,7 +56,7 @@ endpoints:
         name: service_start_time
         description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
         required: false
-        example: '06:46'
+        example: '12:24'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -66,7 +67,7 @@ endpoints:
         name: service_end_time
         description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
         required: false
-        example: '2107-09-28'
+        example: '2107-09-29'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -86,26 +87,16 @@ endpoints:
     cleanBodyParameters:
       subscriber_meter_id: 17
       schedule: 24h
-      service_start_time: '06:46'
-      service_end_time: '2107-09-28'
+      service_start_time: '12:24'
+      service_end_time: '2107-09-29'
       requested_capacity_kw: 45
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -122,9 +113,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -134,22 +126,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -166,9 +148,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -178,22 +161,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -210,9 +183,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -222,22 +196,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -254,9 +218,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -266,22 +231,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -298,9 +253,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -403,7 +359,7 @@ endpoints:
         name: fuel_type
         description: ''
         required: false
-        example: petrol
+        example: dual
         type: string
         enumValues:
           - diesel
@@ -412,6 +368,454 @@ endpoints:
           - dual
         exampleWasSpecified: false
         nullable: true
+        deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: 'Must not be greater than 1000 characters.'
+        required: false
+        example: zjrcnfbaqywuxhgjjmzux
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      lines_count:
+        custom: []
+        name: lines_count
+        description: 'Must be at least 1. Must not be greater than 20.'
+        required: false
+        example: 8
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      location_id:
+        custom: []
+        name: location_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: 17
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      latitude:
+        custom: []
+        name: latitude
+        description: 'Must be between -90 and 90.'
+        required: false
+        example: -90
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      longitude:
+        custom: []
+        name: longitude
+        description: 'Must be between -180 and 180.'
+        required: false
+        example: -179
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rated_voltage:
+        custom: []
+        name: rated_voltage
+        description: 'Must be at least 1. Must not be greater than 65000.'
+        required: false
+        example: 5
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rated_frequency_hz:
+        custom: []
+        name: rated_frequency_hz
+        description: ''
+        required: false
+        example: 50
+        type: integer
+        enumValues:
+          - 50
+          - 60
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      phase_count:
+        custom: []
+        name: phase_count
+        description: ''
+        required: false
+        example: 3
+        type: integer
+        enumValues:
+          - 1
+          - 3
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rated_load_kw:
+        custom: []
+        name: rated_load_kw
+        description: 'Must be at least 1.'
+        required: false
+        example: 51
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      service_interval_hours:
+        custom: []
+        name: service_interval_hours
+        description: 'Must be at least 1.'
+        required: false
+        example: 56
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      next_service_due_at:
+        custom: []
+        name: next_service_due_at
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-08-30T12:24:14'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      installed_at:
+        custom: []
+        name: installed_at
+        description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
+        required: false
+        example: '2020-12-25'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      status:
+        custom: []
+        name: status
+        description: ''
+        required: false
+        example: rejected
+        type: string
+        enumValues:
+          - active
+          - inactive
+          - maintenance
+          - pending_verification
+          - rejected
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      operating_schedule:
+        custom: []
+        name: operating_schedule
+        description: ''
+        required: true
+        example: 24h
+        type: string
+        enumValues:
+          - day
+          - night
+          - 24h
+          - custom
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      operating_start_time:
+        custom: []
+        name: operating_start_time
+        description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
+        required: false
+        example: '12:24'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      operating_end_time:
+        custom: []
+        name: operating_end_time
+        description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>operating_start_time</code>.'
+        required: false
+        example: '2107-09-29'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: vmqeopfuudtdsufvyvddq
+      name_en: amniihfqcoynlazghdtqt
+      manufacturer: qxbajwbpilpmufinllwlo
+      model: auydlsmsjuryvojcybzvr
+      serial_number: byickznkygloigmkwxphl
+      price_per_kw: 22
+      currency: ILS
+      capacity_kw: 1
+      fuel_type: dual
+      notes: zjrcnfbaqywuxhgjjmzux
+      lines_count: 8
+      location_id: 17
+      latitude: -90
+      longitude: -179
+      rated_voltage: 5
+      rated_frequency_hz: 50
+      phase_count: 3
+      rated_load_kw: 51
+      service_interval_hours: 56
+      next_service_due_at: '2026-08-30T12:24:14'
+      installed_at: '2020-12-25'
+      status: rejected
+      operating_schedule: 24h
+      operating_start_time: '12:24'
+      operating_end_time: '2107-09-29'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/generators/map-points
+    metadata:
+      custom: []
+      groupName: 'إدارة المولدات'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}'
+    metadata:
+      custom: []
+      groupName: 'إدارة المولدات'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/generators/{generator_id}'
+    metadata:
+      custom: []
+      groupName: 'إدارة المولدات'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'Must not be greater than 150 characters.'
+        required: false
+        example: vmqeopfuudtdsufvyvddq
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      name_en:
+        custom: []
+        name: name_en
+        description: 'Must not be greater than 150 characters.'
+        required: false
+        example: amniihfqcoynlazghdtqt
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      manufacturer:
+        custom: []
+        name: manufacturer
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: qxbajwbpilpmufinllwlo
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      model:
+        custom: []
+        name: model
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: auydlsmsjuryvojcybzvr
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      serial_number:
+        custom: []
+        name: serial_number
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: byickznkygloigmkwxphl
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      price_per_kw:
+        custom: []
+        name: price_per_kw
+        description: 'Must be at least 0. Must not be greater than 9999.99.'
+        required: false
+        example: 22
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      currency:
+        custom: []
+        name: currency
+        description: ''
+        required: false
+        example: ILS
+        type: string
+        enumValues:
+          - ILS
+          - USD
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      capacity_kw:
+        custom: []
+        name: capacity_kw
+        description: 'Must be at least 1.'
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      fuel_type:
+        custom: []
+        name: fuel_type
+        description: ''
+        required: false
+        example: dual
+        type: string
+        enumValues:
+          - diesel
+          - gas
+          - petrol
+          - dual
+        exampleWasSpecified: false
+        nullable: false
         deprecated: false
       notes:
         custom: []
@@ -532,469 +936,7 @@ endpoints:
         name: next_service_due_at
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-30T06:46:57'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      installed_at:
-        custom: []
-        name: installed_at
-        description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
-        required: false
-        example: '2020-12-25'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      status:
-        custom: []
-        name: status
-        description: ''
-        required: false
-        example: active
-        type: string
-        enumValues:
-          - active
-          - inactive
-          - maintenance
-          - pending_verification
-          - rejected
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      operating_schedule:
-        custom: []
-        name: operating_schedule
-        description: ''
-        required: true
-        example: 24h
-        type: string
-        enumValues:
-          - day
-          - night
-          - 24h
-          - custom
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      operating_start_time:
-        custom: []
-        name: operating_start_time
-        description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
-        required: false
-        example: '06:46'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      operating_end_time:
-        custom: []
-        name: operating_end_time
-        description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>operating_start_time</code>.'
-        required: false
-        example: '2107-09-28'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      name: vmqeopfuudtdsufvyvddq
-      name_en: amniihfqcoynlazghdtqt
-      manufacturer: qxbajwbpilpmufinllwlo
-      model: auydlsmsjuryvojcybzvr
-      serial_number: byickznkygloigmkwxphl
-      price_per_kw: 22
-      currency: ILS
-      capacity_kw: 1
-      fuel_type: petrol
-      notes: zjrcnfbaqywuxhgjjmzux
-      lines_count: 8
-      location_id: 17
-      latitude: -90
-      longitude: -179
-      rated_voltage: 5
-      rated_frequency_hz: 60
-      phase_count: 3
-      rated_load_kw: 51
-      service_interval_hours: 56
-      next_service_due_at: '2026-08-30T06:46:57'
-      installed_at: '2020-12-25'
-      status: active
-      operating_schedule: 24h
-      operating_start_time: '06:46'
-      operating_end_time: '2107-09-28'
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: api/v1/generators/map-points
-    metadata:
-      custom: []
-      groupName: 'إدارة المولدات'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/v1/generators/{generator_id}'
-    metadata:
-      custom: []
-      groupName: 'إدارة المولدات'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'The ID of the generator.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      generator_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/generators/{generator_id}'
-    metadata:
-      custom: []
-      groupName: 'إدارة المولدات'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'The ID of the generator.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      generator_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      name:
-        custom: []
-        name: name
-        description: 'Must not be greater than 150 characters.'
-        required: false
-        example: vmqeopfuudtdsufvyvddq
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      name_en:
-        custom: []
-        name: name_en
-        description: 'Must not be greater than 150 characters.'
-        required: false
-        example: amniihfqcoynlazghdtqt
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      manufacturer:
-        custom: []
-        name: manufacturer
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: qxbajwbpilpmufinllwlo
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      model:
-        custom: []
-        name: model
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: auydlsmsjuryvojcybzvr
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      serial_number:
-        custom: []
-        name: serial_number
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: byickznkygloigmkwxphl
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      price_per_kw:
-        custom: []
-        name: price_per_kw
-        description: 'Must be at least 0. Must not be greater than 9999.99.'
-        required: false
-        example: 22
-        type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      currency:
-        custom: []
-        name: currency
-        description: ''
-        required: false
-        example: USD
-        type: string
-        enumValues:
-          - ILS
-          - USD
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      capacity_kw:
-        custom: []
-        name: capacity_kw
-        description: 'Must be at least 1.'
-        required: false
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      fuel_type:
-        custom: []
-        name: fuel_type
-        description: ''
-        required: false
-        example: dual
-        type: string
-        enumValues:
-          - diesel
-          - gas
-          - petrol
-          - dual
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      notes:
-        custom: []
-        name: notes
-        description: 'Must not be greater than 1000 characters.'
-        required: false
-        example: zjrcnfbaqywuxhgjjmzux
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      lines_count:
-        custom: []
-        name: lines_count
-        description: 'Must be at least 1. Must not be greater than 20.'
-        required: false
-        example: 8
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      location_id:
-        custom: []
-        name: location_id
-        description: 'Must match an existing stored value.'
-        required: false
-        example: 17
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      latitude:
-        custom: []
-        name: latitude
-        description: 'Must be between -90 and 90.'
-        required: false
-        example: -90
-        type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      longitude:
-        custom: []
-        name: longitude
-        description: 'Must be between -180 and 180.'
-        required: false
-        example: -179
-        type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      rated_voltage:
-        custom: []
-        name: rated_voltage
-        description: 'Must be at least 1. Must not be greater than 65000.'
-        required: false
-        example: 5
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      rated_frequency_hz:
-        custom: []
-        name: rated_frequency_hz
-        description: ''
-        required: false
-        example: 50
-        type: integer
-        enumValues:
-          - 50
-          - 60
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      phase_count:
-        custom: []
-        name: phase_count
-        description: ''
-        required: false
-        example: 1
-        type: integer
-        enumValues:
-          - 1
-          - 3
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      rated_load_kw:
-        custom: []
-        name: rated_load_kw
-        description: 'Must be at least 1.'
-        required: false
-        example: 51
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      service_interval_hours:
-        custom: []
-        name: service_interval_hours
-        description: 'Must be at least 1.'
-        required: false
-        example: 56
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      next_service_due_at:
-        custom: []
-        name: next_service_due_at
-        description: 'Must be a valid date.'
-        required: false
-        example: '2026-08-30T06:46:57'
+        example: '2026-08-30T12:24:14'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -1047,7 +989,7 @@ endpoints:
         name: operating_start_time
         description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
         required: false
-        example: '06:46'
+        example: '12:24'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -1058,7 +1000,7 @@ endpoints:
         name: operating_end_time
         description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>operating_start_time</code>.'
         required: false
-        example: '2107-09-28'
+        example: '2107-09-29'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -1071,7 +1013,7 @@ endpoints:
       model: auydlsmsjuryvojcybzvr
       serial_number: byickznkygloigmkwxphl
       price_per_kw: 22
-      currency: USD
+      currency: ILS
       capacity_kw: 1
       fuel_type: dual
       notes: zjrcnfbaqywuxhgjjmzux
@@ -1080,20 +1022,23 @@ endpoints:
       latitude: -90
       longitude: -179
       rated_voltage: 5
-      rated_frequency_hz: 50
-      phase_count: 1
+      rated_frequency_hz: 60
+      phase_count: 3
       rated_load_kw: 51
       service_interval_hours: 56
-      next_service_due_at: '2026-08-30T06:46:57'
+      next_service_due_at: '2026-08-30T12:24:14'
       installed_at: '2020-12-25'
       status: active
       operating_schedule: night
-      operating_start_time: '06:46'
-      operating_end_time: '2107-09-28'
+      operating_start_time: '12:24'
+      operating_end_time: '2107-09-29'
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1110,9 +1055,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1148,7 +1094,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1165,9 +1114,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1191,7 +1141,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1208,9 +1161,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1232,22 +1186,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1264,9 +1208,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1288,22 +1233,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1322,9 +1257,10 @@ endpoints:
         الفنيون المرتبطون حاليًا بهذا المولد بشكل دائم (Attach/Detach) — عبر
         جدول الربط generator_technician، وليس مهام الصيانة المؤقتة.
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1346,22 +1282,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1378,9 +1304,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: multipart/form-data
       Accept: application/json
     urlParameters:
@@ -1405,7 +1332,7 @@ endpoints:
         name: document_type
         description: ''
         required: true
-        example: generator_purchase_invoice
+        example: generator_license
         type: string
         enumValues:
           - generator_photo
@@ -1437,13 +1364,16 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      document_type: generator_purchase_invoice
+      document_type: generator_license
       description: 'Dolores dolorum amet iste laborum eius est dolor.'
     fileParameters:
       file: null
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1460,177 +1390,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'The ID of the generator.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      generator_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/v1/generators/{generator_id}/timeline'
-    metadata:
-      custom: []
-      groupName: 'إدارة المولدات'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'The ID of the generator.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      generator_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/v1/generators/{generator_id}/quick-scan'
-    metadata:
-      custom: []
-      groupName: 'إدارة المولدات'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'The ID of the generator.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      generator_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/generators/{generator_id}/verify'
-    metadata:
-      custom: []
-      groupName: 'إدارة المولدات'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1654,7 +1417,151 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/timeline'
+    metadata:
+      custom: []
+      groupName: 'إدارة المولدات'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/generators/{generator_id}/quick-scan'
+    metadata:
+      custom: []
+      groupName: 'إدارة المولدات'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/generators/{generator_id}/verify'
+    metadata:
+      custom: []
+      groupName: 'إدارة المولدات'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'The ID of the generator.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      generator_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1671,9 +1578,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1709,7 +1617,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null

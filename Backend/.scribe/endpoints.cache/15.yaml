@@ -16,9 +16,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -28,22 +29,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -60,9 +51,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -72,22 +64,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -104,9 +86,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -128,22 +111,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -160,9 +133,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: multipart/form-data
       Accept: application/json
     urlParameters: []
@@ -274,7 +248,10 @@ endpoints:
         - null
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -291,9 +268,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -389,7 +367,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -406,9 +387,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -432,7 +414,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -449,9 +434,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -487,7 +473,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -504,9 +493,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -542,7 +532,107 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/payments/{payment_id}/resubmit'
+    metadata:
+      custom: []
+      groupName: 'الدفعات ووسائل الدفع'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters:
+      payment_id:
+        custom: []
+        name: payment_id
+        description: 'The ID of the payment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      payment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      amount:
+        custom: []
+        name: amount
+        description: '@var Payment $payment Must be at least 0.01.'
+        required: false
+        example: 73
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_reference:
+        custom: []
+        name: transaction_reference
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: mqeopfuudtdsufvyvddqa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      note:
+        custom: []
+        name: note
+        description: 'Must not be greater than 500 characters.'
+        required: false
+        example: mniihfqcoynlazghdtqtq
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      attachments:
+        custom: []
+        name: attachments
+        description: 'Must be a file. Must not be greater than 5120 kilobytes.'
+        required: false
+        example:
+          - null
+        type: 'file[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      amount: 73
+      transaction_reference: mqeopfuudtdsufvyvddqa
+      note: mniihfqcoynlazghdtqtq
+    fileParameters:
+      attachments:
+        - null
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -559,9 +649,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -585,7 +676,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -602,9 +696,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -614,22 +709,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -646,9 +731,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -737,7 +823,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -754,9 +843,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -795,7 +885,7 @@ endpoints:
         name: is_default
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -806,7 +896,7 @@ endpoints:
         name: currency
         description: ''
         required: false
-        example: USD
+        example: ILS
         type: string
         enumValues:
           - ILS
@@ -849,15 +939,18 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       type: cash
-      is_default: true
-      currency: USD
+      is_default: false
+      currency: ILS
       bank_name: vmqeopfuudtdsufvyvddq
       account_name: amniihfqcoynlazghdtqt
       account_number: qxbajwbpilpmufinllwlo
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -874,9 +967,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -900,7 +994,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null

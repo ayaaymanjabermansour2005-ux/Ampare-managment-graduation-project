@@ -16,9 +16,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -43,7 +44,7 @@ endpoints:
         name: commission_mode
         description: ''
         required: true
-        example: tiered
+        example: fixed
         type: string
         enumValues:
           - fixed
@@ -63,12 +64,15 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      commission_mode: tiered
+      commission_mode: fixed
       commission_rate: 21
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -85,9 +89,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -147,7 +152,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -164,9 +172,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -250,7 +259,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -267,9 +279,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -341,7 +354,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -358,9 +374,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -386,7 +403,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -406,9 +426,10 @@ endpoints:
         "إضافة اشتراك" من طرف مالك المولد. مقصود أن تكون ضيّقة الحقول
         ومحدودة النتائج (أقصى 20)، بخلاف index() الإدارية الكاملة.
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -418,22 +439,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -454,9 +465,10 @@ endpoints:
         اشتراك" من طرف مالك المولد. اختيار العداد نفسه لا يكشف شيئًا حسّاسًا
         (مجرد معرِّفات عداد فعلية)، لذا نفس قدرة lookupForOwner تكفي.
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -478,22 +490,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -514,9 +516,10 @@ endpoints:
         subscriber_ids هنا سبق تصفيتها في SendOwnerBulkPaymentReminderRequest
         لتقتصر على مشتركين لهم اشتراك فعلي على أحد مولدات هذا المالك.
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -542,7 +545,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -559,9 +565,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -571,22 +578,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -603,9 +600,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -615,22 +613,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -647,9 +635,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -659,22 +648,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -691,9 +670,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -703,22 +683,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -735,9 +705,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -747,22 +718,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -779,9 +740,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -791,22 +753,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -823,9 +775,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -835,22 +788,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -867,9 +810,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -891,22 +835,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -923,9 +857,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -983,7 +918,7 @@ endpoints:
         name: status
         description: ''
         required: false
-        example: inactive
+        example: pending_review
         type: string
         enumValues:
           - active
@@ -1085,7 +1020,7 @@ endpoints:
       name: vmqeopfuudtdsufvyvddq
       phone: '562771717728'
       email: dsmith@example.com
-      status: inactive
+      status: pending_review
       birth_date: '2020-12-25'
       address: mqeopfuudtdsufvyvddqa
       latitude: -90
@@ -1097,7 +1032,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1114,9 +1052,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: multipart/form-data
       Accept: application/json
     urlParameters:
@@ -1152,7 +1091,10 @@ endpoints:
       avatar: null
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1169,9 +1111,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1195,7 +1138,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1212,9 +1158,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1238,7 +1185,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1258,9 +1208,10 @@ endpoints:
         تعيد استخدام نفس الإجراء المستخدَم بمسار "نسيت كلمة المرور" العام،
         فقط بصلاحية أدمن بدل طلب ذاتي من صاحب الحساب.
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1284,7 +1235,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1305,9 +1259,10 @@ endpoints:
       description: |-
         ..).
         تُبطَل كل جلسات المستخدم الحالية فور التعيين، والإجراء مسجَّل بالكامل.
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1343,7 +1298,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1360,9 +1318,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -1372,22 +1331,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null

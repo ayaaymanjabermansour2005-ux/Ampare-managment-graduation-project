@@ -1,0 +1,300 @@
+/* =============================================================================
+   Ampere API Docs — Brand Theme Override for Scribe (v2 — High Contrast Fix)
+   يُحمَّل بعد theme-default.style.css الأصلي. هذه النسخة تُصلح مشاكل التباين
+   (نص فاتح على خلفية فاتحة) وتضمن وضوح كل النصوص بكل الأقسام.
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+:root {
+    --amp-primary-50:  #EBF1E7;
+    --amp-primary-100: #D3E0C9;
+    --amp-primary-300: #8FAF7A;
+    --amp-primary-500: #52733D;
+    --amp-primary-600: #3E582E;
+    --amp-primary-700: #2E4322;
+    --amp-primary-900: #1C2915;
+
+    --amp-gold-100: #F4E0A5;
+    --amp-gold-300: #E5C665;
+    --amp-gold-500: #D4AF37;
+    --amp-gold-600: #B8942A;
+    --amp-gold-700: #8A6D1F;
+
+    --amp-bg: #F8FAF7;
+    --amp-surface: #FFFFFF;
+    --amp-border: #D8D8D8;
+    --amp-text: #1A1D17;        /* أغمق من قبل لضمان تباين قوي */
+    --amp-text-muted: #4A4A4A;  /* أغمق من قبل، بدل الرمادي الفاتح */
+
+    --amp-danger: #C0392B;
+    --amp-info: #0056B3;
+}
+
+/* =============================================================================
+   1) فرض لون النص الغامق على كل عناصر المحتوى — هذا يحل مشكلة "الكلام مش مبين"
+   ============================================================================= */
+body,
+.content,
+.content p,
+.content li,
+.content td,
+.content th,
+.content span,
+.content div,
+.content label,
+.content small {
+    color: var(--amp-text) !important;
+}
+
+.content a {
+    color: var(--amp-primary-600) !important;
+    font-weight: 700;
+    text-decoration: underline;
+}
+.content a:hover {
+    color: var(--amp-gold-700) !important;
+}
+
+/* النص الثانوي (أوصاف، ملاحظات) — غامق كفاية للقراءة، مش فاتح شبح */
+.content small,
+.content .description,
+.content p small {
+    color: var(--amp-text-muted) !important;
+}
+
+/* =============================================================================
+   2) الأساسيات: الخط والخلفية
+   ============================================================================= */
+html, body,
+.content,
+.tocify-wrapper {
+    font-family: 'Cairo', 'Open Sans', sans-serif !important;
+}
+
+body {
+    background: var(--amp-bg) !important;
+}
+
+.content {
+    background: var(--amp-surface) !important;
+}
+
+/* =============================================================================
+   3) الشريط الجانبي (Sidebar / TOC) — خلفية غامقة + نص فاتح واضح
+   ============================================================================= */
+.tocify-wrapper {
+    background: var(--amp-primary-900) !important;
+    border-inline-end: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.tocify-wrapper .search input,
+#input-search {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+    color: #FFFFFF !important;
+    border-radius: 0.6rem !important;
+}
+.tocify-wrapper .search input::placeholder { color: rgba(255,255,255,0.6) !important; }
+
+.lang-selector .lang-button {
+    background: rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(212,175,55,0.35) !important;
+    color: var(--amp-gold-100) !important;
+    border-radius: 0.5rem !important;
+}
+.lang-selector .lang-button.selected,
+.lang-selector .lang-button:hover {
+    background: var(--amp-gold-500) !important;
+    color: #1C2915 !important;
+    border-color: var(--amp-gold-500) !important;
+}
+
+/* عناوين الأقسام بالشريط الجانبي — أبيض واضح 100% */
+.tocify-header > .tocify-item > a {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+}
+
+/* روابط الـ endpoints الفرعية — فاتح واضح بما فيه الكفاية */
+.tocify-subheader .tocify-item a {
+    color: #E8E8E8 !important;
+    font-size: 12.5px;
+}
+.tocify-subheader .tocify-item a:hover,
+.tocify-item.active > a {
+    color: #FFFFFF !important;
+    background: linear-gradient(90deg, rgba(212,175,55,0.25), rgba(82,115,61,0.2)) !important;
+    border-radius: 0.4rem;
+    box-shadow: inset 3px 0 0 var(--amp-gold-500);
+}
+
+#nav-button {
+    background: var(--amp-primary-700) !important;
+    border: 1px solid rgba(212,175,55,0.4);
+}
+#nav-button span { color: #FFFFFF !important; }
+
+/* =============================================================================
+   4) العناوين بالمحتوى الرئيسي
+   ============================================================================= */
+h1, h2, h3, h4, h5 {
+    font-family: 'Cairo', sans-serif !important;
+    font-weight: 800 !important;
+}
+
+/* H1 بتدرج لوني، لكن مع fallback لون غامق واضح لو المتصفح ما بيدعم background-clip */
+h1 {
+    color: var(--amp-primary-700) !important;
+    background: linear-gradient(90deg, var(--amp-gold-700), var(--amp-primary-600));
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+@supports (-webkit-background-clip: text) {
+    h1 { color: transparent !important; }
+}
+
+h2, h3, h4, h5 {
+    color: var(--amp-primary-700) !important;
+}
+
+.content h2,
+.content h3 {
+    border-bottom: 2px solid rgba(212,175,55,0.4);
+    padding-bottom: 0.4rem;
+}
+
+/* =============================================================================
+   5) شارات HTTP Method — ألوان صريحة وواضحة
+   ============================================================================= */
+.badge {
+    border-radius: 0.5rem !important;
+    font-weight: 700 !important;
+    font-family: 'Cairo', sans-serif !important;
+    color: #FFFFFF !important;
+}
+.badge-green  { background: var(--amp-primary-600) !important; } /* GET */
+.badge-black  { background: var(--amp-primary-900) !important; } /* POST */
+.badge-darkblue,
+.badge-purple { background: var(--amp-gold-700) !important; }    /* PUT/PATCH */
+.badge-red    { background: var(--amp-danger) !important; }      /* DELETE */
+
+/* =============================================================================
+   6) أزرار Try It Out
+   ============================================================================= */
+button[id^="btn-tryout-"] {
+    background: var(--amp-primary-600) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 0.6rem !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(82,115,61,0.3);
+}
+button[id^="btn-tryout-"]:hover {
+    background: var(--amp-primary-700) !important;
+    transform: translateY(-2px);
+}
+
+button[id^="btn-executetryout-"] {
+    background: var(--amp-gold-600) !important;
+    color: #1C2915 !important;
+    border: none !important;
+    border-radius: 0.6rem !important;
+    font-weight: 700 !important;
+}
+
+button[id^="btn-canceltryout-"] {
+    background: var(--amp-danger) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 0.6rem !important;
+}
+
+/* =============================================================================
+   7) حقول الإدخال — نص غامق واضح داخل الحقل نفسه
+   ============================================================================= */
+.content input[type="text"],
+.content input[type="number"],
+.content input[type="email"],
+.content input[type="password"],
+.content textarea,
+.content select {
+    border: 1px solid var(--amp-border) !important;
+    border-radius: 0.5rem !important;
+    font-family: 'Cairo', sans-serif !important;
+    background: var(--amp-surface) !important;
+    color: var(--amp-text) !important;
+}
+.content input::placeholder,
+.content textarea::placeholder {
+    color: #9A9A9A !important;
+}
+.content input:focus,
+.content textarea:focus,
+.content select:focus {
+    outline: none !important;
+    border-color: var(--amp-gold-500) !important;
+    box-shadow: 0 0 0 3px rgba(212,175,55,0.2) !important;
+}
+
+/* =============================================================================
+   8) منطقة أمثلة الكود (الجهة الداكنة) — خلفية غامقة + نص فاتح واضح
+   ============================================================================= */
+.dark-box {
+    background: var(--amp-primary-900) !important;
+}
+.dark-box,
+.dark-box * {
+    color: #F0F0EC !important;
+}
+
+/* =============================================================================
+   9) صناديق الملاحظات (aside) — تباين قوي
+   ============================================================================= */
+aside {
+    background: rgba(212,175,55,0.1) !important;
+    border-inline-start: 4px solid var(--amp-gold-600) !important;
+    border-radius: 0.6rem;
+    padding: 0.9rem 1.1rem !important;
+    color: var(--amp-text) !important;
+}
+aside * { color: var(--amp-text) !important; }
+
+/* =============================================================================
+   10) الجداول (Parameters, Response fields) — تباين واضح بين الصفوف
+   ============================================================================= */
+.content table {
+    border-collapse: collapse;
+    width: 100%;
+}
+.content table th {
+    background: var(--amp-primary-50) !important;
+    color: var(--amp-primary-700) !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid var(--amp-gold-500) !important;
+}
+.content table td {
+    border-bottom: 1px solid var(--amp-border) !important;
+}
+
+/* أكواد inline (اسم الحقل، النوع...) */
+.content code {
+    background: var(--amp-primary-50) !important;
+    color: var(--amp-primary-700) !important;
+    border-radius: 0.35rem;
+    padding: 0.1rem 0.4rem;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* =============================================================================
+   11) سكرول بار
+   ============================================================================= */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb {
+    background: rgba(82,115,61,0.4);
+    border-radius: 999px;
+}
+.tocify-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(212,175,55,0.5);
+}

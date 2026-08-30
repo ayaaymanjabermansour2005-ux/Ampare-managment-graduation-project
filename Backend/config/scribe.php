@@ -11,7 +11,7 @@ use function Knuckles\Scribe\Config\removeStrategies;
 
 return [
     // The HTML <title> for the generated documentation.
-    'title' => config('app.name').' API Documentation',
+    'title' => config('app.name') . ' API Documentation',
 
     // A short description of your API. Will be included in the docs webpage, Postman collection and OpenAPI spec.
     'description' => '',
@@ -95,7 +95,9 @@ return [
         'base_url' => null,
 
         // [Laravel Sanctum] Fetch a CSRF token before each request, and add it as an X-XSRF-TOKEN header.
-        'use_csrf' => false,
+        // مفعّلة لأن المشروع يستخدم Sanctum SPA Authentication (Cookie-based)،
+        // فلازم ياخد الفرونت CSRF cookie قبل أي طلب فعلي عبر زر "Try It Out".
+        'use_csrf' => true,
 
         // The URL to fetch the CSRF token from (if `use_csrf` is true).
         'csrf_url' => '/sanctum/csrf-cookie',
@@ -104,20 +106,27 @@ return [
     // How is your API authenticated? This information will be used in the displayed docs, generated examples and response calls.
     'auth' => [
         // Set this to true if ANY endpoints in your API use authentication.
-        'enabled' => false,
+        // فعّلناها لأن معظم الـ API فعليًا محمي بـ middleware auth:sanctum بملف routes/api/v1.php
+        'enabled' => true,
 
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
-        'default' => false,
+        // خليناها true لأن الافتراض بمشروعك إنه الـ endpoint محمي، وتستثني العامة بـ @unauthenticated
+        'default' => true,
 
         // Where is the auth value meant to be sent in a request?
+        // ملاحظة: Scribe ما عنده خيار "cookie/session" ضمن enum AuthIn (بس Bearer/Query/Basic/Header).
+        // نظامك فعليًا Cookie-based (Sanctum SPA) مش Bearer، فسيّبنا القيمة هون شكليًا
+        // وحطينا الشرح الحقيقي بـ extra_info تحت.
         'in' => AuthIn::BEARER->value,
 
         // The name of the auth parameter (e.g. token, key, apiKey) or header (e.g. Authorization, Api-Key).
-        'name' => 'key',
+        'name' => 'Authorization',
 
         // The value of the parameter to be used by Scribe to authenticate response calls.
         // This will NOT be included in the generated documentation. If empty, Scribe will use a random value.
+        // تنبيه: بما إنه نظامك Cookie-based، هاد التوكن ما رح يشتغل فعليًا لعمل response calls
+        // على endpoints محمية. راجع تعديل استراتيجية "responses" تحت.
         'use_value' => env('SCRIBE_AUTH_KEY'),
 
         // Placeholder your users will see for the auth parameter in the example requests.
@@ -125,7 +134,7 @@ return [
         'placeholder' => '{YOUR_AUTH_KEY}',
 
         // Any extra authentication-related info for your users. Markdown and HTML are supported.
-        'extra_info' => 'You can retrieve your token by visiting your dashboard and clicking <b>Generate API token</b>.',
+        'extra_info' => 'هذا الـ API يستخدم Laravel Sanctum بنمط SPA Authentication عبر الجلسة (Session/Cookie)، وليس Bearer Token. للمصادقة: (1) قم بزيارة `/sanctum/csrf-cookie` أولاً للحصول على CSRF cookie، (2) سجّل الدخول عبر `POST /auth/login`، (3) بعد ذلك سيقوم المتصفح تلقائيًا بإرفاق الجلسة (Cookie) مع كل طلب لاحق دون الحاجة لأي هيدر يدوي.',
     ],
 
     // Example requests for each endpoint will be shown in each of these languages.
@@ -234,7 +243,18 @@ return [
         'responses' => configureStrategy(
             Defaults::RESPONSES_STRATEGIES,
             Strategies\Responses\ResponseCalls::withSettings(
-                only: ['GET *'],
+                // تم تضييق النطاق ليشمل فقط الـ endpoints العامة (غير المحمية بـ auth:sanctum).
+                // السبب: النظام يستخدم Sanctum SPA (Cookie-based)، ولا توجد طريقة عبر
+                // use_value إرسال كوكي جلسة صالحة، فلو تُرك "GET *" ستفشل كل الاستدعاءات
+                // التجريبية على الـ endpoints المحمية بخطأ 401 أثناء توليد التوثيق.
+                only: [
+                    'GET articles',
+                    'GET articles/*',
+                    'GET public/*',
+                    'GET live-schedule',
+                    'GET platform-identity',
+                    'GET auth/neighborhoods',
+                ],
                 // Recommended: disable debug mode in response calls to avoid error stack traces in responses
                 config: [
                     'app.debug' => false,

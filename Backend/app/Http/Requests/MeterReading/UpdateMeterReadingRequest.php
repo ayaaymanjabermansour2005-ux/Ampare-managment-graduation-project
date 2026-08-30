@@ -14,14 +14,13 @@ class UpdateMeterReadingRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var MeterReading $meterReading */
         $meterReading = $this->route('meter_reading');
 
         return [
             'current_reading' => [
                 'required',
                 'numeric',
-                'min:'.$meterReading->previous_reading,
+                'min:' . ($meterReading?->previous_reading ?? 0),
             ],
         ];
     }

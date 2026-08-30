@@ -16,9 +16,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -28,22 +29,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -60,9 +51,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -84,22 +76,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -116,9 +98,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -169,7 +152,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -186,9 +172,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -198,24 +185,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"success":true,"message":"\u062e\u0631\u064a\u0637\u0629 \u062a\u063a\u0637\u064a\u0629 \u0627\u0644\u0645\u0648\u0644\u062f\u0627\u062a \u0627\u0644\u0646\u0634\u0637\u0629 \u062d\u0633\u0628 \u0627\u0644\u0645\u062f\u064a\u0646\u0629.","data":{"cities":[{"city":"\u063a\u0632\u0629","active_generators_count":7,"latitude":"31.52738571429","longitude":"34.47954285714"}],"total_active_generators":7,"total_cities":1},"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-ratelimit-limit: '60'
-          x-ratelimit-remaining: '54'
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -232,9 +207,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -244,24 +220,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"success":true,"message":"\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u0648\u0644\u062f\u0627\u062a \u0627\u0644\u0646\u0634\u0637\u0629 \u0627\u0644\u0639\u0627\u0645\u0629.","data":{"generators":[{"id":3,"name":"\u0627\u0644\u0645\u0648\u0644\u062f \u0627\u0644\u062a\u062c\u0631\u064a\u0628\u064a","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":1.25,"currency":"ILS","subscribers_count":null,"latitude":31.521156,"longitude":34.485003},{"id":4,"name":"\u0645\u0648\u0644\u062f \u0623\u0628\u0648 \u0634\u0645\u0627\u0644\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":0.55,"currency":"ILS","subscribers_count":null,"latitude":31.520946,"longitude":34.485843},{"id":5,"name":"\u0645\u0648\u0644\u062f \u0627\u0644\u0623\u063a\u0627 - \u0627\u0644\u0646\u0635\u0631","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":0.45,"currency":"ILS","subscribers_count":null,"latitude":31.532006,"longitude":34.473733},{"id":7,"name":"\u0645\u0648\u0644\u062f \u0627\u0644\u0646\u062c\u0627\u0631 \u0644\u0644\u0635\u0646\u0627\u0639\u0627\u062a","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":0.18,"currency":"USD","subscribers_count":null,"latitude":31.530606,"longitude":34.472963},{"id":9,"name":"\u0645\u0648\u0644\u062f \u0634\u0627\u0647\u064a\u0646 - \u0627\u0644\u062f\u0631\u062c","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":0.48,"currency":"ILS","subscribers_count":null,"latitude":31.528016,"longitude":34.483953},{"id":11,"name":"\u0645\u0648\u0644\u062f \u064a\u0627\u0633\u064a\u0646 \u0627\u0644\u0643\u0628\u064a\u0631 - \u0627\u0644\u0635\u0628\u0631\u0629","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":0.16,"currency":"USD","subscribers_count":null,"latitude":31.531516,"longitude":34.482273},{"id":12,"name":"\u0645\u0648\u0644\u062f \u064a\u0627\u0633\u064a\u0646 \u0627\u0644\u0641\u0631\u0639\u064a","name_en":null,"city":"\u063a\u0632\u0629","price_per_kw":0.5,"currency":"ILS","subscribers_count":null,"latitude":31.531936,"longitude":34.478493}],"total_generators":7,"total_cities":1},"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-ratelimit-limit: '60'
-          x-ratelimit-remaining: '53'
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -278,9 +242,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -290,24 +255,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"success":true,"message":"\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u0645\u0646\u0635\u0629 \u0627\u0644\u0639\u0627\u0645\u0629.","data":{"subscribers_count":16,"active_generators_count":9,"owners_count":11,"meter_readings_count":17,"uptime_percentage":100},"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-ratelimit-limit: '60'
-          x-ratelimit-remaining: '52'
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -324,9 +277,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -336,24 +290,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"success":true,"message":"\u062a\u062d\u0644\u064a\u0644\u0627\u062a \u0627\u0644\u0645\u0646\u0635\u0629 \u0627\u0644\u0639\u0627\u0645\u0629 \u0627\u0644\u0645\u062c\u0645\u0651\u0639\u0629.","data":{"quick_stats":{"today_revenue_ils":111.5,"active_generators_count":9,"open_faults_count":5,"monthly_readings_count":17},"revenue_growth":{"labels":["mar","apr","may","jun","jul","aug"],"values":[0,0,0,0,0,111.5]},"subscriber_growth":{"labels":["mar","apr","may","jun","jul","aug"],"values":[0,0,0,0,0,16]},"payment_methods":[],"top_generators":[{"name":"\u0645\u0648\u0644\u062f \u0627\u0644\u0631\u0645\u0627\u0644 \u0627\u0644\u0631\u0626\u064a\u0633\u064a","name_en":null,"city":null,"subscribers_count":4},{"name":"\u0645\u0648\u0644\u062f \u0623\u0628\u0648 \u0634\u0645\u0627\u0644\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a","name_en":null,"city":null,"subscribers_count":2},{"name":"\u0627\u0644\u0645\u0648\u0644\u062f \u0627\u0644\u062a\u062c\u0631\u064a\u0628\u064a","name_en":null,"city":null,"subscribers_count":1}]},"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-ratelimit-limit: '60'
-          x-ratelimit-remaining: '51'
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -370,9 +312,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -448,7 +391,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -465,9 +411,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -493,7 +440,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null

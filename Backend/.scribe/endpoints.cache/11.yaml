@@ -16,9 +16,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -28,22 +29,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -60,9 +51,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -72,22 +64,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -104,9 +86,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -128,22 +111,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -160,9 +133,346 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      subscriber_meter_id:
+        custom: []
+        name: subscriber_meter_id
+        description: 'Must match an existing stored value.'
+        required: true
+        example: 17
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'Must match an existing stored value.'
+        required: true
+        example: 17
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      requested_capacity_kw:
+        custom: []
+        name: requested_capacity_kw
+        description: 'Must be at least 0.1.'
+        required: false
+        example: 45
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      schedule:
+        custom: []
+        name: schedule
+        description: ''
+        required: true
+        example: night
+        type: string
+        enumValues:
+          - day
+          - night
+          - 24h
+          - custom
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      billing_cycle:
+        custom: []
+        name: billing_cycle
+        description: ''
+        required: true
+        example: daily
+        type: string
+        enumValues:
+          - daily
+          - weekly
+          - monthly
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      service_start_time:
+        custom: []
+        name: service_start_time
+        description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
+        required: false
+        example: '12:24'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      service_end_time:
+        custom: []
+        name: service_end_time
+        description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
+        required: false
+        example: '2107-09-29'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      contract_type:
+        custom: []
+        name: contract_type
+        description: 'Must not be greater than 50 characters.'
+        required: false
+        example: mqeopfuudtdsufvyvddqa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      start_date:
+        custom: []
+        name: start_date
+        description: 'Must be a valid date.'
+        required: true
+        example: '2026-08-30T12:24:16'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      end_date:
+        custom: []
+        name: end_date
+        description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
+        required: false
+        example: '2107-09-29'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      subscriber_meter_id: 17
+      generator_id: 17
+      requested_capacity_kw: 45
+      schedule: night
+      billing_cycle: daily
+      service_start_time: '12:24'
+      service_end_time: '2107-09-29'
+      contract_type: mqeopfuudtdsufvyvddqa
+      start_date: '2026-08-30T12:24:16'
+      end_date: '2107-09-29'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/subscriptions/{subscription_id}/status'
+    metadata:
+      custom: []
+      groupName: 'الاشتراكات وطلبات الخدمة'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      subscription_id:
+        custom: []
+        name: subscription_id
+        description: 'The ID of the subscription.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      subscription_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      status:
+        custom: []
+        name: status
+        description: ''
+        required: true
+        example: active
+        type: string
+        enumValues:
+          - active
+          - suspended
+          - cancelled
+          - rejected
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      status: active
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/subscriptions/{subscription_id}/contract-pdf'
+    metadata:
+      custom: []
+      groupName: 'الاشتراكات وطلبات الخدمة'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      subscription_id:
+        custom: []
+        name: subscription_id
+        description: 'The ID of the subscription.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      subscription_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/subscriptions/{subscription_id}/transfer'
+    metadata:
+      custom: []
+      groupName: 'الاشتراكات وطلبات الخدمة'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      subscription_id:
+        custom: []
+        name: subscription_id
+        description: 'The ID of the subscription.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      subscription_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      generator_id:
+        custom: []
+        name: generator_id
+        description: 'Must match an existing stored value.'
+        required: true
+        example: 17
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      generator_id: 17
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/owner/subscriptions
+    metadata:
+      custom: []
+      groupName: 'الاشتراكات وطلبات الخدمة'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        إنشاء اشتراك من قِبَل مالك المولد نيابةً عن مشترك — نظير store() لكن
+        لمسار المالك (بدل الاشتراك الذاتي للمشترك). نطاق الصلاحية الحقيقي
+        (المولد المستهدَف يجب أن يكون مملوكًا لصاحب الحساب الحالي) يُتحقَّق
+        منه في StoreOwnerSubscriptionRequest::withValidator() وأيضًا هنا عبر
+        SubscriptionPolicy::createByOwner (دفاع بعمق، بنفس نمط بقية الكود).
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -223,7 +533,7 @@ endpoints:
         name: billing_cycle
         description: ''
         required: true
-        example: weekly
+        example: monthly
         type: string
         enumValues:
           - daily
@@ -237,7 +547,7 @@ endpoints:
         name: service_start_time
         description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
         required: false
-        example: '06:47'
+        example: '12:24'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -248,7 +558,7 @@ endpoints:
         name: service_end_time
         description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
         required: false
-        example: '2107-09-28'
+        example: '2107-09-29'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -270,7 +580,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: true
-        example: '2026-08-30T06:47:02'
+        example: '2026-08-30T12:24:17'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -281,7 +591,7 @@ endpoints:
         name: end_date
         description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
         required: false
-        example: '2107-09-28'
+        example: '2107-09-29'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -292,349 +602,19 @@ endpoints:
       generator_id: 17
       requested_capacity_kw: 45
       schedule: custom
-      billing_cycle: weekly
-      service_start_time: '06:47'
-      service_end_time: '2107-09-28'
+      billing_cycle: monthly
+      service_start_time: '12:24'
+      service_end_time: '2107-09-29'
       contract_type: mqeopfuudtdsufvyvddqa
-      start_date: '2026-08-30T06:47:02'
-      end_date: '2107-09-28'
+      start_date: '2026-08-30T12:24:17'
+      end_date: '2107-09-29'
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/subscriptions/{subscription_id}/status'
-    metadata:
-      custom: []
-      groupName: 'الاشتراكات وطلبات الخدمة'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      subscription_id:
-        custom: []
-        name: subscription_id
-        description: 'The ID of the subscription.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      subscription_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      status:
-        custom: []
-        name: status
-        description: ''
-        required: true
-        example: cancelled
-        type: string
-        enumValues:
-          - active
-          - suspended
-          - cancelled
-          - rejected
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      status: cancelled
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/v1/subscriptions/{subscription_id}/contract-pdf'
-    metadata:
-      custom: []
-      groupName: 'الاشتراكات وطلبات الخدمة'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      subscription_id:
-        custom: []
-        name: subscription_id
-        description: 'The ID of the subscription.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      subscription_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/subscriptions/{subscription_id}/transfer'
-    metadata:
-      custom: []
-      groupName: 'الاشتراكات وطلبات الخدمة'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      subscription_id:
-        custom: []
-        name: subscription_id
-        description: 'The ID of the subscription.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      subscription_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'Must match an existing stored value.'
-        required: true
-        example: 17
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      generator_id: 17
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/v1/owner/subscriptions
-    metadata:
-      custom: []
-      groupName: 'الاشتراكات وطلبات الخدمة'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        إنشاء اشتراك من قِبَل مالك المولد نيابةً عن مشترك — نظير store() لكن
-        لمسار المالك (بدل الاشتراك الذاتي للمشترك). نطاق الصلاحية الحقيقي
-        (المولد المستهدَف يجب أن يكون مملوكًا لصاحب الحساب الحالي) يُتحقَّق
-        منه في StoreOwnerSubscriptionRequest::withValidator() وأيضًا هنا عبر
-        SubscriptionPolicy::createByOwner (دفاع بعمق، بنفس نمط بقية الكود).
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      subscriber_meter_id:
-        custom: []
-        name: subscriber_meter_id
-        description: 'Must match an existing stored value.'
-        required: true
-        example: 17
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      generator_id:
-        custom: []
-        name: generator_id
-        description: 'Must match an existing stored value.'
-        required: true
-        example: 17
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      requested_capacity_kw:
-        custom: []
-        name: requested_capacity_kw
-        description: 'Must be at least 0.1.'
-        required: false
-        example: 45
-        type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      schedule:
-        custom: []
-        name: schedule
-        description: ''
-        required: true
-        example: 24h
-        type: string
-        enumValues:
-          - day
-          - night
-          - 24h
-          - custom
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      billing_cycle:
-        custom: []
-        name: billing_cycle
-        description: ''
-        required: true
-        example: daily
-        type: string
-        enumValues:
-          - daily
-          - weekly
-          - monthly
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      service_start_time:
-        custom: []
-        name: service_start_time
-        description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
-        required: false
-        example: '06:47'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      service_end_time:
-        custom: []
-        name: service_end_time
-        description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
-        required: false
-        example: '2107-09-28'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      contract_type:
-        custom: []
-        name: contract_type
-        description: 'Must not be greater than 50 characters.'
-        required: false
-        example: mqeopfuudtdsufvyvddqa
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      start_date:
-        custom: []
-        name: start_date
-        description: 'Must be a valid date.'
-        required: true
-        example: '2026-08-30T06:47:03'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      end_date:
-        custom: []
-        name: end_date
-        description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-        required: false
-        example: '2107-09-28'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-    cleanBodyParameters:
-      subscriber_meter_id: 17
-      generator_id: 17
-      requested_capacity_kw: 45
-      schedule: 24h
-      billing_cycle: daily
-      service_start_time: '06:47'
-      service_end_time: '2107-09-28'
-      contract_type: mqeopfuudtdsufvyvddqa
-      start_date: '2026-08-30T06:47:03'
-      end_date: '2107-09-28'
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -657,9 +637,10 @@ endpoints:
         TransferSubscriptionAction ضمن نفس الـ transaction (بعد lockForUpdate
         على المولدين) عبر تمرير $ownerScope، وليس مكررًا هنا.
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -695,7 +676,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -712,9 +696,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -724,22 +709,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -756,9 +731,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -780,22 +756,12 @@ endpoints:
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"message":"You must be logged in.","data":null,"errors":null}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          x-content-type-options: nosniff
-          x-frame-options: DENY
-          referrer-policy: strict-origin-when-cross-origin
-          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
-          vary: Origin
-        description: null
+    responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -812,9 +778,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -838,7 +805,7 @@ endpoints:
         name: request_type
         description: ''
         required: true
-        example: medical_priority
+        example: other
         type: string
         enumValues:
           - event
@@ -855,7 +822,7 @@ endpoints:
         name: event_type
         description: ''
         required: false
-        example: religious_event
+        example: exam
         type: string
         enumValues:
           - wedding
@@ -893,7 +860,7 @@ endpoints:
         name: starts_at
         description: 'Must be a valid date. Must be a date after <code>now</code>.'
         required: true
-        example: '2107-09-28'
+        example: '2107-09-29'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -904,7 +871,7 @@ endpoints:
         name: ends_at
         description: 'Must be a valid date. Must be a date after <code>starts_at</code>.'
         required: true
-        example: '2107-09-28'
+        example: '2107-09-29'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -912,16 +879,19 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       subscription_id: 17
-      request_type: medical_priority
-      event_type: religious_event
+      request_type: other
+      event_type: exam
       description: 'Dolorum amet iste laborum eius est dolor.'
       extra_capacity_kw: 4
-      starts_at: '2107-09-28'
-      ends_at: '2107-09-28'
+      starts_at: '2107-09-29'
+      ends_at: '2107-09-29'
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -938,9 +908,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -965,7 +936,7 @@ endpoints:
         name: decision
         description: ''
         required: true
-        example: approved
+        example: rejected
         type: string
         enumValues:
           - approved
@@ -1000,7 +971,7 @@ endpoints:
         name: fee_currency
         description: 'This field is required when <code>fee_amount</code> is present.'
         required: false
-        example: ILS
+        example: USD
         type: string
         enumValues:
           - ILS
@@ -1009,14 +980,17 @@ endpoints:
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      decision: approved
+      decision: rejected
       review_note: vmqeopfuudtdsufvyvddq
       fee_amount: 1
-      fee_currency: ILS
+      fee_currency: USD
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
@@ -1033,9 +1007,10 @@ endpoints:
       subgroupDescription: ''
       title: ''
       description: ''
-      authenticated: false
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
@@ -1059,7 +1034,10 @@ endpoints:
     fileParameters: []
     responses: []
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer dummy-value-not-used'
     controller: null
     method: null
     route: null
