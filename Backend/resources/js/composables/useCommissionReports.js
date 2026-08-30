@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import platformCommissionService from "@/services/platformCommissionService";
@@ -53,7 +54,7 @@ export function useCommissionReports() {
       };
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("owner_reports.load_error");
+        normalizeApiError(err, t("owner_reports.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -73,7 +74,7 @@ export function useCommissionReports() {
       return true;
     } catch (err) {
       markError.value =
-        err.response?.data?.message ?? t("owner_reports.mark_paid_error");
+        normalizeApiError(err, t("owner_reports.mark_paid_error")).message;
       return false;
     } finally {
       markingId.value = null;

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import paymentService from "@/services/paymentService";
@@ -31,7 +32,7 @@ export function useSubscriberPayments() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("my_invoices_page.payments_load_error");
+      error.value = normalizeApiError(err, t("my_invoices_page.payments_load_error")).message;
     } finally {
       isLoading.value = false;
     }

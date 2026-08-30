@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
 import subscriberMeterService from "@/services/subscriberMeterService";
 import subscriptionService from "@/services/subscriptionService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useSubscriberBrowseGenerators() {
   const { t } = useI18n();
@@ -25,7 +26,7 @@ export function useSubscriberBrowseGenerators() {
         total: meta.total ?? generators.value.length,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("browse_generators_page.load_error");
+      error.value = normalizeApiError(err, t("browse_generators_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -56,7 +57,10 @@ export function useSubscriberBrowseGenerators() {
       meters.value.unshift(data.data);
       return data.data;
     } catch (err) {
-      createMeterError.value = err.response?.data?.errors ?? { meter_number: [err.response?.data?.message ?? t("browse_generators_page.add_meter_error")] };
+      const normalized = normalizeApiError(err, t("browse_generators_page.add_meter_error"));
+      createMeterError.value = Object.keys(normalized.fieldErrors).length
+        ? normalized.fieldErrors
+        : { meter_number: [normalized.message] };
       return null;
     } finally {
       isCreatingMeter.value = false;
@@ -76,10 +80,11 @@ export function useSubscriberBrowseGenerators() {
       const { data } = await subscriptionService.create(payload);
       return data;
     } catch (err) {
-      if (err.response?.status === 422) {
-        subscribeErrors.value = err.response.data.errors ?? {};
+      const normalized = normalizeApiError(err, t("browse_generators_page.subscribe_error"));
+      if (normalized.status === 422) {
+        subscribeErrors.value = normalized.fieldErrors;
       } else {
-        subscribeError.value = err.response?.data?.message ?? t("browse_generators_page.subscribe_error");
+        subscribeError.value = normalized.message;
       }
       return null;
     } finally {

@@ -1,1 +1,0 @@
-import{h as r}from"./app-DGsaq14r.js";const o={list(e){return r.get(`/generators/${e}/schedules`)},create(e,t){return r.post(`/generators/${e}/schedules`,t)},update(e,t){return r.patch(`/generator-schedules/${e}`,t)},destroy(e){return r.delete(`/generator-schedules/${e}`)}};export{o as g};

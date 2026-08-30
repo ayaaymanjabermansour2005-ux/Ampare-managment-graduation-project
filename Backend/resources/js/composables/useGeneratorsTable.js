@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 const SORT_MAP = {
   "name-asc": { key: "name", dir: "asc" },
@@ -82,7 +83,7 @@ export function useGeneratorsTable(options = {}) {
         per_page: meta.per_page ?? perPage,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_generators.load_error");
+      error.value = normalizeApiError(err, t("owner_generators.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -108,7 +109,8 @@ export function useGeneratorsTable(options = {}) {
       await fetchGenerators(1);
       return true;
     } catch (err) {
-      saveError.value = err.response?.data ?? { message: t("owner_generators.create_error") };
+      const normalized = normalizeApiError(err, t("owner_generators.create_error"));
+      saveError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isSaving.value = false;
@@ -124,7 +126,8 @@ export function useGeneratorsTable(options = {}) {
       if (index !== -1) generators.value[index] = data.data;
       return true;
     } catch (err) {
-      saveError.value = err.response?.data ?? { message: t("owner_generators.update_error") };
+      const normalized = normalizeApiError(err, t("owner_generators.update_error"));
+      saveError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isSaving.value = false;
@@ -143,9 +146,8 @@ export function useGeneratorsTable(options = {}) {
       // الباك اند برسالة عامة بحقل message ("بيانات غير صالحة")، والرسالة
       // المفيدة الفعلية موجودة بحقل errors.generator — كان الكود يقرأ
       // message بس، فيخفي عن الأدمن سبب الرفض الحقيقي.
-      deleteError.value = err.response?.data?.errors?.generator?.[0]
-        ?? err.response?.data?.message
-        ?? t("owner_generators.delete_error");
+      const normalized = normalizeApiError(err, t("owner_generators.delete_error"));
+      deleteError.value = normalized.fieldError("generator") ?? normalized.message;
       return false;
     } finally {
       deletingId.value = null;

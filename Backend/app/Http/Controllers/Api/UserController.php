@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Auth\SendPasswordResetLinkAction;
-use App\Actions\Technician\AdminCreateTechnicianForOwnerAction;
+use App\Actions\Technician\CreateTechnicianUserAction;
 use App\Actions\User\AdminCreateSubscriberAction;
 use App\Actions\User\AdminSetUserPasswordAction;
 use App\Actions\User\CreateGeneratorOwnerAction;
 use App\Actions\User\SendBulkPaymentReminderAction;
 use App\Actions\User\UpdateOwnerCommissionSettingsAction;
-use App\DTOs\Technician\AdminCreateTechnicianForOwnerData;
+use App\DTOs\Technician\CreateTechnicianUserData;
 use App\DTOs\User\AdminCreateSubscriberData;
 use App\DTOs\User\CreateGeneratorOwnerData;
 use App\Enums\CommissionMode;
@@ -259,7 +259,7 @@ class UserController extends Controller
 
     public function storeTechnician(
         AdminCreateTechnicianRequest $request,
-        AdminCreateTechnicianForOwnerAction $action
+        CreateTechnicianUserAction $action
     ): JsonResponse {
         $admin = $request->user();
 
@@ -270,7 +270,7 @@ class UserController extends Controller
         abort_unless($admin->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
 
         $owner = User::findOrFail((int) $request->validated('owner_id'));
-        $technician = $action->execute(AdminCreateTechnicianForOwnerData::fromArray($request->validated()), $owner, $admin);
+        $technician = $action->execute(CreateTechnicianUserData::fromArray($request->validated()), $owner, $admin);
 
         return $this->success(
             message: "تم إنشاء حساب الفني بنجاح، تابع لمالك المولد \"{$owner->name}\".",
@@ -291,7 +291,8 @@ class UserController extends Controller
             CommissionMode::from($request->validated('commission_mode')),
             $request->validated('commission_rate') !== null
                 ? (float) $request->validated('commission_rate')
-                : null
+                : null,
+            $request->user()
         );
 
         return $this->success(

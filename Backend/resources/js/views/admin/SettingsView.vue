@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import settingService from "@/services/settingService";
 import neighborhoodService from "@/services/neighborhoodService";
 import { useConfirm } from "@/composables/useConfirm";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { vReveal } from "@/directives/reveal";
 import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Info, LoaderCircle, MapPinned, Save, SlidersHorizontal, TriangleAlert } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -75,7 +76,7 @@ async function fetchSettings() {
     const { data } = await settingService.index();
     settings.value = data.data;
   } catch (err) {
-    error.value = err.response?.data?.message ?? t("settings_page.load_failed");
+    error.value = normalizeApiError(err, t("settings_page.load_failed")).message;
   } finally {
     isLoading.value = false;
   }
@@ -104,7 +105,7 @@ async function handleSave() {
     await fetchSettings();
     setTimeout(() => (saveSuccess.value = false), 3000);
   } catch (err) {
-    error.value = err.response?.data?.message ?? t("settings_page.save_failed");
+    error.value = normalizeApiError(err, t("settings_page.save_failed")).message;
   } finally {
     isSaving.value = false;
   }
@@ -147,7 +148,8 @@ async function addNeighborhood() {
     newNeighborhoodNameEn.value = "";
     await fetchNeighborhoods();
   } catch (err) {
-    neighborhoodError.value = err.response?.data?.errors?.name?.[0] ?? t("settings_page.add_neighborhood_failed");
+    const normalized = normalizeApiError(err, t("settings_page.add_neighborhood_failed"));
+    neighborhoodError.value = normalized.fieldError("name") ?? normalized.message;
   } finally {
     isSavingNeighborhood.value = false;
   }
@@ -169,7 +171,8 @@ async function saveEdit(id) {
     editingId.value = null;
     await fetchNeighborhoods();
   } catch (err) {
-    neighborhoodError.value = err.response?.data?.errors?.name?.[0] ?? t("settings_page.update_neighborhood_failed");
+    const normalized = normalizeApiError(err, t("settings_page.update_neighborhood_failed"));
+    neighborhoodError.value = normalized.fieldError("name") ?? normalized.message;
   }
 }
 
@@ -191,7 +194,8 @@ async function deleteNeighborhood(id) {
     await neighborhoodService.destroy(id);
     await fetchNeighborhoods();
   } catch (err) {
-    neighborhoodError.value = err.response?.data?.errors?.neighborhood?.[0] ?? t("settings_page.delete_neighborhood_failed");
+    const normalized = normalizeApiError(err, t("settings_page.delete_neighborhood_failed"));
+    neighborhoodError.value = normalized.fieldError("neighborhood") ?? normalized.message;
   } finally {
     deletingId.value = null;
   }

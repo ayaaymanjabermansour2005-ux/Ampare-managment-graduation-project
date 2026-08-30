@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -39,7 +40,7 @@ async function fetchArticle() {
     if (err.response?.status === 404) {
       isNotFound.value = true;
     } else {
-      error.value = err.response?.data?.message ?? t("landing.articles_page.error_detail_generic");
+      error.value = normalizeApiError(err, t("landing.articles_page.error_detail_generic")).message;
     }
   } finally {
     isLoading.value = false;

@@ -11,6 +11,7 @@ import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import activityLogService from "@/services/activityLogService";
 import userService from "@/services/userService";
 import { useRolePermissions } from "@/composables/useRolePermissions";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, Eye, EyeOff, FileSpreadsheet, Info, Key, LoaderCircle, Lock, LockOpen, Pencil, Save, Search, Shuffle, Trash2, UserPlus, UserX, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
@@ -241,10 +242,11 @@ async function handleDelete(user) {
     } catch (err) {
       // FIX: كانت بدون try/catch — فشل الحذف (مثلاً مستخدم له اشتراكات/مولدات
       // فعّالة) كان يظهر كـ unhandled rejection بصمت بدون أي رسالة للأدمن.
+      const normalized = normalizeApiError(err, t("common.unexpected_error_retry"));
       toast.show({
-        type: "error",
+        type: "danger",
         title: t("users_page.delete_user_title"),
-        message: err.response?.data?.errors?.user?.[0] ?? err.response?.data?.message ?? t("common.unexpected_error_retry"),
+        message: normalized.fieldError("user") ?? normalized.message,
       });
     }
   }
@@ -260,9 +262,9 @@ async function handleUnlock(user) {
     });
   } catch (err) {
     toast.show({
-      type: "error",
+      type: "danger",
       title: t("users_page.unlocked_toast_title"),
-      message: err.response?.data?.message ?? t("common.unexpected_error_retry"),
+      message: normalizeApiError(err, t("common.unexpected_error_retry")).message,
     });
   }
 }
@@ -291,7 +293,7 @@ async function handleSendResetLink(user) {
     toast.show({
       type: "danger",
       title: t("users_page.send_failed_title"),
-      message: err.response?.data?.message ?? t("users_page.try_again_later"),
+      message: normalizeApiError(err, t("users_page.try_again_later")).message,
     });
   } finally {
     isSendingResetLink.value = false;
@@ -347,7 +349,7 @@ async function handleSetPassword() {
     await userService.setPassword(setPasswordModal.value.id, setPasswordForm.password, setPasswordForm.password_confirmation);
     setPasswordSuccess.value = true;
   } catch (err) {
-    setPasswordErrors.value = err.response?.data?.errors ?? null;
+    const normalized_setPasswordErrors = normalizeApiError(err, null); setPasswordErrors.value = Object.keys(normalized_setPasswordErrors.fieldErrors).length ? normalized_setPasswordErrors.fieldErrors : null;
   } finally {
     isSettingPassword.value = false;
   }
@@ -426,7 +428,7 @@ async function handleSave() {
     });
     editingUser.value = null;
   } catch (err) {
-    saveErrors.value = err.response?.data?.errors ?? null;
+    const normalized_saveErrors = normalizeApiError(err, null); saveErrors.value = Object.keys(normalized_saveErrors.fieldErrors).length ? normalized_saveErrors.fieldErrors : null;
   } finally {
     isSaving.value = false;
   }
@@ -498,7 +500,7 @@ async function handleCreateOwner() {
     closeAddUserForms();
     loadUsers();
   } catch (err) {
-    createOwnerErrors.value = err.response?.data?.errors ?? null;
+    const normalized_createOwnerErrors = normalizeApiError(err, null); createOwnerErrors.value = Object.keys(normalized_createOwnerErrors.fieldErrors).length ? normalized_createOwnerErrors.fieldErrors : null;
   } finally {
     isCreatingOwner.value = false;
   }
@@ -527,7 +529,7 @@ async function handleCreateSubscriber() {
     closeAddUserForms();
     loadUsers();
   } catch (err) {
-    createSubscriberErrors.value = err.response?.data?.errors ?? null;
+    const normalized_createSubscriberErrors = normalizeApiError(err, null); createSubscriberErrors.value = Object.keys(normalized_createSubscriberErrors.fieldErrors).length ? normalized_createSubscriberErrors.fieldErrors : null;
   } finally {
     isCreatingSubscriber.value = false;
   }
@@ -570,7 +572,7 @@ async function handleCreateTechnician() {
     closeAddUserForms();
     loadUsers();
   } catch (err) {
-    createTechnicianErrors.value = err.response?.data?.errors ?? null;
+    const normalized_createTechnicianErrors = normalizeApiError(err, null); createTechnicianErrors.value = Object.keys(normalized_createTechnicianErrors.fieldErrors).length ? normalized_createTechnicianErrors.fieldErrors : null;
   } finally {
     isCreatingTechnician.value = false;
   }

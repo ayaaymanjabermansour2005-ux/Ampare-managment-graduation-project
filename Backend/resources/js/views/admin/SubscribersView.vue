@@ -1,22 +1,26 @@
 <script setup>
-import { reactive, ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { normalizeApiError } from "@/utils/normalizeApiError";
+import { reactive, ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import Chart from "chart.js/auto";
 import { Doughnut, Pie } from "vue-chartjs";
 import { useAdminSubscribers } from "@/composables/useAdminSubscribers";
 import { useAdminSubscriptionsData } from "@/composables/useAdminSubscriptionsData";
+import { useSubscriptionsAnalytics } from "@/composables/useSubscriptionsAnalytics";
+import { useAdminPasswordTools } from "@/composables/useAdminPasswordTools";
+import { useSubscriberExport } from "@/composables/useSubscriberExport";
+import { useBulkPaymentReminder } from "@/composables/useBulkPaymentReminder";
 import { useConfirm } from "@/composables/useConfirm";
 import { usePermissions } from "@/composables/usePermissions";
 import { vReveal } from "@/directives/reveal";
 import { vCountUp } from "@/directives/countUp";
-import userService from "@/services/userService";
 import activityLogService from "@/services/activityLogService";
 import { useToastStore } from "@/stores/toast";
 import TransferSubscriptionModal from "@/components/admin/TransferSubscriptionModal.vue";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import LightningCanvas from "@/components/ui/LightningCanvas.vue";
 
 
 const { t, locale } = useI18n();
@@ -55,6 +59,30 @@ const {
   isCreating,
   createError,
 } = useAdminSubscribers();
+
+/* ---------------- FRONT-004a (slice 2): أدوات كلمة السر (رابط إعادة تعيين /
+   تعيين مباشر) — منقولة لـ useAdminPasswordTools composable (God-component
+   breakdown). ---------------- */
+const {
+  isSendingResetLink,
+  handleSendResetLink,
+  setPasswordModal,
+  setPasswordForm,
+  showSetPassword,
+  isSettingPassword,
+  setPasswordError,
+  generateSetPassword,
+  openSetPassword,
+  copySetPassword,
+  handleSetPassword,
+} = useAdminPasswordTools();
+
+/* ---------------- FRONT-004a (slice 4): تذكير جماعي بالدفع —
+   منقولة لـ useBulkPaymentReminder composable (God-component breakdown). ---------------- */
+const { isSendingBulkReminder, handleBulkReminder } = useBulkPaymentReminder({
+  subscribers,
+  subscriberStatus,
+});
 
 
 /* ==========================================================================
@@ -105,266 +133,67 @@ const {
   contractUrl,
   monthlyGrowth,
   fetchMonthlyGrowth,
+  computeMonthlyGrowthFromPage,
   activityLog,
   pushActivity,
   fetchActivityLog,
 } = useAdminSubscriptionsData();
 
+/* ---------------- FRONT-004a (slice 3): تصدير القائمة (CSV / Excel) —
+   منقولة لـ useSubscriberExport composable (God-component breakdown). ---------------- */
+const { exportExcelUrl, handleExportCsv } = useSubscriberExport({
+  subscribers,
+  statusFilter,
+  subscriptionSearchTerm,
+  exportUrl,
+  statusLabel,
+  formatDate,
+});
+
 const generatorFormOptions = computed(() =>
   generatorsForForm.value.map((g) => ({ value: g.id, label: `${g.name} — ${g.location?.city ?? "-"}` })),
 );
-
-/* ---------------- تنسيق الحالة (بنفس منطق الألوان بباقي الصفحات) ----------------
- * ملاحظة: "cancelled" ما إلها chip-* رسمي بنظام التصميم (بس chip-warning/success/info/danger
- * موجودين ومستخدمين بصفحات تانية زي قراءات العدادات وأصحاب المولدات)، فمنستخدملها لون مخصّص
- * عبر style بدل افتراض اسم كلاس مش موجود.
- */
-const STATUS_META = {
-  pending: { key: "subscriptions_page.status_pending", chip: "chip-warning", color: "#FFC107" },
-  active: { key: "subscriptions_page.status_active", chip: "chip-success", color: "#28A745" },
-  suspended: { key: "subscriptions_page.status_suspended", chip: "chip-info", color: "#17A2B8" },
-  cancelled: { key: "subscriptions_page.status_cancelled", chip: null, color: "#9a9d97" },
-  rejected: { key: "subscriptions_page.status_rejected", chip: "chip-danger", color: "#D9534F" },
-};
-function subscriptionStatusLabel(status) {
-  const m = STATUS_META[status];
-  if (!m) return status;
-  return t(m.key);
-}
-function statusChip(status) {
-  return STATUS_META[status]?.chip ?? null;
-}
-function statusChipStyle(status) {
-  const m = STATUS_META[status];
-  if (!m || m.chip) return {};
-  return { color: m.color, background: m.color + "1A" };
-}
-
-/* ---------------- تنسيق نوع الخطة (نفس منطق نسخة الـ HTML) ---------------- */
-const PLAN_META = {
-  full: { key: "subscriptions_page.plan_full", cls: "plan-full", icon: "fa-circle-check" },
-  hours: { key: "subscriptions_page.plan_hours", cls: "plan-hours", icon: "fa-clock" },
-};
-function planMeta(plan) {
-  return PLAN_META[plan] ?? null;
-}
-function planLabel(plan) {
-  const m = PLAN_META[plan];
-  if (!m) return "-";
-  return t(m.key);
-}
 
 function subscriptionAvatarStyle(idx) {
   const c = AVATAR_COLORS[idx % AVATAR_COLORS.length];
   return { background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` };
 }
 
-/* ==================================================================
- * تحليلات لوحة الاشتراكات (رسوم بيانية / تنبيهات / أقرب للانتهاء)
- * ملاحظة نطاق البيانات: كل التحليلات التالية محسوبة من subscriptions.value، يعني من
- * اشتراكات الصفحة الحالية فقط بالجدول (بنفس قيد بطاقات الـ KPI أعلاه) - لأنه ما في
- * endpoint إحصائيات عام للاشتراكات (زي المذكور بالتعليق فوق نظام حالة الهيدر). لو صار
- * عندنا endpoint مماثل لاحقًا (مثال: subscriptionService.stats() / monthlyStats() /
- * activityLog())، هاي الدوال بتحاول تستخدمه أولًا وبترجع تلقائيًا للحساب المحلي لو مش موجود.
- * ================================================================== */
-
-/* ---------------- فرق الأيام عن اليوم (لتصنيف "على وشك الانتهاء" و"منتهي") ---------------- */
-function subscriptionDaysUntil(dateStr) {
-  if (!dateStr) return null;
-  const end = new Date(dateStr);
-  if (Number.isNaN(end.getTime())) return null;
-  const now = new Date();
-  end.setHours(0, 0, 0, 0);
-  now.setHours(0, 0, 0, 0);
-  return Math.round((end - now) / 86400000);
-}
-
-/* ---------------- تصنيف مشتق لأغراض العرض التحليلي فقط (نشط / على وشك / منتهي / موقوف) ----------------
- * هاد التصنيف منفصل عن sub.status الحقيقي (المستخدم بأزرار الإجراءات وفلتر الجدول)، لأنه
- * بيدمج تاريخ الانتهاء (ends_at) مع الحالة الفعلية عشان يعطي صورة أوضح للأدمن بالرسوم البيانية:
- *  - موقوف: sub.status === 'suspended'
- *  - منتهي: sub.status هي 'cancelled' أو 'rejected'، أو تاريخ الانتهاء عدّى
- *  - على وشك الانتهاء: باقي على الانتهاء EXPIRING_SOON_DAYS يوم أو أقل
- *  - نشط: كل الباقي (يشمل active وpending البعيدين عن الانتهاء)
- */
-const EXPIRING_SOON_DAYS = 14;
-function derivedStatusKey(sub) {
-  if (sub.status === "suspended") return "suspended";
-  if (sub.status === "cancelled" || sub.status === "rejected") return "expired";
-  const d = subscriptionDaysUntil(sub.end_date);
-  if (d !== null && d < 0) return "expired";
-  if (d !== null && d <= EXPIRING_SOON_DAYS) return "expiring";
-  return "active";
-}
-const DERIVED_STATUS_META = {
-  active: { key: "users_page.status_active", color: "#28A745", chip: "chip-success" },
-  expiring: { key: "subscriptions_page.derived_expiring", color: "#FFC107", chip: "chip-warning" },
-  expired: { key: "subscriptions_page.derived_expired", color: "#D9534F", chip: "chip-danger" },
-  suspended: { key: "users_page.status_suspended", color: "#17A2B8", chip: "chip-info" },
-};
-function derivedStatusLabel(key) {
-  return t(DERIVED_STATUS_META[key].key);
-}
-const derivedStatusCounts = computed(() => {
-  const counts = { active: 0, expiring: 0, expired: 0, suspended: 0 };
-  subscriptions.value.forEach((s) => { counts[derivedStatusKey(s)]++; });
-  return counts;
-});
-const statusDistribution = computed(() => {
-  const total = subscriptions.value.length || 1;
-  return Object.entries(DERIVED_STATUS_META).map(([key, meta]) => ({
-    key,
-    label: t(meta.key),
-    color: meta.color,
-    count: derivedStatusCounts.value[key],
-    pct: Math.round((derivedStatusCounts.value[key] / total) * 100),
-  }));
-});
-
-/* ---------------- فلتر سريع من الرسم البياني/الأسطورة (فوق فلتر الحالة الحقيقي بالجدول) ---------------- */
-const derivedFilter = ref(null); // 'active' | 'expiring' | 'expired' | 'suspended' | null
-function applyDerivedFilter(key) {
-  derivedFilter.value = derivedFilter.value === key ? null : key;
-}
-
-/* ---------------- توزيع نوع الخطة ---------------- */
-const planCounts = computed(() => {
-  const counts = { full: 0, hours: 0 };
-  subscriptions.value.forEach((s) => { if (counts[s.plan] !== undefined) counts[s.plan]++; });
-  return counts;
-});
-
-/* ---------------- الاشتراكات المنتهية خلال الأسابيع القادمة (تجميع بحسب المدى الزمني) ---------------- */
-const expiringBuckets = computed(() => {
-  const buckets = [0, 0, 0, 0, 0];
-  subscriptions.value.forEach((s) => {
-    const d = subscriptionDaysUntil(s.end_date);
-    if (d === null || d < 0) return;
-    if (d <= 7) buckets[0]++;
-    else if (d <= 14) buckets[1]++;
-    else if (d <= 21) buckets[2]++;
-    else if (d <= 28) buckets[3]++;
-    else if (d <= 60) buckets[4]++;
-  });
-  return buckets;
-});
-const expiringBucketLabels = computed(() => [
-  t("subscriptions_page.expiring_bucket_this_week"),
-  t("subscriptions_page.expiring_bucket_next_week"),
-  t("subscriptions_page.expiring_bucket_2weeks"),
-  t("subscriptions_page.expiring_bucket_3weeks"),
-  t("subscriptions_page.expiring_bucket_2months"),
-]);
-
-/* ---------------- تنبيهات متعلقة بالاشتراكات (مشتقة من البيانات) ---------------- */
-const subsAlerts = computed(() => {
-  const c = derivedStatusCounts.value;
-  const pendingCount = countOnPage("pending");
-  const all = [
-    {
-      icon: "fa-hourglass-half",
-      title: t("subscriptions_page.alert_pending_title"),
-      desc: t("subscriptions_page.alert_pending_desc", { count: pendingCount }),
-      color: "#FFC107",
-      chip: "chip-warning",
-      tag: t("subscriptions_page.tag_alert"),
-      show: pendingCount > 0,
-    },
-    {
-      icon: "fa-calendar-xmark",
-      title: t("subscriptions_page.alert_expiring_title"),
-      desc: t("subscriptions_page.alert_expiring_desc", { count: c.expiring, days: EXPIRING_SOON_DAYS }),
-      color: "#FFC107",
-      chip: "chip-warning",
-      tag: t("subscriptions_page.tag_alert"),
-      show: c.expiring > 0,
-    },
-    {
-      icon: "fa-ban",
-      title: t("subscriptions_page.alert_suspended_title"),
-      desc: t("subscriptions_page.alert_suspended_desc", { count: c.suspended }),
-      color: "#17A2B8",
-      chip: "chip-info",
-      tag: t("subscriptions_page.tag_info"),
-      show: c.suspended > 0,
-    },
-    {
-      icon: "fa-calendar-xmark",
-      title: t("subscriptions_page.alert_expired_title"),
-      desc: t("subscriptions_page.alert_expired_desc", { count: c.expired }),
-      color: "#D9534F",
-      chip: "chip-danger",
-      tag: t("owners_page.alert_tag_critical"),
-      show: c.expired > 0,
-    },
-    {
-      icon: "fa-circle-check",
-      title: t("subscriptions_page.alert_active_title"),
-      desc: t("subscriptions_page.alert_active_desc", { count: c.active }),
-      color: "#28A745",
-      chip: "chip-success",
-      tag: t("subscriptions_page.tag_good"),
-      show: true,
-    },
-  ];
-  return all.filter((a) => a.show);
-});
-
-function subscriptionTimeAgo(dateStr) {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.max(0, Math.floor(diffMs / 60000));
-  if (mins < 1) return t("subscriptions_page.time_just_now");
-  if (mins < 60) return t("subscriptions_page.time_mins_ago_short", { mins });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return t("subscribers_page.time_hours_ago", { hours });
-  const days = Math.floor(hours / 24);
-  return t("subscribers_page.time_days_ago", { days });
-}
-
-/* ---------------- الأقرب للانتهاء ---------------- */
-const topExpiring = computed(() =>
-  subscriptions.value
-    .filter((s) => s.status !== "suspended" && s.status !== "cancelled" && s.status !== "rejected")
-    .slice()
-    .sort((a, b) => new Date(a.end_date) - new Date(b.end_date))
-    .slice(0, 5)
-);
-function expiringLabel(sub) {
-  const d = subscriptionDaysUntil(sub.end_date);
-  if (d === null) return "-";
-  if (d < 0) return t("subscriptions_page.expired_marker");
-  return t("subscriptions_page.days_remaining", { d });
-}
-function expiringColor(sub) {
-  const d = subscriptionDaysUntil(sub.end_date);
-  if (d === null) return "#9a9d97";
-  if (d < 0) return "#D9534F";
-  if (d <= EXPIRING_SOON_DAYS) return "#FFC107";
-  return "#28A745";
-}
-
-const SUBSCRIPTION_STATUS_PILLS = computed(() => [
-  { value: "all", label: t("common.all") },
-  { value: "pending", label: subscriptionStatusLabel("pending") },
-  { value: "active", label: subscriptionStatusLabel("active") },
-  { value: "suspended", label: subscriptionStatusLabel("suspended") },
-  { value: "cancelled", label: subscriptionStatusLabel("cancelled") },
-  { value: "rejected", label: subscriptionStatusLabel("rejected") },
-]);
-
-/* ---------------- تصدير القائمة (Excel / PDF) ----------------
- * ملاحظة تصميمية: نفس منطق الفلاتر المطبّق على الجدول (statusFilter/subscriptionSearchTerm) بينعكس على
- * رابط التصدير، بحيث يصدّر بالضبط اللي الأدمن شايفه بالجدول.
- */
-const exportParams = computed(() => ({
-  status: statusFilter.value !== "all" ? statusFilter.value : undefined,
-  search: subscriptionSearchTerm.value.trim() || undefined,
-}));
-const exportExcelUrl = computed(() => exportUrl("excel", exportParams.value));
-// FIX-031: زر "تصدير PDF" اتحذف نهائيًا (مش بس تعطيل) — ما في endpoint
-// بالباك اند لتصدير PDF لقائمة الاشتراكات (راجع التقرير). لو أُضيف
-// الـ endpoint مستقبلاً، الزر لازم يُعاد بناؤه من الصفر بربط حقيقي،
-// مش بإعادة تفعيل هاد الكود.
+/* ---------------- FRONT-004a (slice 1): تحليلات لوحة الاشتراكات + رسوم Chart.js —
+   منقولة لـ useSubscriptionsAnalytics composable (God-component breakdown). ---------------- */
+const {
+  STATUS_META,
+  subscriptionStatusLabel,
+  statusChip,
+  statusChipStyle,
+  planMeta,
+  planLabel,
+  EXPIRING_SOON_DAYS,
+  subscriptionDaysUntil,
+  derivedStatusKey,
+  derivedStatusLabel,
+  derivedStatusCounts,
+  statusDistribution,
+  derivedFilter,
+  applyDerivedFilter,
+  planCounts,
+  expiringBuckets,
+  expiringBucketLabels,
+  countOnPage,
+  subsAlerts,
+  subscriptionTimeAgo,
+  topExpiring,
+  expiringLabel,
+  expiringColor,
+  SUBSCRIPTION_STATUS_PILLS,
+  SUBSCRIPTION_KPI_CARDS,
+  systemStatusInfo,
+  growthCanvas,
+  statusCanvas,
+  planCanvas,
+  expiringCanvas,
+  renderAllCharts,
+} = useSubscriptionsAnalytics({ subscriptions, subscriptionPagination, monthlyGrowth, computeMonthlyGrowthFromPage });
 
 /* ---------------- فرز عبر رؤوس الأعمدة (أيقونة تصاعدي/تنازلي - نفس أسلوب صفحتَي المولدات والمشتركين) ---------------- */
 const subscriptionSortKey = ref("");
@@ -436,35 +265,6 @@ const subscriptionPaginationRange = computed(() => {
     last = i;
   }
   return withDots;
-});
-
-/* ---------------- KPI Cards (من الصفحة الحالية، فيما عدا الإجمالي) ---------------- */
-const countOnPage = (status) => subscriptions.value.filter((s) => s.status === status).length;
-const SUBSCRIPTION_KPI_CARDS = computed(() => [
-  { icon: "fa-file-contract", label: t("subscriptions_page.total_subscriptions"), value: subscriptionPagination.value.total, c1: "#52733D", c2: "#3E582E" },
-  { icon: "fa-circle-check", label: subscriptionStatusLabel("active") + t("common.this_page_suffix"), value: countOnPage("active"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-hourglass-half", label: subscriptionStatusLabel("pending") + t("common.this_page_suffix"), value: countOnPage("pending"), c1: "#FFC107", c2: "#a3760a" },
-  { icon: "fa-circle-pause", label: subscriptionStatusLabel("suspended") + t("common.this_page_suffix"), value: countOnPage("suspended"), c1: "#17A2B8", c2: "#0f6c7d" },
-]);
-
-/* ---------------- مؤشر حالة النظام بالهيدر (نفس أسلوب صفحة إدارة المولدات) ----------------
- * ملاحظة نطاق البيانات: الحالات المعروضة بجدول الصفحة الحالية فقط (subscriptions.value)، تمامًا
- * كباقي بطاقات الـ KPI أعلاه المعلّم عليها "(هذه الصفحة)" - لأنه ما في endpoint إحصائيات عام
- * للاشتراكات مثل الموجود لصفحة المولدات (stats). لو صار عندنا endpoint مماثل لاحقًا، يفضّل
- * الاعتماد عليه بدل الاكتفاء ببيانات الصفحة الحالية.
- */
-const systemStatusInfo = computed(() => {
-  const pendingCount = countOnPage("pending");
-  if (pendingCount === 0) {
-    return {
-      label: t("subscriptions_page.no_requests_awaiting_review"),
-      color: "#28A745",
-    };
-  }
-  return {
-    label: t("subscriptions_page.requests_awaiting_review", { count: pendingCount }),
-    color: "#FFC107",
-  };
 });
 
 /* ==================================================================
@@ -676,151 +476,11 @@ function handleTransferred(updated) {
 }
 
 
-/* ==================================================================
- * رسم بيانات لوحة التحليلات (Chart.js) - نفس الرسوم البيانية الأربعة بنسخة الـ HTML
- * (نمو الاشتراكات الشهري / توزيع الحالات / حسب نوع الخطة / المنتهية خلال الأسابيع القادمة)
- * ================================================================== */
-Chart.defaults.font.family = "Cairo, sans-serif";
-Chart.defaults.color = "#6B6B6B";
-
-const growthCanvas = ref(null);
-const statusCanvas = ref(null);
-const planCanvas = ref(null);
-const expiringCanvas = ref(null);
-let growthChart = null;
-let statusChart = null;
-let planChart = null;
-let expiringChart = null;
-
-function renderGrowthChart() {
-  if (!growthCanvas.value) return;
-  if (growthChart) growthChart.destroy();
-  growthChart = new Chart(growthCanvas.value, {
-    type: "line",
-    data: {
-      labels: monthlyGrowth.value.labels,
-      datasets: [
-        {
-          label: t("subscriptions_page.chart_new_contracts"),
-          data: monthlyGrowth.value.newCounts,
-          borderColor: "#8A6D1F",
-          backgroundColor: "rgba(138,109,31,0.12)",
-          fill: true,
-          tension: 0.4,
-        },
-        {
-          label: t("subscriptions_page.chart_cancelled_contracts"),
-          data: monthlyGrowth.value.cancelledCounts,
-          borderColor: "#D9534F",
-          backgroundColor: "rgba(217,83,79,0.08)",
-          fill: true,
-          tension: 0.4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
-      scales: { x: { grid: { display: false } }, y: { grid: { color: "rgba(82,115,61,0.08)" } } },
-    },
-  });
-}
-
-function renderStatusChart() {
-  if (!statusCanvas.value) return;
-  if (statusChart) statusChart.destroy();
-  const dist = statusDistribution.value;
-  statusChart = new Chart(statusCanvas.value, {
-    type: "doughnut",
-    data: {
-      labels: dist.map((d) => d.label),
-      datasets: [{ data: dist.map((d) => d.count), backgroundColor: dist.map((d) => d.color), borderWidth: 0 }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: "70%",
-      plugins: { legend: { display: false } },
-      onClick: (evt, elements) => {
-        if (!elements.length) return;
-        applyDerivedFilter(dist[elements[0].index].key);
-      },
-    },
-  });
-}
-
-function renderPlanChart() {
-  if (!planCanvas.value) return;
-  if (planChart) planChart.destroy();
-  planChart = new Chart(planCanvas.value, {
-    type: "bar",
-    data: {
-      labels: [planLabel("full"), planLabel("hours")],
-      datasets: [
-        {
-          label: t("subscriptions_page.chart_subscriptions_label"),
-          data: [planCounts.value.full, planCounts.value.hours],
-          backgroundColor: ["#52733D", "#17A2B8"],
-          borderRadius: 6,
-        },
-      ],
-    },
-    options: {
-      indexAxis: "y",
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { grid: { color: "rgba(82,115,61,0.08)" } }, y: { grid: { display: false } } },
-    },
-  });
-}
-
-function renderExpiringChart() {
-  if (!expiringCanvas.value) return;
-  if (expiringChart) expiringChart.destroy();
-  expiringChart = new Chart(expiringCanvas.value, {
-    type: "bar",
-    data: {
-      labels: expiringBucketLabels.value,
-      datasets: [
-        {
-          label: t("subscriptions_page.chart_expiring_subscriptions_label"),
-          data: expiringBuckets.value,
-          backgroundColor: "#D4AF37",
-          borderRadius: 6,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { grid: { display: false } }, y: { grid: { color: "rgba(82,115,61,0.08)" } } },
-    },
-  });
-}
-
-function renderAllCharts() {
-  nextTick(() => {
-    renderGrowthChart();
-    renderStatusChart();
-    renderPlanChart();
-    renderExpiringChart();
-  });
-}
-
-/* لما بيانات الصفحة تتغيّر: نعيد حساب نمو الاشتراكات التقريبي (لو ما في endpoint حقيقي) ونعيد رسم كل الرسوم */
-watch(subscriptions, () => {
-  if (monthlyGrowth.value.isEstimate) computeMonthlyGrowthFromPage();
-  renderAllCharts();
-});
-/* لما تتغيّر اللغة: تحديث تسميات الأشهر/الحالات/الخطط والرسوم كلها */
-watch(locale, () => {
-  if (monthlyGrowth.value.isEstimate) computeMonthlyGrowthFromPage();
-  renderAllCharts();
-});
-
+/* ---------------- تحميل بيانات تبويب الاشتراكات عند التركيب ----------------
+ * رسم الرسوم البيانية الأربعة (نمو/حالة/خطة/انتهاء) وإعادة حسابها عند تغيّر
+ * subscriptions/locale الآن من مسؤولية useSubscriptionsAnalytics composable
+ * (FRONT-004a slice 1) — الـ view هون بس بيطلب تحميل البيانات ثم يطلب من
+ * الـ composable يرسم أول مرة. */
 onMounted(async () => {
   await fetchSubscriptions();
   await fetchMonthlyGrowth();
@@ -828,87 +488,14 @@ onMounted(async () => {
   renderAllCharts();
 });
 
-onBeforeUnmount(() => {
-  growthChart?.destroy();
-  statusChart?.destroy();
-  planChart?.destroy();
-  expiringChart?.destroy();
-});
-
-/* ---------------- تأثير الصواعق الخلفي في الـ Hero (هوية أمبير البصرية — منقول من subscribers.html) ---------------- */
-const heroCanvas = ref(null);
-let stopLightning = null;
-function startLightningEffect(canvas) {
-  const ctx = canvas.getContext("2d");
-  function resize() {
-    canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = canvas.parentElement.offsetHeight;
-  }
-  window.addEventListener("resize", resize);
-  resize();
-
-  class Lightning {
-    constructor() {
-      this.reset();
-    }
-    reset() {
-      this.startX = Math.random() * canvas.width;
-      this.startY = Math.random() * (canvas.height * 0.3);
-      this.path = [];
-      this.life = 0;
-      this.maxLife = 20 + Math.random() * 20;
-      let x = this.startX;
-      let y = this.startY;
-      this.path.push({ x, y });
-      const steps = 8 + Math.floor(Math.random() * 6);
-      for (let i = 0; i < steps; i++) {
-        x += (Math.random() - 0.5) * 70;
-        y += (canvas.height / steps) * (0.8 + Math.random() * 0.4);
-        this.path.push({ x, y });
-      }
-    }
-    draw() {
-      this.life++;
-      let alpha = Math.max(0, 1 - this.life / this.maxLife);
-      if (Math.random() < 0.25) alpha *= 0.3;
-      const dark = document.documentElement.classList.contains("dark");
-      ctx.save();
-      ctx.shadowBlur = dark ? 16 : 9;
-      ctx.shadowColor = dark ? "#D4AF37" : "#3E582E";
-      ctx.strokeStyle = dark ? `rgba(255,248,220,${alpha * 0.5})` : `rgba(62,88,46,${alpha * 0.35})`;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      this.path.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  let bolts = [new Lightning()];
-  let timer = 0;
-  let frame = null;
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    timer++;
-    if (timer % 90 === 0 || Math.random() < 0.01) bolts.push(new Lightning());
-    for (let i = bolts.length - 1; i >= 0; i--) {
-      bolts[i].draw();
-      if (bolts[i].life >= bolts[i].maxLife) bolts.splice(i, 1);
-    }
-    frame = requestAnimationFrame(animate);
-  }
-  animate();
-
-  return () => {
-    window.removeEventListener("resize", resize);
-    if (frame) cancelAnimationFrame(frame);
-  };
-}
-onMounted(() => {
-  if (heroCanvas.value) stopLightning = startLightningEffect(heroCanvas.value);
-});
-onUnmounted(() => {
-  if (stopLightning) stopLightning();
+/* FIX (FRONT-004-chart-sizing): تبويب "الاشتراكات" بمحتواه (وبالتالي الـ 4
+ * canvas الخاصة بالرسوم) معروض بـ v-if، يعني مش موجود بالـ DOM أصلًا لما
+ * onMounted فوق ينفّذ (activeTab تبدأ "subscribers" دائمًا) — فكل محاولات
+ * الرسم بتفشل بصمت (canvas.value لسا null) ولا في شي بيعيد الرسم لما
+ * المستخدم يبدّل فعليًا لتبويب الاشتراكات. هاد الـ watch يضمن الرسم الفعلي
+ * أول مرة توصل فيها الـ canvas عناصر حقيقية للـ DOM. */
+watch(activeTab, (tab) => {
+  if (tab === "subscriptions") renderAllCharts();
 });
 
 async function handleUnlock(subscriber) {
@@ -922,80 +509,10 @@ async function handleUnlock(subscriber) {
     });
   } catch (err) {
     toast.show({
-      type: "error",
+      type: "danger",
       title: t("users_page.unlocked_toast_title"),
-      message: err.response?.data?.message ?? t("common.unexpected_error_retry"),
+      message: normalizeApiError(err, t("common.unexpected_error_retry")).message,
     });
-  }
-}
-
-/* ---------------- أدوات كلمة السر (رابط إعادة تعيين / تعيين مباشر)     ---------------- */
-const isSendingResetLink = ref(false);
-async function handleSendResetLink(subscriber) {
-  const confirmed = await confirm({
-    title: t("users_page.send_reset_link_title"),
-    message: t("subscribers_page.send_reset_link_message", { email: subscriber.email }),
-    confirmLabel: t("users_page.send_action"),
-  });
-  if (!confirmed) return;
-  isSendingResetLink.value = true;
-  try {
-    await userService.sendPasswordResetLink(subscriber.id);
-    toast.show({ type: "success", title: t("users_page.sent_toast_title"), message: t("subscribers_page.reset_link_sent_message", { email: subscriber.email }) });
-  } catch (err) {
-    toast.show({ type: "danger", title: t("subscribers_page.send_failed_title"), message: err.response?.data?.message ?? "" });
-  } finally {
-    isSendingResetLink.value = false;
-  }
-}
-
-const setPasswordModal = ref(null);
-const setPasswordForm = reactive({ password: "", password_confirmation: "" });
-const showSetPassword = ref(true);
-const isSettingPassword = ref(false);
-const setPasswordError = ref(null);
-
-function generateSetPassword() {
-  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const lower = "abcdefghijkmnpqrstuvwxyz";
-  const digits = "23456789";
-  const symbols = "!@#$%&*";
-  const all = upper + lower + digits + symbols;
-  let pwd = upper[Math.floor(Math.random() * upper.length)] + lower[Math.floor(Math.random() * lower.length)] + digits[Math.floor(Math.random() * digits.length)] + symbols[Math.floor(Math.random() * symbols.length)];
-  for (let i = 0; i < 8; i++) pwd += all[Math.floor(Math.random() * all.length)];
-  pwd = pwd.split("").sort(() => Math.random() - 0.5).join("");
-  setPasswordForm.password = pwd;
-  setPasswordForm.password_confirmation = pwd;
-}
-function openSetPassword(subscriber) {
-  setPasswordModal.value = subscriber;
-  setPasswordError.value = null;
-  showSetPassword.value = true;
-  generateSetPassword();
-}
-async function copySetPassword() {
-  try {
-    await navigator.clipboard.writeText(setPasswordForm.password);
-    toast.show({ type: "success", title: t("users_page.copied_toast_title"), message: t("subscribers_page.password_copied_short") });
-  } catch {
-    // فشل النسخ (صلاحيات المتصفح) — تجاهل بصمت.
-  }
-}
-async function handleSetPassword() {
-  isSettingPassword.value = true;
-  setPasswordError.value = null;
-  try {
-    await userService.setPassword(setPasswordModal.value.id, setPasswordForm.password, setPasswordForm.password_confirmation);
-    toast.show({
-      type: "success",
-      title: t("users_page.set_action"),
-      message: t("subscribers_page.password_set_message"),
-    });
-    setPasswordModal.value = null;
-  } catch (err) {
-    setPasswordError.value = err.response?.data?.errors?.password?.[0] ?? err.response?.data?.message ?? t("subscribers_page.could_not_set_password");
-  } finally {
-    isSettingPassword.value = false;
   }
 }
 
@@ -1326,55 +843,6 @@ function printPage() {
   window.print();
 }
 
-/* ---------------- تذكير جماعي بالدفع ----------------
- * أصبحت الآن متّصلة فعليًا بـ POST /users/bulk-payment-reminder (تعيد استخدام
- * نفس بنية الإشعارات الموجودة: حدث InvoiceDueSoon + بوابة تفضيلات الإشعارات) —
- * راجع SendBulkPaymentReminderAction بالباك اند للتفاصيل الكاملة.
- * ---------------------------------------------------------------- */
-const isSendingBulkReminder = ref(false);
-async function handleBulkReminder() {
-  const dueSubscriberIds = subscribers.value
-    .filter((s) => subscriberStatus(s) === "overdue")
-    .map((s) => s.id);
-
-  if (dueSubscriberIds.length === 0) {
-    await confirm({
-      title: t("subscribers_page.no_overdue_subscribers_title"),
-      message: t("subscribers_page.no_overdue_subscribers_message"),
-      confirmLabel: t("subscribers_page.ok_action"),
-      hideCancel: true,
-    });
-    return;
-  }
-
-  const confirmed = await confirm({
-    title: t("subscribers_page.bulk_reminder_title"),
-    message: t("subscribers_page.bulk_reminder_message", { count: dueSubscriberIds.length }),
-    confirmLabel: t("users_page.send_action"),
-  });
-  if (!confirmed) return;
-
-  isSendingBulkReminder.value = true;
-  try {
-    const { data } = await userService.sendBulkPaymentReminder(dueSubscriberIds);
-    await confirm({
-      title: t("users_page.sent_toast_title"),
-      message: data?.message ?? t("subscribers_page.reminders_sent_message"),
-      confirmLabel: t("subscribers_page.ok_action"),
-      hideCancel: true,
-    });
-  } catch (err) {
-    await confirm({
-      title: t("users_page.send_failed_title"),
-      message: err.response?.data?.message ?? t("subscribers_page.reminder_send_failed_message"),
-      confirmLabel: t("subscribers_page.ok_action"),
-      hideCancel: true,
-    });
-  } finally {
-    isSendingBulkReminder.value = false;
-  }
-}
-
 /* ---------------- Pagination بأزرار محدودة (مش زر لكل صفحة) ---------------- */
 const paginationRange = computed(() => {
   const total = pagination.value.last_page;
@@ -1511,46 +979,6 @@ function switchToEditFromView() {
   openEdit(subscriber);
 }
 
-/* ---------------- تصدير CSV ----------------
- * ملاحظة: التصدير هون على مستوى الصفحة المحمّلة حاليًا (subscribers.value) فقط، مو كل
- * السجلات. لتصدير الكل بغض النظر عن الـ pagination، يلزم إما رفع per_page مؤقتًا عبر
- * fetchSubscribers، أو إضافة Endpoint تصدير مخصص بالـ Backend (الأفضل للحجم الكبير).
- */
-function handleExportCsv() {
-  const escapeCsv = (val) => {
-    const s = String(val ?? "");
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const header = [
-    t("dashboard.name"),
-    t("users_page.email_label"),
-    t("dashboard.phone"),
-    t("dashboard.status"),
-    t("subscribers_page.current_subscription_col"),
-    t("subscribers_page.expires_on_col"),
-    t("subscribers_page.joined_col"),
-  ];
-  const rows = subscribers.value.map((s) => [
-    s.name,
-    s.email,
-    s.phone ?? "",
-    statusLabel(s),
-    s.active_subscription ? (s.active_subscription.generator_name ?? s.active_subscription.plan_name ?? "") : t("subscribers_page.no_subscription"),
-    s.active_subscription ? formatDate(s.active_subscription.ends_at) : "",
-    formatDate(s.created_at),
-  ]);
-  const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(escapeCsv).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 onMounted(() => {
   if (route.query.q) searchTerm.value = String(route.query.q);
   fetchSubscribers();
@@ -1564,7 +992,7 @@ onMounted(() => {
   <div class="space-y-6">
     <!-- ===== HERO ===== -->
     <section v-reveal class="glass-card relative overflow-hidden p-6 lg:p-8">
-      <canvas ref="heroCanvas" class="absolute inset-0 w-full h-full pointer-events-none opacity-70"></canvas>
+      <LightningCanvas />
       <div class="absolute -start-16 -top-16 w-72 h-72 bg-[#D4AF37]/20 dark:bg-[#D4AF37]/25 rounded-full blur-[100px] pointer-events-none"></div>
       <div class="absolute -end-10 -bottom-16 w-72 h-72 bg-[#52733D]/20 dark:bg-[#8cc35a]/15 rounded-full blur-[100px] pointer-events-none"></div>
 

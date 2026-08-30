@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import invoiceService from "@/services/invoiceService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminInvoices() {
   const { t } = useI18n();
@@ -28,7 +29,7 @@ export function useAdminInvoices() {
         last_page: meta.last_page ?? 1,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("invoices_page.load_error");
+      error.value = normalizeApiError(err, t("invoices_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -62,7 +63,7 @@ export function useAdminInvoices() {
       return true;
     } catch (err) {
       cancelError.value =
-        err.response?.data?.message ?? t("invoices_page.cancel_error");
+        normalizeApiError(err, t("invoices_page.cancel_error")).message;
       return false;
     } finally {
       cancellingId.value = null;
@@ -81,7 +82,7 @@ export function useAdminInvoices() {
       return true;
     } catch (err) {
       reissueError.value =
-        err.response?.data?.message ?? t("invoices_page.reissue_error");
+        normalizeApiError(err, t("invoices_page.reissue_error")).message;
       return false;
     } finally {
       reissuingId.value = null;

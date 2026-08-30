@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import subscriptionService from "@/services/subscriptionService";
@@ -42,7 +43,7 @@ export function useAdminSubscriptionsData() {
         total: meta.total ?? subscriptions.value.length,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("subscriptions_page.load_error");
+      error.value = normalizeApiError(err, t("subscriptions_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -64,9 +65,13 @@ export function useAdminSubscriptionsData() {
    * بالـ service الحقيقي، منرجع "#" بدل ما نخلي الصفحة كلها تطيح بخطأ Runtime.
    */
   function exportUrl(kind, params) {
-    const fn = subscriptionService[kind === "excel" ? "exportExcelUrl" : "exportPdfUrl"];
+    // ملاحظة إصلاح حرج: كان الكود القديم يفصل الدالة عن subscriptionService قبل
+    // نداءها (`const fn = subscriptionService[...]; fn(params)`)، فتفقد ربط `this` —
+    // exportExcelUrl الحقيقية بالـ service بتنادي `this.exportUrl(...)` داخليًا، فكانت
+    // ترمي TypeError دايمًا وتلتقطها catch{} بصمت، فيرجع "#" حتى مع وجود endpoint حقيقي.
+    const key = kind === "excel" ? "exportExcelUrl" : "exportPdfUrl";
     try {
-      return typeof fn === "function" ? fn(params) : "#";
+      return typeof subscriptionService[key] === "function" ? subscriptionService[key](params) : "#";
     } catch {
       return "#";
     }
@@ -124,7 +129,7 @@ export function useAdminSubscriptionsData() {
       await fetchSubscriptions(1);
       return data?.data ?? true;
     } catch (err) {
-      saveSubscriptionError.value = err.response?.data?.message ?? t("subscriptions_page.create_error");
+      saveSubscriptionError.value = normalizeApiError(err, t("subscriptions_page.create_error")).message;
       return false;
     } finally {
       isSavingSubscription.value = false;
@@ -145,7 +150,7 @@ export function useAdminSubscriptionsData() {
       if (index !== -1) subscriptions.value[index] = updated;
       return updated;
     } catch (err) {
-      statusUpdateError.value = err.response?.data?.message ?? t("subscriptions_page.status_update_error");
+      statusUpdateError.value = normalizeApiError(err, t("subscriptions_page.status_update_error")).message;
       return null;
     } finally {
       updatingStatusId.value = null;
@@ -264,6 +269,7 @@ export function useAdminSubscriptionsData() {
 
     monthlyGrowth,
     fetchMonthlyGrowth,
+    computeMonthlyGrowthFromPage,
 
     activityLog,
     pushActivity,

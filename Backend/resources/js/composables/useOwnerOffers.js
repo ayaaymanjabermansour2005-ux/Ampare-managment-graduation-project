@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import offerService from "@/services/offerService";
@@ -36,7 +37,7 @@ export function useOwnerOffers() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_offers.load_error");
+      error.value = normalizeApiError(err, t("owner_offers.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -106,7 +107,7 @@ export function useOwnerOffers() {
       if (index !== -1) offers.value[index] = data.data;
       return true;
     } catch (err) {
-      cancelError.value = err.response?.data?.message ?? t("owner_offers.cancel_error");
+      cancelError.value = normalizeApiError(err, t("owner_offers.cancel_error")).message;
       return false;
     } finally {
       cancellingId.value = null;

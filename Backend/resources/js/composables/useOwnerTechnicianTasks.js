@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianTaskService from "@/services/technicianTaskService";
@@ -44,7 +45,7 @@ export function useOwnerTechnicianTasks() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_technician_tasks.load_error");
+      error.value = normalizeApiError(err, t("owner_technician_tasks.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -70,7 +71,7 @@ export function useOwnerTechnicianTasks() {
       return true;
     } catch (err) {
       actionError.value =
-        err.response?.data?.message ?? t("owner_technician_tasks.review_error");
+        normalizeApiError(err, t("owner_technician_tasks.review_error")).message;
       return false;
     } finally {
       actingId.value = null;
@@ -89,7 +90,7 @@ export function useOwnerTechnicianTasks() {
       if (task) task.rating = data.data;
       return true;
     } catch (err) {
-      actionError.value = err.response?.data?.message ?? t("owner_technician_tasks.rate_error");
+      actionError.value = normalizeApiError(err, t("owner_technician_tasks.rate_error")).message;
       return false;
     } finally {
       actingId.value = null;
@@ -107,7 +108,7 @@ export function useOwnerTechnicianTasks() {
       await fetchTasks(1);
       return true;
     } catch (err) {
-      createError.value = err.response?.data?.message ?? t("owner_technician_tasks.create_error");
+      createError.value = normalizeApiError(err, t("owner_technician_tasks.create_error")).message;
       return false;
     } finally {
       isCreating.value = false;
@@ -125,7 +126,7 @@ export function useOwnerTechnicianTasks() {
       replaceInList(data.data);
       return true;
     } catch (err) {
-      assignError.value = err.response?.data?.message ?? t("owner_technician_tasks.assign_error");
+      assignError.value = normalizeApiError(err, t("owner_technician_tasks.assign_error")).message;
       return false;
     } finally {
       isAssigning.value = false;

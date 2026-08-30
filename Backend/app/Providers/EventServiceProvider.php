@@ -17,6 +17,7 @@ use App\Events\TechnicianTaskApproved;
 use App\Events\TechnicianTaskAssigned;
 use App\Events\TechnicianTaskRejected;
 use App\Events\TechnicianTaskSubmitted;
+use App\Listeners\CheckApplicationDependenciesHealth;
 use App\Listeners\SendComplaintResolvedNotification;
 use App\Listeners\SendFaultReportedNotification;
 use App\Listeners\SendFuelStockLowNotification;
@@ -31,11 +32,16 @@ use App\Listeners\SendSubscriptionApprovedNotification;
 use App\Listeners\SendTechnicianTaskAssignedNotification;
 use App\Listeners\SendTechnicianTaskReviewedNotification;
 use App\Listeners\SendTechnicianTaskSubmittedNotification;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
+        DiagnosingHealth::class => [
+            CheckApplicationDependenciesHealth::class,
+        ],
+
         InvoicePaid::class => [
             SendInvoicePaidNotification::class,
         ],

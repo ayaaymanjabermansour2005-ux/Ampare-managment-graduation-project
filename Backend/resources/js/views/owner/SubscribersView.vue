@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -214,7 +215,7 @@ async function load(page = 1) {
     subscriptions.value = unwrapPagination(data.data);
     selectedIds.value = [];
   } catch (error) {
-    loadError.value = error.response?.data?.message ?? t("owner_subscribers.load_error");
+    loadError.value = normalizeApiError(error, t("owner_subscribers.load_error")).message;
   } finally {
     isLoading.value = false;
   }
@@ -289,7 +290,7 @@ async function changeStatus(item, nextStatus) {
     if (selected.value?.id === item.id) selected.value = updated;
     toast.show({ type: "success", title: t("owner_subscribers.status_updated_toast_title"), message: t("owner_subscribers.status_updated_toast_message", { name: updated.subscriber?.name, status: statusLabel(updated.status) }) });
   } catch (error) {
-    toast.show({ type: "danger", title: t("owner_subscribers.status_update_failed_title"), message: error.response?.data?.message ?? t("owner_subscribers.status_update_failed_message") });
+    toast.show({ type: "danger", title: t("owner_subscribers.status_update_failed_title"), message: normalizeApiError(error, t("owner_subscribers.status_update_failed_message")).message });
   } finally {
     changingId.value = null;
   }
@@ -340,7 +341,7 @@ async function confirmTransfer() {
     });
     transferModal.value = { open: false, subscription: null, generatorId: "" };
   } catch (error) {
-    transferError.value = error.response?.data?.message ?? t("owner_subscribers.transfer_error", "تعذّر نقل الاشتراك.");
+    transferError.value = normalizeApiError(error, t("owner_subscribers.transfer_error", "تعذّر نقل الاشتراك.")).message;
   } finally {
     isTransferring.value = false;
   }
@@ -389,7 +390,7 @@ async function sendBulkReminder() {
     toast.show({
       type: "danger",
       title: t("owner_subscribers.bulk_reminder_failed_title", "تعذّر الإرسال"),
-      message: error.response?.data?.message ?? t("owner_subscribers.bulk_reminder_failed_message", "تعذّر إرسال التذكير، حاول مرة أخرى."),
+      message: normalizeApiError(error, t("owner_subscribers.bulk_reminder_failed_message", "تعذّر إرسال التذكير، حاول مرة أخرى.")).message,
     });
   } finally {
     isSendingReminder.value = false;
@@ -626,7 +627,7 @@ async function handleCreateSubscription() {
     addSubscriptionModal.value = false;
   } catch (error) {
     createSubscriptionError.value =
-      error.response?.data?.message ?? t("owner_subscribers.subscription_create_failed", "تعذّر إنشاء الاشتراك.");
+      normalizeApiError(error, t("owner_subscribers.subscription_create_failed", "تعذّر إنشاء الاشتراك.")).message;
   } finally {
     isCreatingSubscription.value = false;
   }

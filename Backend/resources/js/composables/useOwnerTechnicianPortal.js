@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianTaskService from "@/services/technicianTaskService";
@@ -37,7 +38,7 @@ export function useOwnerTechnicianPortal() {
       readings.value = readingsRes.data.data.data ?? readingsRes.data.data;
       payments.value = paymentsRes.data.data.data ?? paymentsRes.data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_technician_portal.load_error");
+      error.value = normalizeApiError(err, t("owner_technician_portal.load_error")).message;
     } finally {
       isLoading.value = false;
     }

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import userService from "@/services/userService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export const useUserStore = defineStore("user", () => {
   const users = ref([]);
@@ -33,8 +34,9 @@ export const useUserStore = defineStore("user", () => {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      errors.value = err.response?.data?.errors ?? null;
-      error.value = err.response?.data?.message ?? null;
+      const normalized = normalizeApiError(err, null);
+      errors.value = Object.keys(normalized.fieldErrors).length ? normalized.fieldErrors : null;
+      error.value = normalized.message;
       throw err;
     } finally {
       isLoading.value = false;

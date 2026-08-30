@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import conversationService from "@/services/conversationService";
@@ -19,7 +20,7 @@ export function useConversations() {
       const payload = data.data;
       conversations.value = payload.data ?? payload;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_messages.load_error");
+      error.value = normalizeApiError(err, t("owner_messages.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -58,7 +59,7 @@ export function useConversations() {
       messages.value.push(data.data);
       return true;
     } catch (err) {
-      sendError.value = err.response?.data?.message ?? t("owner_messages.send_error");
+      sendError.value = normalizeApiError(err, t("owner_messages.send_error")).message;
       return false;
     } finally {
       isSending.value = false;
@@ -78,7 +79,7 @@ export function useConversations() {
       await openConversation(data.data);
       return true;
     } catch (err) {
-      startError.value = err.response?.data?.message ?? t("owner_messages.start_error");
+      startError.value = normalizeApiError(err, t("owner_messages.start_error")).message;
       return false;
     } finally {
       isStarting.value = false;
@@ -98,7 +99,7 @@ export function useConversations() {
       await openConversation(data.data);
       return true;
     } catch (err) {
-      startSupportError.value = err.response?.data?.message ?? t("owner_messages.start_error");
+      startSupportError.value = normalizeApiError(err, t("owner_messages.start_error")).message;
       return false;
     } finally {
       isStartingSupport.value = false;
@@ -118,7 +119,7 @@ export function useConversations() {
       await openConversation(data.data);
       return true;
     } catch (err) {
-      startWithOwnerError.value = err.response?.data?.message ?? t("owner_messages.start_error");
+      startWithOwnerError.value = normalizeApiError(err, t("owner_messages.start_error")).message;
       return false;
     } finally {
       isStartingWithOwner.value = false;
@@ -139,7 +140,7 @@ export function useConversations() {
       });
       return data.data;
     } catch (err) {
-      convertError.value = err.response?.data?.message ?? t("messages_page.convert_error");
+      convertError.value = normalizeApiError(err, t("messages_page.convert_error")).message;
       return false;
     } finally {
       isConverting.value = false;

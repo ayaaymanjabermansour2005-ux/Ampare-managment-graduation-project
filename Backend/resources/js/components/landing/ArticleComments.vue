@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import articleCommentService from "@/services/articleCommentService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { LoaderCircle, Reply, Send } from "@lucide/vue";
 
 
@@ -51,10 +52,11 @@ async function handleSubmit() {
     submitSuccess.value = true;
     Object.assign(form, { name: "", email: "", comment: "", website: "" });
   } catch (err) {
-    if (err.response?.status === 422) {
-      fieldErrors.value = err.response.data.errors ?? {};
+    const normalized = normalizeApiError(err, t("landing.articles_page.comment_submit_error"));
+    if (normalized.status === 422) {
+      fieldErrors.value = normalized.fieldErrors;
     } else {
-      submitError.value = err.response?.data?.message ?? t("landing.articles_page.comment_submit_error");
+      submitError.value = normalized.message;
     }
   } finally {
     isSubmitting.value = false;

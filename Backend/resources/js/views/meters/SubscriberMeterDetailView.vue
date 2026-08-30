@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -43,7 +44,7 @@ async function load() {
       isNotFound.value = true;
     } else {
       errorMessage.value =
-        err.response?.data?.message ?? t("subscriber_meter_detail_page.load_failed");
+        normalizeApiError(err, t("subscriber_meter_detail_page.load_failed")).message;
     }
   } finally {
     isLoading.value = false;

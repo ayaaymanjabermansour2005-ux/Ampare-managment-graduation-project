@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianPaymentService from "@/services/technicianPaymentService";
@@ -35,7 +36,7 @@ export function useTechnicianPayments() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("technician_payments.load_error");
+      error.value = normalizeApiError(err, t("technician_payments.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -58,7 +59,7 @@ export function useTechnicianPayments() {
       replaceInList(data.data);
       return true;
     } catch (err) {
-      actionError.value = err.response?.data?.message ?? t("technician_payments.approve_error");
+      actionError.value = normalizeApiError(err, t("technician_payments.approve_error")).message;
       return false;
     } finally {
       actingId.value = null;
@@ -74,7 +75,7 @@ export function useTechnicianPayments() {
       replaceInList(data.data);
       return true;
     } catch (err) {
-      actionError.value = err.response?.data?.message ?? t("technician_payments.reject_error");
+      actionError.value = normalizeApiError(err, t("technician_payments.reject_error")).message;
       return false;
     } finally {
       actingId.value = null;

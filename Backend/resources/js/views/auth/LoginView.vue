@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/auth";
 import { resolveHomeRouteName } from "@/utils/roleRedirect";
 import { consumePendingSubscribeGeneratorId } from "@/utils/pendingSubscribeGenerator";
 import authService from "@/services/authService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, LoaderCircle } from "@lucide/vue";
 
 
@@ -53,7 +54,7 @@ async function handleResendVerification() {
     resendState.value = "sent";
   } catch (error) {
     resendState.value = "idle";
-    resendError.value = error.response?.data?.message ?? t("auth.login.generic_error");
+    resendError.value = normalizeApiError(error, t("auth.login.generic_error")).message;
   }
 }
 
@@ -90,12 +91,13 @@ async function handleSubmit() {
     }, 500);
   } catch (error) {
     submitState.value = "idle";
-    submitError.value =
-      error.response?.data?.errors?.login?.[0] ||
-      error.response?.data?.message ||
-      t("auth.login.generic_error");
+    const normalized = normalizeApiError(error, t("auth.login.generic_error"));
+    submitError.value = normalized.fieldError("login") ?? normalized.message;
 
-    if (error.response?.data?.errors?.code === "EMAIL_NOT_VERIFIED") {
+    // ملاحظة: errors.code هنا ليست حقل تحقّق عادي (مصفوفة رسائل) بل قيمة
+    // نصية مباشرة (راجع EmailNotVerifiedException) — تُقرأ من fieldErrors
+    // خامًا، لا عبر fieldError() اللي بتفترض شكل مصفوفة.
+    if (normalized.fieldErrors.code === "EMAIL_NOT_VERIFIED") {
       isEmailNotVerified.value = true;
     }
   }

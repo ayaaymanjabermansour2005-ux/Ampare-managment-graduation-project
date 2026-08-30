@@ -19,6 +19,7 @@ class IdempotencyKey extends Model
         'key',
         'user_id',
         'route',
+        'payload_hash',
         'response_status',
         'response_body',
     ];

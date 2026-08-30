@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import articleService from "@/services/articleService";
@@ -25,7 +26,7 @@ export function useArticles() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("articles_page.load_error");
+      error.value = normalizeApiError(err, t("articles_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -38,7 +39,7 @@ export function useArticles() {
       await fetchArticles();
       return true;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("articles_page.create_error");
+      error.value = normalizeApiError(err, t("articles_page.create_error")).message;
       return false;
     } finally {
       isSaving.value = false;
@@ -52,7 +53,7 @@ export function useArticles() {
       await fetchArticles(pagination.value.current_page);
       return true;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("articles_page.update_error");
+      error.value = normalizeApiError(err, t("articles_page.update_error")).message;
       return false;
     } finally {
       isSaving.value = false;
@@ -64,7 +65,7 @@ export function useArticles() {
       await articleService.destroy(id);
       await fetchArticles(pagination.value.current_page);
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("articles_page.delete_error");
+      error.value = normalizeApiError(err, t("articles_page.delete_error")).message;
     }
   }
 

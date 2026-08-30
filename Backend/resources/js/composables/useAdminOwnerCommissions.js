@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import platformCommissionService from "@/services/platformCommissionService";
@@ -22,7 +23,7 @@ export function useAdminOwnerCommissions() {
       const payload = data.data;
       commissions.value = payload.data ?? payload;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("admin_payments_page.owner_payments_load_error");
+      error.value = normalizeApiError(err, t("admin_payments_page.owner_payments_load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -40,7 +41,7 @@ export function useAdminOwnerCommissions() {
       if (index !== -1) commissions.value[index] = data.data;
       return true;
     } catch (err) {
-      updateError.value = err.response?.data?.message ?? t("admin_payments_page.owner_payments_update_error");
+      updateError.value = normalizeApiError(err, t("admin_payments_page.owner_payments_update_error")).message;
       return false;
     } finally {
       updatingId.value = null;

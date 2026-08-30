@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { motion, useReducedMotion } from "motion-v";
@@ -67,7 +68,7 @@ async function chooseGuestRole(role) {
     window.location.assign(role === "owner" ? "/owner" : "/subscriber");
   } catch (err) {
     guestLoginState.value = "idle";
-    guestLoginError.value = err.response?.data?.message ?? t("landing.hero.guest_login_error");
+    guestLoginError.value = normalizeApiError(err, t("landing.hero.guest_login_error")).message;
   }
 }
 

@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import articleService from "@/services/articleService";
@@ -34,7 +35,7 @@ async function fetchArticles(page = 1) {
     };
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
-    error.value = err.response?.data?.message ?? t("landing.articles_page.error_generic");
+    error.value = normalizeApiError(err, t("landing.articles_page.error_generic")).message;
   } finally {
     isLoading.value = false;
   }

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import subscriptionMeterTransferService from "@/services/subscriptionMeterTransferService";
@@ -31,7 +32,7 @@ export function useSubscriptionMeterTransfer() {
       const payload = data.data;
       meters.value = payload.data ?? payload ?? [];
     } catch (err) {
-      metersError.value = err.response?.data?.message ?? t("my_subscription_page.load_error");
+      metersError.value = normalizeApiError(err, t("my_subscription_page.load_error")).message;
       meters.value = [];
     } finally {
       isLoadingMeters.value = false;
@@ -46,7 +47,7 @@ export function useSubscriptionMeterTransfer() {
       const payload = data.data;
       requests.value = payload.data ?? payload ?? [];
     } catch (err) {
-      requestsError.value = err.response?.data?.message ?? t("my_subscription_page.load_error");
+      requestsError.value = normalizeApiError(err, t("my_subscription_page.load_error")).message;
       requests.value = [];
     } finally {
       isLoadingRequests.value = false;

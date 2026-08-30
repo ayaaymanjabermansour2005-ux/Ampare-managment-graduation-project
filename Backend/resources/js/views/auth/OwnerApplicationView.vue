@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, CircleAlert, Eye, EyeOff, FileLock, LoaderCircle
 
 import authService from "@/services/authService";
 import neighborhoodService from "@/services/neighborhoodService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import AuthSelect from "@/components/auth/AuthSelect.vue";
 import AuthDocumentField from "@/components/auth/AuthDocumentField.vue";
 
@@ -168,9 +169,10 @@ async function handleSubmit() {
     submitState.value = "success";
   } catch (error) {
     submitState.value = "idle";
-    errors.value = error.response?.data?.errors ?? null;
+    const normalized = normalizeApiError(error, t("auth.owner_application.generic_error"));
+    errors.value = Object.keys(normalized.fieldErrors).length ? normalized.fieldErrors : null;
     if (!errors.value) {
-      generalError.value = error.response?.data?.message ?? t("auth.owner_application.generic_error");
+      generalError.value = normalized.message;
     }
   }
 }

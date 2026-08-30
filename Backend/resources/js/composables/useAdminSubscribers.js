@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import userService from "@/services/userService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminSubscribers() {
   const { t } = useI18n();
@@ -56,8 +57,7 @@ export function useAdminSubscribers() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value =
-        err.response?.data?.message ?? t("subscribers_page.load_error");
+      error.value = normalizeApiError(err, t("subscribers_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -79,9 +79,8 @@ export function useAdminSubscribers() {
       if (index !== -1) subscribers.value[index] = data.data;
       return true;
     } catch (err) {
-      saveError.value = err.response?.data ?? {
-        message: t("subscribers_page.update_error"),
-      };
+      const normalized = normalizeApiError(err, t("subscribers_page.update_error"));
+      saveError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isSaving.value = false;
@@ -101,10 +100,8 @@ export function useAdminSubscribers() {
     } catch (err) {
       // ملاحظة إصلاح: الرسالة المحدَّدة (عدد الاشتراكات الفعالة المانعة
       // للحذف) موجودة بحقل errors.user، لا بحقل message العام.
-      deleteError.value =
-        err.response?.data?.errors?.user?.[0]
-        ?? err.response?.data?.message
-        ?? t("subscribers_page.delete_error");
+      const normalized = normalizeApiError(err, t("subscribers_page.delete_error"));
+      deleteError.value = normalized.fieldError("user") ?? normalized.message;
       return false;
     } finally {
       deletingId.value = null;

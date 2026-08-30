@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import adminOpsService from "@/services/adminOpsService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { CircleCheck, LoaderCircle, Megaphone, Send, X } from "@lucide/vue";
 
@@ -49,7 +50,7 @@ async function handleSubmit() {
     successCount.value = data.data.recipients_count;
     setTimeout(close, 1800);
   } catch (err) {
-    sendError.value = err.response?.data?.message ?? t("announcement.send_error");
+    sendError.value = normalizeApiError(err, t("announcement.send_error")).message;
   } finally {
     isSending.value = false;
   }

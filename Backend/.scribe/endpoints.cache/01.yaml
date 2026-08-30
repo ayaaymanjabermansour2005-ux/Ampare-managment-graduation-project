@@ -156,7 +156,7 @@ endpoints:
         name: remember
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -165,7 +165,7 @@ endpoints:
     cleanBodyParameters:
       login: vmqeopfuudtdsufvyvddq
       password: 'O[2UZ5ij-e/dl4m{o,'
-      remember: false
+      remember: true
     fileParameters: []
     responses: []
     responseFields: []
@@ -335,13 +335,17 @@ endpoints:
     responses:
       -
         custom: []
-        status: 429
-        content: '{"success":false,"message":"Too many attempts, please wait a moment before trying again.","data":null,"errors":null}'
+        status: 500
+        content: '{"success":false,"message":"An unexpected error occurred, please try again later.","data":null,"errors":null}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
-          x-ratelimit-limit: '60'
-          x-ratelimit-remaining: '44'
+          x-ratelimit-limit: '6'
+          x-ratelimit-remaining: '5'
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []
@@ -456,6 +460,10 @@ endpoints:
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []
@@ -582,6 +590,10 @@ endpoints:
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []
@@ -665,6 +677,10 @@ endpoints:
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []

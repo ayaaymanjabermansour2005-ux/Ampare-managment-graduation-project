@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
 import userService from "@/services/userService";
 import authService from "@/services/authService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAccountSettings() {
   const { t } = useI18n();
@@ -22,7 +23,8 @@ export function useAccountSettings() {
       profileSuccess.value = true;
       return true;
     } catch (err) {
-      profileError.value = err.response?.data ?? { message: t("owner_settings.profile.save_error") };
+      const normalized = normalizeApiError(err, t("owner_settings.profile.save_error"));
+      profileError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isSavingProfile.value = false;
@@ -40,7 +42,7 @@ export function useAccountSettings() {
       authStore.user = { ...authStore.user, avatar_url: data.data.avatar_url };
       return true;
     } catch (err) {
-      avatarError.value = err.response?.data?.message ?? t("owner_settings.profile.avatar_error");
+      avatarError.value = normalizeApiError(err, t("owner_settings.profile.avatar_error")).message;
       return false;
     } finally {
       isUploadingAvatar.value = false;
@@ -60,7 +62,8 @@ export function useAccountSettings() {
       passwordSuccess.value = true;
       return true;
     } catch (err) {
-      passwordError.value = err.response?.data ?? { message: t("owner_settings.security.password_error") };
+      const normalized = normalizeApiError(err, t("owner_settings.security.password_error"));
+      passwordError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isChangingPassword.value = false;
@@ -79,7 +82,7 @@ export function useAccountSettings() {
       const { data } = await authService.sessions();
       sessions.value = data.data;
     } catch (err) {
-      sessionsError.value = err.response?.data?.message ?? t("owner_settings.security.sessions_load_error");
+      sessionsError.value = normalizeApiError(err, t("owner_settings.security.sessions_load_error")).message;
     } finally {
       isLoadingSessions.value = false;
     }
@@ -112,7 +115,7 @@ export function useAccountSettings() {
       await fetchSessions();
       return true;
     } catch (err) {
-      logoutOthersError.value = err.response?.data?.message ?? t("owner_settings.security.wrong_password");
+      logoutOthersError.value = normalizeApiError(err, t("owner_settings.security.wrong_password")).message;
       return false;
     } finally {
       isLoggingOutOthers.value = false;
@@ -130,7 +133,7 @@ export function useAccountSettings() {
       const { data } = await authService.loginLog();
       loginLog.value = data.data.data ?? data.data;
     } catch (err) {
-      loginLogError.value = err.response?.data?.message ?? t("owner_settings.security.login_log_load_error");
+      loginLogError.value = normalizeApiError(err, t("owner_settings.security.login_log_load_error")).message;
     } finally {
       isLoadingLoginLog.value = false;
     }
@@ -147,7 +150,7 @@ export function useAccountSettings() {
       await authStore.logout();
       return true;
     } catch (err) {
-      deleteAccountError.value = err.response?.data?.message ?? t("owner_settings.danger.delete_error");
+      deleteAccountError.value = normalizeApiError(err, t("owner_settings.danger.delete_error")).message;
       return false;
     } finally {
       isDeletingAccount.value = false;

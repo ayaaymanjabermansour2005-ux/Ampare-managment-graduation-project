@@ -1,0 +1,1 @@
+import{h as e}from"./app-Bfh18IKj.js";const n={list(r={}){return e.get("/subscription-meter-transfers",{params:r})},create(r){return e.post("/subscription-meter-transfers",r)},approve(r){return e.patch(`/subscription-meter-transfers/${r}/approve`)},reject(r,t){return e.patch(`/subscription-meter-transfers/${r}/reject`,{rejection_reason:t})}};export{n as s};

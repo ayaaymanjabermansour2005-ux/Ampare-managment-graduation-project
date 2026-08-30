@@ -106,7 +106,7 @@ endpoints:
         name: generator_currency
         description: ''
         required: false
-        example: ILS
+        example: USD
         type: string
         enumValues:
           - ILS
@@ -232,7 +232,7 @@ endpoints:
       password: consequatur
       generator_name: mqeopfuudtdsufvyvddqa
       generator_price_per_kw: 13
-      generator_currency: ILS
+      generator_currency: USD
       generator_capacity_kw: 46
       generator_city: iihfqcoynlazghdtqtqxb
       generator_neighborhood_id: 17
@@ -278,7 +278,7 @@ endpoints:
         name: from_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-17T12:22:17'
+        example: '2026-08-30T06:47:16'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -289,15 +289,15 @@ endpoints:
         name: to_date
         description: 'Must be a valid date. Must be a date after or equal to <code>from_date</code>.'
         required: false
-        example: '2107-09-16'
+        example: '2107-09-28'
         type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      from_date: '2026-08-17T12:22:17'
-      to_date: '2107-09-16'
+      from_date: '2026-08-30T06:47:16'
+      to_date: '2107-09-28'
     fileParameters: []
     responses:
       -
@@ -307,6 +307,10 @@ endpoints:
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []
@@ -342,7 +346,7 @@ endpoints:
         name: from_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-17T12:22:17'
+        example: '2026-08-30T06:47:16'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -353,15 +357,15 @@ endpoints:
         name: to_date
         description: 'Must be a valid date. Must be a date after or equal to <code>from_date</code>.'
         required: false
-        example: '2107-09-16'
+        example: '2107-09-28'
         type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      from_date: '2026-08-17T12:22:17'
-      to_date: '2107-09-16'
+      from_date: '2026-08-30T06:47:16'
+      to_date: '2107-09-28'
     fileParameters: []
     responses:
       -
@@ -371,6 +375,10 @@ endpoints:
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []
@@ -504,14 +512,14 @@ endpoints:
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
         required: true
-        example: 17
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      ownerApplication_id: 17
+      ownerApplication_id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -525,6 +533,10 @@ endpoints:
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          x-content-type-options: nosniff
+          x-frame-options: DENY
+          referrer-policy: strict-origin-when-cross-origin
+          content-security-policy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://127.0.0.1:5173; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://127.0.0.1:5173; font-src 'self' https://fonts.gstatic.com data: http://127.0.0.1:5173; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' ws://localhost:6001 http://127.0.0.1:5173 ws://127.0.0.1:5173"
           vary: Origin
         description: null
     responseFields: []
@@ -556,14 +568,14 @@ endpoints:
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
         required: true
-        example: 17
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      ownerApplication_id: 17
+      ownerApplication_id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -599,14 +611,14 @@ endpoints:
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
         required: true
-        example: 17
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      ownerApplication_id: 17
+      ownerApplication_id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
@@ -654,14 +666,14 @@ endpoints:
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
         required: true
-        example: 17
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      ownerApplication_id: 17
+      ownerApplication_id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:

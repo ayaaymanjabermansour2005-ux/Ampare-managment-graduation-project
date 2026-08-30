@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import meterReadingService from "@/services/meterReadingService";
@@ -31,7 +32,7 @@ export function useSubscriberMeterReadings() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("subscriber_meter_readings_page.load_error");
+      error.value = normalizeApiError(err, t("subscriber_meter_readings_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import rolePermissionService from "@/services/rolePermissionService";
@@ -18,7 +19,7 @@ export function useRolePermissions() {
       roles.value = data.data.roles;
       allPermissions.value = data.data.all_permissions;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("roles_permissions_page.load_error");
+      error.value = normalizeApiError(err, t("roles_permissions_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -31,7 +32,7 @@ export function useRolePermissions() {
       await rolePermissionService.sync(role.id, role.permissions);
       return true;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("roles_permissions_page.save_error");
+      error.value = normalizeApiError(err, t("roles_permissions_page.save_error")).message;
       return false;
     } finally {
       isSaving.value = false;

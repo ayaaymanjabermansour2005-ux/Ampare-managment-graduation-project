@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import subscriptionMeterTransferService from "@/services/subscriptionMeterTransferService";
@@ -40,7 +41,7 @@ export function useOwnerSubscriptionMeterTransfers() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_subscribers.load_error");
+      error.value = normalizeApiError(err, t("owner_subscribers.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -69,7 +70,7 @@ export function useOwnerSubscriptionMeterTransfers() {
       replaceInList(data.data);
       return data.data;
     } catch (err) {
-      approveError.value = err.response?.data?.message ?? t("owner_subscribers.transfer_error");
+      approveError.value = normalizeApiError(err, t("owner_subscribers.transfer_error")).message;
       return null;
     } finally {
       isApproving.value = false;
@@ -84,7 +85,7 @@ export function useOwnerSubscriptionMeterTransfers() {
       replaceInList(data.data);
       return data.data;
     } catch (err) {
-      rejectError.value = err.response?.data?.message ?? t("owner_subscribers.transfer_error");
+      rejectError.value = normalizeApiError(err, t("owner_subscribers.transfer_error")).message;
       return null;
     } finally {
       isRejecting.value = false;

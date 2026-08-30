@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import articleCommentService from "@/services/articleCommentService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { useToastStore } from "@/stores/toast";
 import { CircleCheck, Star } from "@lucide/vue";
 
@@ -45,8 +46,8 @@ async function submitRating(star) {
     // FIX: (item 17) كان بدون catch — فشل الإرسال (429 rate limit، شبكة)
     // كان unhandled promise rejection صامت بدون أي إشارة للمستخدم.
     toast.show({
-      type: "error",
-      message: err.response?.data?.message ?? t("landing.articles_page.rate_error"),
+      type: "danger",
+      message: normalizeApiError(err, t("landing.articles_page.rate_error")).message,
     });
   } finally {
     isSubmitting.value = false;

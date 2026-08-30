@@ -15,6 +15,10 @@ return new class extends Migration
             $table->uuid('key')->primary();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('route');
+            // IDEMPOTENCY-payload: يسمح للـ middleware باكتشاف إعادة استخدام
+            // نفس المفتاح ببيانات مختلفة عن أول مرة، بدل الرد بصمت بنتيجة
+            // الطلب الأول. Nullable لأن صفوفًا قديمة قد لا تملك القيمة.
+            $table->string('payload_hash', 64)->nullable();
             $table->unsignedSmallInteger('response_status');
             $table->json('response_body');
             $table->timestamp('created_at')->useCurrent();

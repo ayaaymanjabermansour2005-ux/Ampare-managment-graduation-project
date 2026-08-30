@@ -3,6 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import subscriptionService from "@/services/subscriptionService";
 import generatorService from "@/services/generatorService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { Check, LoaderCircle, Route, X } from "@lucide/vue";
 
@@ -51,7 +52,7 @@ async function submitTransfer() {
     emit("transferred", data.data);
     emit("close");
   } catch (err) {
-    error.value = err.response?.data?.message ?? t("transfer_subscription_modal.generic_error");
+    error.value = normalizeApiError(err, t("transfer_subscription_modal.generic_error")).message;
   } finally {
     isSaving.value = false;
   }

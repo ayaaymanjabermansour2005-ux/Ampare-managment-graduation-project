@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import invoiceService from "@/services/invoiceService";
@@ -39,7 +40,7 @@ export function useSubscriberInvoices() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("my_invoices_page.load_error");
+      error.value = normalizeApiError(err, t("my_invoices_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -55,7 +56,7 @@ export function useSubscriberInvoices() {
       const { data } = await invoiceService.getInvoice(id);
       return data.data;
     } catch (err) {
-      detailError.value = err.response?.data?.message ?? t("my_invoices_page.load_error");
+      detailError.value = normalizeApiError(err, t("my_invoices_page.load_error")).message;
       return null;
     } finally {
       isLoadingDetail.value = false;

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
@@ -85,7 +86,7 @@ export function useOwnerDashboardExtras() {
       mapPoints.value = data.data;
     } catch (err) {
       mapPoints.value = [];
-      mapPointsError.value = err.response?.data?.message ?? t("generators_map.load_error");
+      mapPointsError.value = normalizeApiError(err, t("generators_map.load_error")).message;
     } finally {
       isLoadingMapPoints.value = false;
     }

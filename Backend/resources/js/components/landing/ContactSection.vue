@@ -3,6 +3,7 @@ import { reactive, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { vReveal } from "@/directives/reveal";
 import publicContactService from "@/services/publicContactService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { CircleCheck, CircleX, LoaderCircle, Send } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -47,10 +48,11 @@ async function handleSubmit() {
     touched.email = false;
     setTimeout(() => (submitted.value = false), 4000);
   } catch (err) {
-    if (err.response?.status === 422) {
-      fieldErrors.value = err.response.data.errors ?? {};
+    const normalized = normalizeApiError(err, t("landing.contact.generic_error"));
+    if (normalized.status === 422) {
+      fieldErrors.value = normalized.fieldErrors;
     } else {
-      errorMessage.value = err.response?.data?.message ?? t("landing.contact.generic_error");
+      errorMessage.value = normalized.message;
     }
   } finally {
     isSubmitting.value = false;

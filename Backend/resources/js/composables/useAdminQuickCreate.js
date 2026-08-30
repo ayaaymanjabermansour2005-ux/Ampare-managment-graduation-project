@@ -5,6 +5,7 @@ import adminOpsService from "@/services/adminOpsService";
 import { useConfirm } from "@/composables/useConfirm";
 import { useToastStore } from "@/stores/toast";
 import { useOwnerOptions } from "@/composables/useOwnerOptions";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 /**
  * Owner/subscriber/technician quick-create and backup-run orchestration for
@@ -45,10 +46,8 @@ export function useAdminQuickCreate(options = {}) {
       isOwnerModalOpen.value = false;
       toast.show({ type: "success", title: t("dashboard.owner_created", { name: ownerForm.value.name }) });
     } catch (err) {
-      ownerError.value = {
-        message: err.response?.data?.message ?? t("dashboard.owner_create_error"),
-        errors: err.response?.data?.errors ?? null,
-      };
+      const normalized = normalizeApiError(err, t("dashboard.owner_create_error"));
+      ownerError.value = { message: normalized.message, errors: normalized.fieldErrors };
     } finally {
       isSavingOwner.value = false;
     }
@@ -90,10 +89,8 @@ export function useAdminQuickCreate(options = {}) {
       await options.onSubscriberCreated?.();
       toast.show({ type: "success", title: t("dashboard.subscriber_created", { name: subscriberForm.value.name }) });
     } catch (err) {
-      subscriberError.value = {
-        message: err.response?.data?.message ?? t("dashboard.subscriber_create_error"),
-        errors: err.response?.data?.errors ?? null,
-      };
+      const normalized = normalizeApiError(err, t("dashboard.subscriber_create_error"));
+      subscriberError.value = { message: normalized.message, errors: normalized.fieldErrors };
     } finally {
       isSavingSubscriber.value = false;
     }
@@ -129,10 +126,8 @@ export function useAdminQuickCreate(options = {}) {
       isTechnicianModalOpen.value = false;
       toast.show({ type: "success", title: t("dashboard.technician_created", { name: technicianForm.value.name }) });
     } catch (err) {
-      technicianError.value = {
-        message: err.response?.data?.message ?? t("dashboard.technician_create_error"),
-        errors: err.response?.data?.errors ?? null,
-      };
+      const normalized = normalizeApiError(err, t("dashboard.technician_create_error"));
+      technicianError.value = { message: normalized.message, errors: normalized.fieldErrors };
     } finally {
       isSavingTechnician.value = false;
     }
@@ -154,7 +149,7 @@ export function useAdminQuickCreate(options = {}) {
       await adminOpsService.runBackup();
       toast.show({ type: "success", title: t("dashboard.backup_started") });
     } catch (err) {
-      toast.show({ type: "danger", title: err.response?.data?.message ?? t("dashboard.backup_start_error") });
+      toast.show({ type: "danger", title: normalizeApiError(err, t("dashboard.backup_start_error")).message });
     } finally {
       isRunningBackup.value = false;
     }

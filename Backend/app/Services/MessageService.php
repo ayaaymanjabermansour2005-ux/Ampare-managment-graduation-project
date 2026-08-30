@@ -18,9 +18,13 @@ class MessageService
 
     public function listForConversation(Conversation $conversation, int $perPage = 30): LengthAwarePaginator
     {
+        // MSG-001: `created_at` وحده ليس مفتاح ترتيب مستقر — رسالتان بنفس
+        // الثانية (سيناريو طبيعي تمامًا) لهما نفس `created_at`، و MySQL لا
+        // يضمن ترتيب التعادل. `id` يضمن ترتيبًا زمنيًا حتميًا دائمًا.
         return $conversation->messages()
             ->with(['sender', 'attachments'])
             ->oldest()
+            ->oldest('id')
             ->paginate($perPage);
     }
 

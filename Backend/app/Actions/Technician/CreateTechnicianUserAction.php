@@ -13,15 +13,26 @@ use Illuminate\Validation\ValidationException;
 
 final class CreateTechnicianUserAction
 {
-    public function execute(CreateTechnicianUserData $data, User $creator): Technician
+    /**
+     * ARCH-001: كانت هذه الدالة مكرَّرة بنسختين شبه متطابقتين
+     * (CreateTechnicianUserAction / AdminCreateTechnicianForOwnerAction) —
+     * الفرق الوحيد الفعلي بينهما هو مين الفاعل (المالك نفسه، أو أدمن نيابةً
+     * عنه) لغرض سجل الـ activity log. `$onBehalfOfAdmin` يوحّد الحالتين.
+     */
+    public function execute(CreateTechnicianUserData $data, User $owner, ?User $onBehalfOfAdmin = null): Technician
     {
-        if (! $creator->isOwner()) {
+        if (! $owner->isOwner()) {
+            // مفتاح الرسالة owner_id (لا owner) — يطابق حقل owner_id الفعلي
+            // بطلب المسار الإداري (AdminCreateTechnicianRequest)، وهو
+            // المسار الوحيد الذي يختبر هذا الشرط فعليًا؛ في مسار المالك
+            // لنفسه (createAccount) هذا الشرط دفاعي بحت (الـ route/policy
+            // يضمنان مسبقًا أن $owner هو المستخدم الحالي المالك).
             throw ValidationException::withMessages([
-                'owner' => ['فقط مالك المولد يمكنه إنشاء حساب فني جديد.'],
+                'owner_id' => ['المستخدم المحدَّد ليس مالك مولد.'],
             ]);
         }
 
-        return DB::transaction(function () use ($data, $creator) {
+        return DB::transaction(function () use ($data, $owner, $onBehalfOfAdmin) {
             $user = User::create([
                 'name' => $data->name,
                 'email' => $data->email,
@@ -34,17 +45,30 @@ final class CreateTechnicianUserAction
 
             $technician = Technician::create([
                 'user_id' => $user->id,
-                'owner_id' => $creator->id,
+                'owner_id' => $owner->id,
                 'status' => TechnicianStatus::Active,
                 'notes' => $data->notes,
             ]);
 
-            activity()
-                ->causedBy($creator)
-                ->performedOn($technician)
-                ->log('owner_created_technician');
+            $activity = activity()->performedOn($technician);
 
-            return $technician->fresh('user');
+            if ($onBehalfOfAdmin) {
+                // مسجَّل بوضوح كإجراء دعم فني نيابةً عن المالك — يميّزه عن
+                // الحالة الطبيعية حيث المالك ينشئ حساب الفني بنفسه مباشرة.
+                $activity->causedBy($onBehalfOfAdmin)
+                    ->withProperties(['on_behalf_of_owner_id' => $owner->id, 'on_behalf_of_owner_name' => $owner->name])
+                    ->log('admin_created_technician_on_behalf_of_owner');
+            } else {
+                $activity->causedBy($owner)->log('owner_created_technician');
+            }
+
+            $fresh = $technician->fresh('user');
+
+            if (! $fresh instanceof Technician) {
+                throw new \RuntimeException('Failed to reload the technician immediately after creation.');
+            }
+
+            return $fresh;
         });
     }
 }

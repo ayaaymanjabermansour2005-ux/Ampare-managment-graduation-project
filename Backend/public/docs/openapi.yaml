@@ -71,10 +71,16 @@ tags:
     name: 'تقييمات أصحاب المولدات'
     description: ''
   -
+    name: 'دفعات الفنيين'
+    description: ''
+  -
     name: 'شرائح العمولة التلقائية'
     description: ''
   -
     name: 'طلبات انضمام أصحاب المولدات'
+    description: ''
+  -
+    name: 'طلبات نقل عداد الاشتراك'
     description: ''
   -
     name: 'عمولات المنصة'
@@ -148,30 +154,39 @@ paths:
                     -
                       id: 7
                       name: التفاح
+                      name_en: null
                     -
                       id: 6
                       name: الدرج
+                      name_en: null
                     -
                       id: 1
                       name: الرمال
+                      name_en: null
                     -
                       id: 3
                       name: الزيتون
+                      name_en: null
                     -
                       id: 2
                       name: الشجاعية
+                      name_en: null
                     -
                       id: 8
                       name: الصبرة
+                      name_en: null
                     -
                       id: 4
                       name: النصر
+                      name_en: null
                     -
                       id: 5
                       name: 'تل الهوى'
+                      name_en: null
                     -
                       id: 9
                       name: 'حي تجريبي'
+                      name_en: null
                   errors: null
                 properties:
                   success:
@@ -186,30 +201,39 @@ paths:
                       -
                         id: 7
                         name: التفاح
+                        name_en: null
                       -
                         id: 6
                         name: الدرج
+                        name_en: null
                       -
                         id: 1
                         name: الرمال
+                        name_en: null
                       -
                         id: 3
                         name: الزيتون
+                        name_en: null
                       -
                         id: 2
                         name: الشجاعية
+                        name_en: null
                       -
                         id: 8
                         name: الصبرة
+                        name_en: null
                       -
                         id: 4
                         name: النصر
+                        name_en: null
                       -
                         id: 5
                         name: 'تل الهوى'
+                        name_en: null
                       -
                         id: 9
                         name: 'حي تجريبي'
+                        name_en: null
                     items:
                       type: object
                       properties:
@@ -219,6 +243,10 @@ paths:
                         name:
                           type: string
                           example: التفاح
+                        name_en:
+                          type: string
+                          example: null
+                          nullable: true
                   errors:
                     type: string
                     example: null
@@ -230,6 +258,42 @@ paths:
     get:
       summary: ''
       operationId: getApiV1AdminLoginLogs
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - Endpoints
+      security: []
+  /api/v1/admin/login-logs/export:
+    get:
+      summary: ''
+      operationId: getApiV1AdminLoginLogsExport
       description: ''
       parameters: []
       responses:
@@ -813,6 +877,11 @@ paths:
                   type: string
                   description: 'Must be at least 2 characters. Must not be greater than 100 characters.'
                   example: vmqeopfuudtdsufvyvddq
+                name_en:
+                  type: string
+                  description: 'Must be at least 2 characters. Must not be greater than 100 characters.'
+                  example: amniihfqcoynlazghdtqt
+                  nullable: true
               required:
                 - name
       security: []
@@ -836,6 +905,11 @@ paths:
                   type: string
                   description: 'Must be at least 2 characters. Must not be greater than 100 characters.'
                   example: vmqeopfuudtdsufvyvddq
+                name_en:
+                  type: string
+                  description: 'Must be at least 2 characters. Must not be greater than 100 characters.'
+                  example: amniihfqcoynlazghdtqt
+                  nullable: true
               required:
                 - name
       security: []
@@ -942,7 +1016,7 @@ paths:
                 is_published:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
               required:
                 - title
                 - content
@@ -1107,7 +1181,7 @@ paths:
         in: path
         name: comment_id
         description: 'The ID of the comment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -1126,7 +1200,7 @@ paths:
         in: path
         name: comment_id
         description: 'The ID of the comment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -1167,7 +1241,7 @@ paths:
         in: path
         name: comment_id
         description: 'The ID of the comment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -1186,7 +1260,7 @@ paths:
         in: path
         name: comment_id
         description: 'The ID of the comment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -1312,11 +1386,11 @@ paths:
                 starts_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:15'
+                  example: '2026-08-30T06:47:00'
                 ends_at:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>starts_at</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                 note:
                   type: string
                   description: 'Must not be greater than 255 characters.'
@@ -1354,11 +1428,11 @@ paths:
                 starts_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:15'
+                  example: '2026-08-30T06:47:00'
                 ends_at:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>starts_at</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                 note:
                   type: string
                   description: 'Must not be greater than 255 characters.'
@@ -2070,37 +2144,7 @@ paths:
                   success: true
                   message: 'المقالات المنشورة.'
                   data:
-                    -
-                      id: 2
-                      title: 'نصائح لتوفير الوقود لأصحاب المولدات'
-                      title_en: 'Fuel-Saving Tips for Generator Owners'
-                      slug: nsayh-latwfyr-alwqwd-lasshab-almwldat
-                      excerpt: 'خطوات عملية بسيطة تساعد بتقليل استهلاك الوقود وزيادة كفاءة التشغيل.'
-                      excerpt_en: 'Simple, practical steps to reduce fuel consumption without affecting service quality.'
-                      cover_image_url: null
-                      is_published: true
-                      published_at: '2026-08-14'
-                    -
-                      id: 1
-                      title: 'كيف يعمل نظام إدارة المولدات؟'
-                      title_en: 'How Does the Generator Management System Work?'
-                      slug: ala-yagraf-nzam-tashghyl-almwld-almatal
-                      excerpt: 'نظرة سريعة على كيفية إدارة اشتراكات الكهرباء بالمولدات بشكل رقمي كامل.'
-                      excerpt_en: 'A quick look at how electricity subscriptions are managed digitally, end to end.'
-                      cover_image_url: null
-                      is_published: true
-                      published_at: '2026-08-10'
-                  errors: null
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: 'المقالات المنشورة.'
-                  data:
-                    type: array
-                    example:
+                    data:
                       -
                         id: 2
                         title: 'نصائح لتوفير الوقود لأصحاب المولدات'
@@ -2110,7 +2154,7 @@ paths:
                         excerpt_en: 'Simple, practical steps to reduce fuel consumption without affecting service quality.'
                         cover_image_url: null
                         is_published: true
-                        published_at: '2026-08-14'
+                        published_at: '2026-08-29'
                       -
                         id: 1
                         title: 'كيف يعمل نظام إدارة المولدات؟'
@@ -2120,38 +2164,177 @@ paths:
                         excerpt_en: 'A quick look at how electricity subscriptions are managed digitally, end to end.'
                         cover_image_url: null
                         is_published: true
-                        published_at: '2026-08-10'
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 2
-                        title:
-                          type: string
-                          example: 'نصائح لتوفير الوقود لأصحاب المولدات'
-                        title_en:
-                          type: string
-                          example: 'Fuel-Saving Tips for Generator Owners'
-                        slug:
-                          type: string
-                          example: nsayh-latwfyr-alwqwd-lasshab-almwldat
-                        excerpt:
-                          type: string
-                          example: 'خطوات عملية بسيطة تساعد بتقليل استهلاك الوقود وزيادة كفاءة التشغيل.'
-                        excerpt_en:
-                          type: string
-                          example: 'Simple, practical steps to reduce fuel consumption without affecting service quality.'
-                        cover_image_url:
-                          type: string
-                          example: null
-                          nullable: true
-                        is_published:
-                          type: boolean
-                          example: true
-                        published_at:
-                          type: string
-                          example: '2026-08-14'
+                        published_at: '2026-08-25'
+                    links:
+                      first: 'http://localhost:8000/api/articles?page=1'
+                      last: 'http://localhost:8000/api/articles?page=1'
+                      prev: null
+                      next: null
+                    meta:
+                      current_page: 1
+                      from: 1
+                      last_page: 1
+                      links:
+                        -
+                          url: null
+                          label: '&laquo; Previous'
+                          page: null
+                          active: false
+                        -
+                          url: 'http://localhost:8000/api/articles?page=1'
+                          label: '1'
+                          page: 1
+                          active: true
+                        -
+                          url: null
+                          label: 'Next &raquo;'
+                          page: null
+                          active: false
+                      path: 'http://localhost:8000/api/articles'
+                      per_page: 12
+                      to: 2
+                      total: 2
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'المقالات المنشورة.'
+                  data:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        example:
+                          -
+                            id: 2
+                            title: 'نصائح لتوفير الوقود لأصحاب المولدات'
+                            title_en: 'Fuel-Saving Tips for Generator Owners'
+                            slug: nsayh-latwfyr-alwqwd-lasshab-almwldat
+                            excerpt: 'خطوات عملية بسيطة تساعد بتقليل استهلاك الوقود وزيادة كفاءة التشغيل.'
+                            excerpt_en: 'Simple, practical steps to reduce fuel consumption without affecting service quality.'
+                            cover_image_url: null
+                            is_published: true
+                            published_at: '2026-08-29'
+                          -
+                            id: 1
+                            title: 'كيف يعمل نظام إدارة المولدات؟'
+                            title_en: 'How Does the Generator Management System Work?'
+                            slug: ala-yagraf-nzam-tashghyl-almwld-almatal
+                            excerpt: 'نظرة سريعة على كيفية إدارة اشتراكات الكهرباء بالمولدات بشكل رقمي كامل.'
+                            excerpt_en: 'A quick look at how electricity subscriptions are managed digitally, end to end.'
+                            cover_image_url: null
+                            is_published: true
+                            published_at: '2026-08-25'
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 2
+                            title:
+                              type: string
+                              example: 'نصائح لتوفير الوقود لأصحاب المولدات'
+                            title_en:
+                              type: string
+                              example: 'Fuel-Saving Tips for Generator Owners'
+                            slug:
+                              type: string
+                              example: nsayh-latwfyr-alwqwd-lasshab-almwldat
+                            excerpt:
+                              type: string
+                              example: 'خطوات عملية بسيطة تساعد بتقليل استهلاك الوقود وزيادة كفاءة التشغيل.'
+                            excerpt_en:
+                              type: string
+                              example: 'Simple, practical steps to reduce fuel consumption without affecting service quality.'
+                            cover_image_url:
+                              type: string
+                              example: null
+                              nullable: true
+                            is_published:
+                              type: boolean
+                              example: true
+                            published_at:
+                              type: string
+                              example: '2026-08-29'
+                      links:
+                        type: object
+                        properties:
+                          first:
+                            type: string
+                            example: 'http://localhost:8000/api/articles?page=1'
+                          last:
+                            type: string
+                            example: 'http://localhost:8000/api/articles?page=1'
+                          prev:
+                            type: string
+                            example: null
+                            nullable: true
+                          next:
+                            type: string
+                            example: null
+                            nullable: true
+                      meta:
+                        type: object
+                        properties:
+                          current_page:
+                            type: integer
+                            example: 1
+                          from:
+                            type: integer
+                            example: 1
+                          last_page:
+                            type: integer
+                            example: 1
+                          links:
+                            type: array
+                            example:
+                              -
+                                url: null
+                                label: '&laquo; Previous'
+                                page: null
+                                active: false
+                              -
+                                url: 'http://localhost:8000/api/articles?page=1'
+                                label: '1'
+                                page: 1
+                                active: true
+                              -
+                                url: null
+                                label: 'Next &raquo;'
+                                page: null
+                                active: false
+                            items:
+                              type: object
+                              properties:
+                                url:
+                                  type: string
+                                  example: null
+                                  nullable: true
+                                label:
+                                  type: string
+                                  example: '&laquo; Previous'
+                                page:
+                                  type: string
+                                  example: null
+                                  nullable: true
+                                active:
+                                  type: boolean
+                                  example: false
+                          path:
+                            type: string
+                            example: 'http://localhost:8000/api/articles'
+                          per_page:
+                            type: integer
+                            example: 12
+                          to:
+                            type: integer
+                            example: 2
+                          total:
+                            type: integer
+                            example: 2
                   errors:
                     type: string
                     example: null
@@ -2372,7 +2555,7 @@ paths:
                 commission_mode:
                   type: string
                   description: ''
-                  example: fixed
+                  example: tiered
                   enum:
                     - fixed
                     - tiered
@@ -2526,6 +2709,111 @@ paths:
     post:
       summary: ''
       operationId: postApiV1UsersBulkPaymentReminder
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'إدارة المستخدمين وسجل التدقيق'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscriber_ids:
+                  type: array
+                  description: 'Must match an existing stored value.'
+                  example:
+                    - 17
+                  items:
+                    type: integer
+      security: []
+  /api/v1/owner/subscriber-lookup:
+    get:
+      summary: "بحث محدود عن مستخدمين بدور \"مشترك\" (id/name/email/phone فقط) — لخطوة\n\"إضافة اشتراك\" من طرف مالك المولد. مقصود أن تكون ضيّقة الحقول\nومحدودة النتائج (أقصى 20)، بخلاف index() الإدارية الكاملة."
+      operationId: idnameemailphone20Index
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'إدارة المستخدمين وسجل التدقيق'
+      security: []
+  '/api/v1/owner/subscriber-lookup/{user_id}/meters':
+    get:
+      summary: "عدادات مشترك محدَّد (id/meter_number/property_label/status فقط) —\nتُستخدم لملء قائمة اختيار العداد بعد اختيار المشترك في خطوة \"إضافة\nاشتراك\" من طرف مالك المولد. اختيار العداد نفسه لا يكشف شيئًا حسّاسًا\n(مجرد معرِّفات عداد فعلية)، لذا نفس قدرة lookupForOwner تكفي."
+      operationId: idmeterNumberpropertyLabelstatusLookupForOwner
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'إدارة المستخدمين وسجل التدقيق'
+      security: []
+    parameters:
+      -
+        in: path
+        name: user_id
+        description: 'The ID of the user.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/owner/subscribers/bulk-payment-reminder:
+    post:
+      summary: "تذكير دفع جماعي من قِبَل مالك المولد — يعيد استخدام نفس\nSendBulkPaymentReminderAction المستخدَم بمسار الأدمن، لكن قائمة\nsubscriber_ids هنا سبق تصفيتها في SendOwnerBulkPaymentReminderRequest\nلتقتصر على مشتركين لهم اشتراك فعلي على أحد مولدات هذا المالك."
+      operationId: SendBulkPaymentReminderActionSubscriberIdsSendOwnerBulkPaymentReminderRequest
       description: ''
       parameters: []
       responses: {  }
@@ -2762,6 +3050,42 @@ paths:
       tags:
         - 'إدارة المستخدمين وسجل التدقيق'
       security: []
+  /api/v1/users/export:
+    get:
+      summary: ''
+      operationId: getApiV1UsersExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'إدارة المستخدمين وسجل التدقيق'
+      security: []
   '/api/v1/users/{user_id}':
     get:
       summary: ''
@@ -2829,7 +3153,7 @@ paths:
                 status:
                   type: string
                   description: ''
-                  example: active
+                  example: inactive
                   enum:
                     - active
                     - inactive
@@ -2838,7 +3162,7 @@ paths:
                 birth_date:
                   type: string
                   description: 'Must be a valid date. Must be a date before <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
                   nullable: true
                 address:
                   type: string
@@ -3082,7 +3406,7 @@ paths:
                 schedule:
                   type: string
                   description: ''
-                  example: custom
+                  example: 24h
                   enum:
                     - day
                     - night
@@ -3092,11 +3416,11 @@ paths:
                 service_start_time:
                   type: string
                   description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
-                  example: '12:22'
+                  example: '06:46'
                 service_end_time:
                   type: string
                   description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                 requested_capacity_kw:
                   type: number
                   description: 'Must be at least 0.1.'
@@ -3271,10 +3595,25 @@ paths:
                   description: 'Must not be greater than 150 characters.'
                   example: amniihfqcoynlazghdtqt
                   nullable: true
+                manufacturer:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: qxbajwbpilpmufinllwlo
+                  nullable: true
+                model:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: auydlsmsjuryvojcybzvr
+                  nullable: true
+                serial_number:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: byickznkygloigmkwxphl
+                  nullable: true
                 price_per_kw:
                   type: number
                   description: 'Must be at least 0. Must not be greater than 9999.99.'
-                  example: 16
+                  example: 22
                 currency:
                   type: string
                   description: ''
@@ -3285,7 +3624,7 @@ paths:
                 capacity_kw:
                   type: integer
                   description: 'Must be at least 1.'
-                  example: 81
+                  example: 1
                   nullable: true
                 fuel_type:
                   type: string
@@ -3300,12 +3639,12 @@ paths:
                 notes:
                   type: string
                   description: 'Must not be greater than 1000 characters.'
-                  example: bajwbpilpmufinllwloau
+                  example: zjrcnfbaqywuxhgjjmzux
                   nullable: true
                 lines_count:
                   type: integer
                   description: 'Must be at least 1. Must not be greater than 20.'
-                  example: 20
+                  example: 8
                 location_id:
                   type: integer
                   description: 'Must match an existing stored value.'
@@ -3321,10 +3660,51 @@ paths:
                   description: 'Must be between -180 and 180.'
                   example: -179
                   nullable: true
+                rated_voltage:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 65000.'
+                  example: 5
+                  nullable: true
+                rated_frequency_hz:
+                  type: integer
+                  description: ''
+                  example: 60
+                  enum:
+                    - 50
+                    - 60
+                  nullable: true
+                phase_count:
+                  type: integer
+                  description: ''
+                  example: 3
+                  enum:
+                    - 1
+                    - 3
+                  nullable: true
+                rated_load_kw:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 51
+                  nullable: true
+                service_interval_hours:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 56
+                  nullable: true
+                next_service_due_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-30T06:46:57'
+                  nullable: true
+                installed_at:
+                  type: string
+                  description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
+                  example: '2020-12-25'
+                  nullable: true
                 status:
                   type: string
                   description: ''
-                  example: rejected
+                  example: active
                   enum:
                     - active
                     - inactive
@@ -3334,7 +3714,7 @@ paths:
                 operating_schedule:
                   type: string
                   description: ''
-                  example: night
+                  example: 24h
                   enum:
                     - day
                     - night
@@ -3343,15 +3723,51 @@ paths:
                 operating_start_time:
                   type: string
                   description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
-                  example: '12:22'
+                  example: '06:46'
                 operating_end_time:
                   type: string
                   description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>operating_start_time</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
               required:
                 - name
                 - price_per_kw
                 - operating_schedule
+      security: []
+  /api/v1/generators/map-points:
+    get:
+      summary: ''
+      operationId: getApiV1GeneratorsMapPoints
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'إدارة المولدات'
       security: []
   '/api/v1/generators/{generator_id}':
     get:
@@ -3413,10 +3829,25 @@ paths:
                   description: 'Must not be greater than 150 characters.'
                   example: amniihfqcoynlazghdtqt
                   nullable: true
+                manufacturer:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: qxbajwbpilpmufinllwlo
+                  nullable: true
+                model:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: auydlsmsjuryvojcybzvr
+                  nullable: true
+                serial_number:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: byickznkygloigmkwxphl
+                  nullable: true
                 price_per_kw:
                   type: number
                   description: 'Must be at least 0. Must not be greater than 9999.99.'
-                  example: 16
+                  example: 22
                 currency:
                   type: string
                   description: ''
@@ -3427,12 +3858,12 @@ paths:
                 capacity_kw:
                   type: integer
                   description: 'Must be at least 1.'
-                  example: 81
+                  example: 1
                   nullable: true
                 fuel_type:
                   type: string
                   description: ''
-                  example: diesel
+                  example: dual
                   enum:
                     - diesel
                     - gas
@@ -3441,12 +3872,12 @@ paths:
                 notes:
                   type: string
                   description: 'Must not be greater than 1000 characters.'
-                  example: bajwbpilpmufinllwloau
+                  example: zjrcnfbaqywuxhgjjmzux
                   nullable: true
                 lines_count:
                   type: integer
                   description: 'Must be at least 1. Must not be greater than 20.'
-                  example: 20
+                  example: 8
                 location_id:
                   type: integer
                   description: 'Must match an existing stored value.'
@@ -3462,10 +3893,51 @@ paths:
                   description: 'Must be between -180 and 180.'
                   example: -179
                   nullable: true
+                rated_voltage:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 65000.'
+                  example: 5
+                  nullable: true
+                rated_frequency_hz:
+                  type: integer
+                  description: ''
+                  example: 50
+                  enum:
+                    - 50
+                    - 60
+                  nullable: true
+                phase_count:
+                  type: integer
+                  description: ''
+                  example: 1
+                  enum:
+                    - 1
+                    - 3
+                  nullable: true
+                rated_load_kw:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 51
+                  nullable: true
+                service_interval_hours:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 56
+                  nullable: true
+                next_service_due_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-30T06:46:57'
+                  nullable: true
+                installed_at:
+                  type: string
+                  description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
+                  example: '2020-12-25'
+                  nullable: true
                 status:
                   type: string
                   description: ''
-                  example: inactive
+                  example: active
                   enum:
                     - active
                     - inactive
@@ -3475,7 +3947,7 @@ paths:
                 operating_schedule:
                   type: string
                   description: ''
-                  example: custom
+                  example: night
                   enum:
                     - day
                     - night
@@ -3484,11 +3956,11 @@ paths:
                 operating_start_time:
                   type: string
                   description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
-                  example: '12:22'
+                  example: '06:46'
                 operating_end_time:
                   type: string
                   description: 'This field is required when <code>operating_schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>operating_start_time</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
       security: []
     delete:
       summary: ''
@@ -3639,7 +4111,7 @@ paths:
                 document_type:
                   type: string
                   description: ''
-                  example: generator_photo
+                  example: generator_purchase_invoice
                   enum:
                     - generator_photo
                     - generator_license
@@ -3974,6 +4446,42 @@ paths:
                 - title
                 - description
       security: []
+  /api/v1/faults/export:
+    get:
+      summary: ''
+      operationId: getApiV1FaultsExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'الأعطال والتوقعات الذكية'
+      security: []
   '/api/v1/faults/{fault_id}':
     get:
       summary: ''
@@ -4024,7 +4532,7 @@ paths:
         in: path
         name: fault_id
         description: 'The ID of the fault.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -4047,7 +4555,7 @@ paths:
                 is_valid:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
               required:
                 - is_valid
       security: []
@@ -4056,7 +4564,7 @@ paths:
         in: path
         name: fault_id
         description: 'The ID of the fault.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -4083,7 +4591,6 @@ paths:
                   enum:
                     - owner_fixed
                     - internal_technician
-                    - platform_technician
                 technician_id:
                   type: integer
                   description: 'Must match an existing stored value.'
@@ -4102,7 +4609,7 @@ paths:
         in: path
         name: fault_id
         description: 'The ID of the fault.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -4125,7 +4632,7 @@ paths:
                 status:
                   type: string
                   description: ''
-                  example: closed
+                  example: rejected
                   enum:
                     - pending_verification
                     - verified
@@ -4146,7 +4653,7 @@ paths:
         in: path
         name: fault_id
         description: 'The ID of the fault.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -4499,7 +5006,7 @@ paths:
                 schedule:
                   type: string
                   description: ''
-                  example: night
+                  example: custom
                   enum:
                     - day
                     - night
@@ -4508,7 +5015,7 @@ paths:
                 billing_cycle:
                   type: string
                   description: ''
-                  example: monthly
+                  example: weekly
                   enum:
                     - daily
                     - weekly
@@ -4516,11 +5023,11 @@ paths:
                 service_start_time:
                   type: string
                   description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
-                  example: '12:22'
+                  example: '06:47'
                 service_end_time:
                   type: string
                   description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                 contract_type:
                   type: string
                   description: 'Must not be greater than 50 characters.'
@@ -4529,11 +5036,11 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:15'
+                  example: '2026-08-30T06:47:02'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                   nullable: true
               required:
                 - subscriber_meter_id
@@ -4541,6 +5048,42 @@ paths:
                 - schedule
                 - billing_cycle
                 - start_date
+      security: []
+  /api/v1/subscriptions/export:
+    get:
+      summary: ''
+      operationId: getApiV1SubscriptionsExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'الاشتراكات وطلبات الخدمة'
       security: []
   '/api/v1/subscriptions/{subscription_id}':
     get:
@@ -4606,7 +5149,7 @@ paths:
                 status:
                   type: string
                   description: ''
-                  example: rejected
+                  example: cancelled
                   enum:
                     - active
                     - suspended
@@ -4701,6 +5244,113 @@ paths:
         required: true
         schema:
           type: integer
+  /api/v1/owner/subscriptions:
+    post:
+      summary: "إنشاء اشتراك من قِبَل مالك المولد نيابةً عن مشترك — نظير store() لكن\nلمسار المالك (بدل الاشتراك الذاتي للمشترك). نطاق الصلاحية الحقيقي\n(المولد المستهدَف يجب أن يكون مملوكًا لصاحب الحساب الحالي) يُتحقَّق\nمنه في StoreOwnerSubscriptionRequest::withValidator() وأيضًا هنا عبر\nSubscriptionPolicy::createByOwner (دفاع بعمق، بنفس نمط بقية الكود)."
+      operationId: StoreStoreOwnerSubscriptionRequestwithValidatorSubscriptionPolicycreateByOwner
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'الاشتراكات وطلبات الخدمة'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscriber_meter_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                generator_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                requested_capacity_kw:
+                  type: number
+                  description: 'Must be at least 0.1.'
+                  example: 45
+                  nullable: true
+                schedule:
+                  type: string
+                  description: ''
+                  example: 24h
+                  enum:
+                    - day
+                    - night
+                    - 24h
+                    - custom
+                billing_cycle:
+                  type: string
+                  description: ''
+                  example: daily
+                  enum:
+                    - daily
+                    - weekly
+                    - monthly
+                service_start_time:
+                  type: string
+                  description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>.'
+                  example: '06:47'
+                service_end_time:
+                  type: string
+                  description: 'This field is required when <code>schedule</code> is <code>custom</code>. Must be a valid date in the format <code>H:i</code>. Must be a date after <code>service_start_time</code>.'
+                  example: '2107-09-28'
+                contract_type:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: mqeopfuudtdsufvyvddqa
+                  nullable: true
+                start_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-30T06:47:03'
+                end_date:
+                  type: string
+                  description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
+                  example: '2107-09-28'
+                  nullable: true
+              required:
+                - subscriber_meter_id
+                - generator_id
+                - schedule
+                - billing_cycle
+                - start_date
+      security: []
+  '/api/v1/owner/subscriptions/{subscription_id}/transfer':
+    patch:
+      summary: "نقل اشتراك بين مولدات مالك المولد نفسه — نظير transfer() (المخصَّص\nللأدمن) لكن لمسار المالك. الـ TransferSubscriptionRequest مُعاد\nاستخدامها كما هي (شكل الحقول مطابق: generator_id فقط)؛ القيد الإضافي\n— أن المولد الهدف مملوك لنفس المالك أيضًا — يُنفَّذ داخل\nTransferSubscriptionAction ضمن نفس الـ transaction (بعد lockForUpdate\nعلى المولدين) عبر تمرير $ownerScope، وليس مكررًا هنا."
+      operationId: TransferTransferSubscriptionRequestGeneratorIdTransferSubscriptionActionTransactionLockForUpdateownerScope
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'الاشتراكات وطلبات الخدمة'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                generator_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+              required:
+                - generator_id
+      security: []
+    parameters:
+      -
+        in: path
+        name: subscription_id
+        description: 'The ID of the subscription.'
+        example: 1
+        required: true
+        schema:
+          type: integer
   /api/v1/subscription-service-requests:
     get:
       summary: ''
@@ -4759,7 +5409,7 @@ paths:
                 request_type:
                   type: string
                   description: ''
-                  example: extra_hours
+                  example: medical_priority
                   enum:
                     - event
                     - extra_capacity
@@ -4770,7 +5420,7 @@ paths:
                 event_type:
                   type: string
                   description: ''
-                  example: wedding
+                  example: religious_event
                   enum:
                     - wedding
                     - exam
@@ -4789,11 +5439,11 @@ paths:
                 starts_at:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>now</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                 ends_at:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>starts_at</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
               required:
                 - subscription_id
                 - request_type
@@ -4842,7 +5492,7 @@ paths:
         in: path
         name: serviceRequest_id
         description: 'The ID of the serviceRequest.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -4882,7 +5532,7 @@ paths:
                 fee_currency:
                   type: string
                   description: 'This field is required when <code>fee_amount</code> is present.'
-                  example: USD
+                  example: ILS
                   enum:
                     - ILS
                     - USD
@@ -4894,7 +5544,7 @@ paths:
         in: path
         name: serviceRequest_id
         description: 'The ID of the serviceRequest.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -4913,7 +5563,7 @@ paths:
         in: path
         name: serviceRequest_id
         description: 'The ID of the serviceRequest.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5039,7 +5689,7 @@ paths:
                 currency:
                   type: string
                   description: ''
-                  example: ILS
+                  example: USD
                   enum:
                     - ILS
                     - USD
@@ -5126,7 +5776,7 @@ paths:
         in: path
         name: payment_id
         description: 'The ID of the payment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5198,7 +5848,7 @@ paths:
         in: path
         name: payment_id
         description: 'The ID of the payment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5212,7 +5862,7 @@ paths:
       tags:
         - 'الدفعات ووسائل الدفع'
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -5222,14 +5872,15 @@ paths:
                   type: string
                   description: 'Must not be greater than 500 characters.'
                   example: vmqeopfuudtdsufvyvddq
-                  nullable: true
+              required:
+                - reason
       security: []
     parameters:
       -
         in: path
         name: payment_id
         description: 'The ID of the payment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5261,7 +5912,7 @@ paths:
         in: path
         name: payment_id
         description: 'The ID of the payment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5280,7 +5931,7 @@ paths:
         in: path
         name: payment_id
         description: 'The ID of the payment.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5338,7 +5989,7 @@ paths:
                 type:
                   type: string
                   description: ''
-                  example: bank
+                  example: cash
                   enum:
                     - bank
                     - wallet
@@ -5520,6 +6171,42 @@ paths:
                 - subject
                 - description
       security: []
+  /api/v1/complaints/export:
+    get:
+      summary: ''
+      operationId: getApiV1ComplaintsExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - الشكاوى
+      security: []
   '/api/v1/complaints/{id}':
     get:
       summary: ''
@@ -5570,7 +6257,7 @@ paths:
         in: path
         name: id
         description: 'The ID of the complaint.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5593,7 +6280,7 @@ paths:
                 status:
                   type: string
                   description: ''
-                  example: in_progress
+                  example: resolved
                   enum:
                     - in_progress
                     - resolved
@@ -5610,7 +6297,7 @@ paths:
         in: path
         name: complaint_id
         description: 'The ID of the complaint.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5637,7 +6324,7 @@ paths:
                 document_type:
                   type: string
                   description: ''
-                  example: complaint_image
+                  example: complaint_video
                   enum:
                     - complaint_image
                     - complaint_video
@@ -5655,7 +6342,7 @@ paths:
         in: path
         name: complaint_id
         description: 'The ID of the complaint.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -5801,10 +6488,10 @@ paths:
                     cities:
                       -
                         city: غزة
-                        active_generators_count: 1
-                        latitude: '31.50170000000'
-                        longitude: '34.46680000000'
-                    total_active_generators: 1
+                        active_generators_count: 7
+                        latitude: '31.52738571429'
+                        longitude: '34.47954285714'
+                    total_active_generators: 7
                     total_cities: 1
                   errors: null
                 properties:
@@ -5822,9 +6509,9 @@ paths:
                         example:
                           -
                             city: غزة
-                            active_generators_count: 1
-                            latitude: '31.50170000000'
-                            longitude: '34.46680000000'
+                            active_generators_count: 7
+                            latitude: '31.52738571429'
+                            longitude: '34.47954285714'
                         items:
                           type: object
                           properties:
@@ -5833,16 +6520,16 @@ paths:
                               example: غزة
                             active_generators_count:
                               type: integer
-                              example: 1
+                              example: 7
                             latitude:
                               type: string
-                              example: '31.50170000000'
+                              example: '31.52738571429'
                             longitude:
                               type: string
-                              example: '34.46680000000'
+                              example: '34.47954285714'
                       total_active_generators:
                         type: integer
-                        example: 1
+                        example: 7
                       total_cities:
                         type: integer
                         example: 1
@@ -5879,9 +6566,69 @@ paths:
                         price_per_kw: 1.25
                         currency: ILS
                         subscribers_count: null
-                        latitude: 31.49547
-                        longitude: 34.47226
-                    total_generators: 1
+                        latitude: 31.521156
+                        longitude: 34.485003
+                      -
+                        id: 4
+                        name: 'مولد أبو شمالة الرئيسي'
+                        name_en: null
+                        city: غزة
+                        price_per_kw: 0.55
+                        currency: ILS
+                        subscribers_count: null
+                        latitude: 31.520946
+                        longitude: 34.485843
+                      -
+                        id: 5
+                        name: 'مولد الأغا - النصر'
+                        name_en: null
+                        city: غزة
+                        price_per_kw: 0.45
+                        currency: ILS
+                        subscribers_count: null
+                        latitude: 31.532006
+                        longitude: 34.473733
+                      -
+                        id: 7
+                        name: 'مولد النجار للصناعات'
+                        name_en: null
+                        city: غزة
+                        price_per_kw: 0.18
+                        currency: USD
+                        subscribers_count: null
+                        latitude: 31.530606
+                        longitude: 34.472963
+                      -
+                        id: 9
+                        name: 'مولد شاهين - الدرج'
+                        name_en: null
+                        city: غزة
+                        price_per_kw: 0.48
+                        currency: ILS
+                        subscribers_count: null
+                        latitude: 31.528016
+                        longitude: 34.483953
+                      -
+                        id: 11
+                        name: 'مولد ياسين الكبير - الصبرة'
+                        name_en: null
+                        city: غزة
+                        price_per_kw: 0.16
+                        currency: USD
+                        subscribers_count: null
+                        latitude: 31.531516
+                        longitude: 34.482273
+                      -
+                        id: 12
+                        name: 'مولد ياسين الفرعي'
+                        name_en: null
+                        city: غزة
+                        price_per_kw: 0.5
+                        currency: ILS
+                        subscribers_count: null
+                        latitude: 31.531936
+                        longitude: 34.478493
+                    total_generators: 7
                     total_cities: 1
                   errors: null
                 properties:
@@ -5905,8 +6652,68 @@ paths:
                             price_per_kw: 1.25
                             currency: ILS
                             subscribers_count: null
-                            latitude: 31.49547
-                            longitude: 34.47226
+                            latitude: 31.521156
+                            longitude: 34.485003
+                          -
+                            id: 4
+                            name: 'مولد أبو شمالة الرئيسي'
+                            name_en: null
+                            city: غزة
+                            price_per_kw: 0.55
+                            currency: ILS
+                            subscribers_count: null
+                            latitude: 31.520946
+                            longitude: 34.485843
+                          -
+                            id: 5
+                            name: 'مولد الأغا - النصر'
+                            name_en: null
+                            city: غزة
+                            price_per_kw: 0.45
+                            currency: ILS
+                            subscribers_count: null
+                            latitude: 31.532006
+                            longitude: 34.473733
+                          -
+                            id: 7
+                            name: 'مولد النجار للصناعات'
+                            name_en: null
+                            city: غزة
+                            price_per_kw: 0.18
+                            currency: USD
+                            subscribers_count: null
+                            latitude: 31.530606
+                            longitude: 34.472963
+                          -
+                            id: 9
+                            name: 'مولد شاهين - الدرج'
+                            name_en: null
+                            city: غزة
+                            price_per_kw: 0.48
+                            currency: ILS
+                            subscribers_count: null
+                            latitude: 31.528016
+                            longitude: 34.483953
+                          -
+                            id: 11
+                            name: 'مولد ياسين الكبير - الصبرة'
+                            name_en: null
+                            city: غزة
+                            price_per_kw: 0.16
+                            currency: USD
+                            subscribers_count: null
+                            latitude: 31.531516
+                            longitude: 34.482273
+                          -
+                            id: 12
+                            name: 'مولد ياسين الفرعي'
+                            name_en: null
+                            city: غزة
+                            price_per_kw: 0.5
+                            currency: ILS
+                            subscribers_count: null
+                            latitude: 31.531936
+                            longitude: 34.478493
                         items:
                           type: object
                           properties:
@@ -5935,13 +6742,13 @@ paths:
                               nullable: true
                             latitude:
                               type: number
-                              example: 31.49547
+                              example: 31.521156
                             longitude:
                               type: number
-                              example: 34.47226
+                              example: 34.485003
                       total_generators:
                         type: integer
-                        example: 1
+                        example: 7
                       total_cities:
                         type: integer
                         example: 1
@@ -5969,10 +6776,10 @@ paths:
                   success: true
                   message: 'إحصائيات المنصة العامة.'
                   data:
-                    subscribers_count: 7
-                    active_generators_count: 3
-                    owners_count: 4
-                    meter_readings_count: 2
+                    subscribers_count: 16
+                    active_generators_count: 9
+                    owners_count: 11
+                    meter_readings_count: 17
                     uptime_percentage: 100
                   errors: null
                 properties:
@@ -5987,16 +6794,16 @@ paths:
                     properties:
                       subscribers_count:
                         type: integer
-                        example: 7
+                        example: 16
                       active_generators_count:
                         type: integer
-                        example: 3
+                        example: 9
                       owners_count:
                         type: integer
-                        example: 4
+                        example: 11
                       meter_readings_count:
                         type: integer
-                        example: 2
+                        example: 17
                       uptime_percentage:
                         type: integer
                         example: 100
@@ -6025,10 +6832,10 @@ paths:
                   message: 'تحليلات المنصة العامة المجمّعة.'
                   data:
                     quick_stats:
-                      today_revenue_ils: 0
-                      active_generators_count: 3
-                      open_faults_count: 0
-                      monthly_readings_count: 2
+                      today_revenue_ils: 111.5
+                      active_generators_count: 9
+                      open_faults_count: 5
+                      monthly_readings_count: 17
                     revenue_growth:
                       labels:
                         - mar
@@ -6043,7 +6850,7 @@ paths:
                         - 0
                         - 0
                         - 0
-                        - 0
+                        - 111.5
                     subscriber_growth:
                       labels:
                         - mar
@@ -6058,7 +6865,7 @@ paths:
                         - 0
                         - 0
                         - 0
-                        - 8
+                        - 16
                     payment_methods: []
                     top_generators:
                       -
@@ -6067,15 +6874,15 @@ paths:
                         city: null
                         subscribers_count: 4
                       -
+                        name: 'مولد أبو شمالة الرئيسي'
+                        name_en: null
+                        city: null
+                        subscribers_count: 2
+                      -
                         name: 'المولد التجريبي'
                         name_en: null
                         city: null
                         subscribers_count: 1
-                      -
-                        name: 'مولد الشجاعية'
-                        name_en: null
-                        city: null
-                        subscribers_count: 0
                   errors: null
                 properties:
                   success:
@@ -6091,17 +6898,17 @@ paths:
                         type: object
                         properties:
                           today_revenue_ils:
-                            type: integer
-                            example: 0
+                            type: number
+                            example: 111.5
                           active_generators_count:
                             type: integer
-                            example: 3
+                            example: 9
                           open_faults_count:
                             type: integer
-                            example: 0
+                            example: 5
                           monthly_readings_count:
                             type: integer
-                            example: 2
+                            example: 17
                       revenue_growth:
                         type: object
                         properties:
@@ -6124,7 +6931,7 @@ paths:
                               - 0
                               - 0
                               - 0
-                              - 0
+                              - 111.5
                             items:
                               type: integer
                       subscriber_growth:
@@ -6149,7 +6956,7 @@ paths:
                               - 0
                               - 0
                               - 0
-                              - 8
+                              - 16
                             items:
                               type: integer
                       payment_methods:
@@ -6164,15 +6971,15 @@ paths:
                             city: null
                             subscribers_count: 4
                           -
+                            name: 'مولد أبو شمالة الرئيسي'
+                            name_en: null
+                            city: null
+                            subscribers_count: 2
+                          -
                             name: 'المولد التجريبي'
                             name_en: null
                             city: null
                             subscribers_count: 1
-                          -
-                            name: 'مولد الشجاعية'
-                            name_en: null
-                            city: null
-                            subscribers_count: 0
                         items:
                           type: object
                           properties:
@@ -6334,7 +7141,7 @@ paths:
                 discount_type:
                   type: string
                   description: ''
-                  example: percentage
+                  example: fixed
                   enum:
                     - percentage
                     - fixed
@@ -6345,7 +7152,7 @@ paths:
                 target_mode:
                   type: string
                   description: ''
-                  example: all
+                  example: beneficiary
                   enum:
                     - all
                     - beneficiary
@@ -6353,7 +7160,7 @@ paths:
                 beneficiary_type:
                   type: string
                   description: ''
-                  example: special
+                  example: normal
                   enum:
                     - normal
                     - special
@@ -6367,11 +7174,11 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>today</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
               required:
                 - title
                 - discount_type
@@ -6379,6 +7186,42 @@ paths:
                 - target_mode
                 - start_date
                 - end_date
+      security: []
+  /api/v1/offers/export:
+    get:
+      summary: ''
+      operationId: getApiV1OffersExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'العروض والخصومات'
       security: []
   '/api/v1/offers/{id}':
     get:
@@ -6447,11 +7290,11 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:16'
+                  example: '2026-08-30T06:47:13'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
       security: []
     delete:
       summary: ''
@@ -6467,7 +7310,7 @@ paths:
         in: path
         name: id
         description: 'The ID of the offer.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -6486,7 +7329,7 @@ paths:
         in: path
         name: offer_id
         description: 'The ID of the offer.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -6552,6 +7395,42 @@ paths:
                   nullable: true
               required:
                 - user_id
+      security: []
+  /api/v1/technicians/export:
+    get:
+      summary: ''
+      operationId: getApiV1TechniciansExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'الفنيين وأوامر الشغل'
       security: []
   '/api/v1/technicians/{technician_id}':
     get:
@@ -6777,7 +7656,7 @@ paths:
                 document_type:
                   type: string
                   description: ''
-                  example: technician_certificate
+                  example: technician_identity
                   enum:
                     - technician_certificate
                     - technician_identity
@@ -6906,7 +7785,7 @@ paths:
                 type:
                   type: string
                   description: ''
-                  example: new_subscription_installation
+                  example: meter_reading
                   enum:
                     - new_subscription_installation
                     - meter_reading
@@ -6939,6 +7818,42 @@ paths:
               required:
                 - generator_id
                 - type
+      security: []
+  /api/v1/technician-tasks/stats:
+    get:
+      summary: ''
+      operationId: getApiV1TechnicianTasksStats
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'الفنيين وأوامر الشغل'
       security: []
   '/api/v1/technician-tasks/{technician_task_id}':
     get:
@@ -7265,7 +8180,7 @@ paths:
                 reading_date:
                   type: string
                   description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
                 current_reading:
                   type: number
                   description: 'Must be at least 0.'
@@ -7274,6 +8189,123 @@ paths:
                 - subscription_id
                 - reading_date
                 - current_reading
+      security: []
+  /api/v1/meter-readings/overdue-subscribers:
+    get:
+      summary: ''
+      operationId: getApiV1MeterReadingsOverdueSubscribers
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'القراءات والفواتير'
+      security: []
+  '/api/v1/meter-readings/subscriptions/{subscription_id}/history':
+    get:
+      summary: ''
+      operationId: getApiV1MeterReadingsSubscriptionsSubscription_idHistory
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'القراءات والفواتير'
+      security: []
+    parameters:
+      -
+        in: path
+        name: subscription_id
+        description: 'The ID of the subscription.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/meter-readings/export:
+    get:
+      summary: ''
+      operationId: getApiV1MeterReadingsExport
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'القراءات والفواتير'
       security: []
   '/api/v1/meter-readings/{meter_reading_id}':
     get:
@@ -7311,6 +8343,15 @@ paths:
       tags:
         - 'القراءات والفواتير'
       security: []
+    delete:
+      summary: ''
+      operationId: deleteApiV1MeterReadingsMeter_reading_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'القراءات والفواتير'
+      security: []
     parameters:
       -
         in: path
@@ -7329,6 +8370,38 @@ paths:
       responses: {  }
       tags:
         - 'القراءات والفواتير'
+      security: []
+    parameters:
+      -
+        in: path
+        name: meter_reading_id
+        description: 'The ID of the meter reading.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/meter-readings/{meter_reading_id}/reject':
+    patch:
+      summary: ''
+      operationId: patchApiV1MeterReadingsMeter_reading_idReject
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'القراءات والفواتير'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+              required:
+                - reason
       security: []
     parameters:
       -
@@ -7470,6 +8543,26 @@ paths:
       tags:
         - المحادثات
       security: []
+  /api/v1/conversations/start-support:
+    post:
+      summary: ''
+      operationId: postApiV1ConversationsStartSupport
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - المحادثات
+      security: []
+  /api/v1/conversations/start-with-owner:
+    post:
+      summary: "فتح محادثة الفني مع المالك الذي يتبع له — الهدف يُحدَّد بالكامل من\nعلاقة الفني بالمالك في قاعدة البيانات، ولا يُقبل أي معرّف من الطلب."
+      operationId: ''
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - المحادثات
+      security: []
   '/api/v1/conversations/{id}':
     get:
       summary: ''
@@ -7520,7 +8613,7 @@ paths:
         in: path
         name: id
         description: 'The ID of the conversation.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -7592,7 +8685,47 @@ paths:
         in: path
         name: conversation_id
         description: 'The ID of the conversation.'
-        example: 17
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/conversations/{conversation_id}/convert-to-issue':
+    post:
+      summary: ''
+      operationId: postApiV1ConversationsConversation_idConvertToIssue
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - المحادثات
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  type: string
+                  description: ''
+                  example: complaint
+                  enum:
+                    - fault
+                    - complaint
+                generator_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                  nullable: true
+              required:
+                - category
+      security: []
+    parameters:
+      -
+        in: path
+        name: conversation_id
+        description: 'The ID of the conversation.'
+        example: 1
         required: true
         schema:
           type: integer
@@ -7646,7 +8779,7 @@ paths:
         in: path
         name: id
         description: 'The ID of the attachment.'
-        example: 1
+        example: 17
         required: true
         schema:
           type: integer
@@ -7691,7 +8824,7 @@ paths:
         in: path
         name: attachment_id
         description: 'The ID of the attachment.'
-        example: 1
+        example: 17
         required: true
         schema:
           type: integer
@@ -7736,7 +8869,7 @@ paths:
         in: path
         name: attachment_id
         description: 'The ID of the attachment.'
-        example: 1
+        example: 17
         required: true
         schema:
           type: integer
@@ -7832,7 +8965,7 @@ paths:
                 vibration_level:
                   type: string
                   description: ''
-                  example: abnormal
+                  example: normal
                   enum:
                     - normal
                     - abnormal
@@ -7845,7 +8978,7 @@ paths:
                 reading_date:
                   type: string
                   description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
               required:
                 - operating_hours
                 - reading_date
@@ -8212,7 +9345,7 @@ paths:
                 remember:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
               required:
                 - login
                 - password
@@ -8280,7 +9413,7 @@ paths:
       description: ''
       parameters: []
       responses:
-        429:
+        500:
           description: ''
           content:
             application/json:
@@ -8288,7 +9421,7 @@ paths:
                 type: object
                 example:
                   success: false
-                  message: 'Too many attempts, please wait a moment before trying again.'
+                  message: 'An unexpected error occurred, please try again later.'
                   data: null
                   errors: null
                 properties:
@@ -8297,7 +9430,7 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: 'Too many attempts, please wait a moment before trying again.'
+                    example: 'An unexpected error occurred, please try again later.'
                   data:
                     type: string
                     example: null
@@ -8616,7 +9749,7 @@ paths:
                 purchased_at:
                   type: string
                   description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
                 notes:
                   type: string
                   description: 'Must not be greater than 500 characters.'
@@ -8706,7 +9839,7 @@ paths:
                 reading_date:
                   type: string
                   description: 'Must be a valid date. Must be a date before or equal to <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
                 notes:
                   type: string
                   description: 'Must not be greater than 500 characters.'
@@ -8776,11 +9909,11 @@ paths:
                 from:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:15'
+                  example: '2026-08-30T06:46:59'
                 to:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>from</code>. Must be a date before or equal to <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
               required:
                 - from
                 - to
@@ -8839,11 +9972,11 @@ paths:
                 from:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:15'
+                  example: '2026-08-30T06:47:00'
                 to:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>from</code>. Must be a date before or equal to <code>today</code>.'
-                  example: '2020-12-12'
+                  example: '2020-12-25'
               required:
                 - from
                 - to
@@ -9043,6 +10176,263 @@ paths:
         required: true
         schema:
           type: integer
+  /api/v1/technician-payments:
+    get:
+      summary: ''
+      operationId: getApiV1TechnicianPayments
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'دفعات الفنيين'
+      security: []
+    post:
+      summary: ''
+      operationId: postApiV1TechnicianPayments
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'دفعات الفنيين'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                technician_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                payment_method_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                  nullable: true
+                amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 45
+                currency:
+                  type: string
+                  description: ''
+                  example: ILS
+                  enum:
+                    - ILS
+                    - USD
+                  nullable: true
+                note:
+                  type: string
+                  description: 'Must not be greater than 500 characters.'
+                  example: qeopfuudtdsufvyvddqam
+                  nullable: true
+              required:
+                - technician_id
+                - amount
+      security: []
+  '/api/v1/technician-payments/{technician_payment_id}':
+    get:
+      summary: ''
+      operationId: getApiV1TechnicianPaymentsTechnician_payment_id
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'دفعات الفنيين'
+      security: []
+    parameters:
+      -
+        in: path
+        name: technician_payment_id
+        description: 'The ID of the technician payment.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/technician-payments/{technician_payment_id}/approve':
+    patch:
+      summary: ''
+      operationId: patchApiV1TechnicianPaymentsTechnician_payment_idApprove
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'دفعات الفنيين'
+      security: []
+    parameters:
+      -
+        in: path
+        name: technician_payment_id
+        description: 'The ID of the technician payment.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/technician-payments/{technician_payment_id}/reject':
+    patch:
+      summary: ''
+      operationId: patchApiV1TechnicianPaymentsTechnician_payment_idReject
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'دفعات الفنيين'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 'Must not be greater than 500 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+              required:
+                - reason
+      security: []
+    parameters:
+      -
+        in: path
+        name: technician_payment_id
+        description: 'The ID of the technician payment.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/technician-payments/{technician_payment_id}/attachments':
+    get:
+      summary: ''
+      operationId: getApiV1TechnicianPaymentsTechnician_payment_idAttachments
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'دفعات الفنيين'
+      security: []
+    post:
+      summary: ''
+      operationId: postApiV1TechnicianPaymentsTechnician_payment_idAttachments
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'دفعات الفنيين'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                document_type:
+                  type: string
+                  description: ''
+                  example: other
+                  enum:
+                    - payment_receipt
+                    - other
+                file:
+                  type: string
+                  format: binary
+                  description: 'Must be a file. Must not be greater than 5120 kilobytes.'
+                description:
+                  type: string
+                  description: 'Must not be greater than 500 characters.'
+                  example: 'Dolores dolorum amet iste laborum eius est dolor.'
+                  nullable: true
+              required:
+                - document_type
+                - file
+      security: []
+    parameters:
+      -
+        in: path
+        name: technician_payment_id
+        description: 'The ID of the technician payment.'
+        example: 1
+        required: true
+        schema:
+          type: integer
   /api/v1/commission-tiers:
     get:
       summary: ''
@@ -9147,7 +10537,7 @@ paths:
                 is_active:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
       security: []
     delete:
       summary: ''
@@ -9216,7 +10606,7 @@ paths:
                 generator_currency:
                   type: string
                   description: ''
-                  example: ILS
+                  example: USD
                   enum:
                     - ILS
                     - USD
@@ -9322,12 +10712,12 @@ paths:
                 from_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:17'
+                  example: '2026-08-30T06:47:16'
                   nullable: true
                 to_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>from_date</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                   nullable: true
       security: []
   /api/v1/admin/owner-applications/export:
@@ -9375,12 +10765,12 @@ paths:
                 from_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-17T12:22:17'
+                  example: '2026-08-30T06:47:16'
                   nullable: true
                 to_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>from_date</code>.'
-                  example: '2107-09-16'
+                  example: '2107-09-28'
                   nullable: true
       security: []
   /api/v1/admin/owner-applications/bulk-approve:
@@ -9477,7 +10867,7 @@ paths:
         in: path
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -9496,7 +10886,7 @@ paths:
         in: path
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -9527,7 +10917,7 @@ paths:
         in: path
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
@@ -9558,14 +10948,169 @@ paths:
         in: path
         name: ownerApplication_id
         description: 'The ID of the ownerApplication.'
-        example: 17
+        example: 1
         required: true
         schema:
           type: integer
+  /api/v1/subscription-meter-transfers:
+    get:
+      summary: ''
+      operationId: getApiV1SubscriptionMeterTransfers
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'طلبات نقل عداد الاشتراك'
+      security: []
+    post:
+      summary: ''
+      operationId: postApiV1SubscriptionMeterTransfers
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'طلبات نقل عداد الاشتراك'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscription_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                to_subscriber_meter_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 17
+                reason:
+                  type: string
+                  description: 'Must not be greater than 500 characters.'
+                  example: mqeopfuudtdsufvyvddqa
+                  nullable: true
+              required:
+                - subscription_id
+                - to_subscriber_meter_id
+      security: []
+  '/api/v1/subscription-meter-transfers/{subscription_meter_transfer_id}/approve':
+    patch:
+      summary: ''
+      operationId: patchApiV1SubscriptionMeterTransfersSubscription_meter_transfer_idApprove
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'طلبات نقل عداد الاشتراك'
+      security: []
+    parameters:
+      -
+        in: path
+        name: subscription_meter_transfer_id
+        description: 'The ID of the subscription meter transfer.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  '/api/v1/subscription-meter-transfers/{subscription_meter_transfer_id}/reject':
+    patch:
+      summary: ''
+      operationId: patchApiV1SubscriptionMeterTransfersSubscription_meter_transfer_idReject
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'طلبات نقل عداد الاشتراك'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejection_reason:
+                  type: string
+                  description: 'Must not be greater than 500 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+              required:
+                - rejection_reason
+      security: []
+    parameters:
+      -
+        in: path
+        name: subscription_meter_transfer_id
+        description: 'The ID of the subscription meter transfer.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
   /api/v1/platform-commissions:
     get:
       summary: ''
       operationId: getApiV1PlatformCommissions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'You must be logged in.'
+                  data: null
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'You must be logged in.'
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'عمولات المنصة'
+      security: []
+  /api/v1/platform-commissions/summary:
+    get:
+      summary: ''
+      operationId: getApiV1PlatformCommissionsSummary
       description: ''
       parameters: []
       responses:

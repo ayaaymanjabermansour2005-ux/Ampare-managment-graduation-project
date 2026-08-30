@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, reactive, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -52,7 +53,7 @@ async function handleSubmit() {
     submitted.value = true;
     setTimeout(() => router.back(), 1200);
   } catch (err) {
-    submitError.value = err.response?.data?.message ?? t("owner_ai_chat.fault_report_error");
+    submitError.value = normalizeApiError(err, t("owner_ai_chat.fault_report_error")).message;
   } finally {
     isSubmitting.value = false;
   }

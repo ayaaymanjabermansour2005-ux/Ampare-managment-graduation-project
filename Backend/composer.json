@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "ampare/ampare-project",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Ampere — diesel-generator electricity subscription marketplace (Laravel API + Vue SPA).",
+    "keywords": ["ampere", "generators", "laravel", "vue"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -11,7 +11,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "giggsey/libphonenumber-for-php": "^9.0",
         "intervention/image": "^3.11",
-        "khaled.alshamaa/ar-php": "*",
+        "khaled.alshamaa/ar-php": "^7.0",
         "laravel/framework": "^12.0",
         "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.3",

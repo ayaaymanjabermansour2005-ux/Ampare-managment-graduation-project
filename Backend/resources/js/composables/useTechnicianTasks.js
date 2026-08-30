@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianTaskService from "@/services/technicianTaskService";
@@ -82,7 +83,7 @@ export function useTechnicianTasks() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("technician_tasks.load_error");
+      error.value = normalizeApiError(err, t("technician_tasks.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -105,7 +106,7 @@ export function useTechnicianTasks() {
       replaceInList(data.data);
       return true;
     } catch (err) {
-      actionError.value = err.response?.data?.message ?? t("technician_tasks.action_error");
+      actionError.value = normalizeApiError(err, t("technician_tasks.action_error")).message;
       return false;
     } finally {
       actingId.value = null;

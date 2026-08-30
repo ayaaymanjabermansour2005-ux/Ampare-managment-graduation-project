@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import invoiceService from "@/services/invoiceService";
@@ -43,7 +44,7 @@ export function useOwnerInvoices() {
       };
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("owner_invoices.load_error");
+        normalizeApiError(err, t("owner_invoices.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -73,7 +74,7 @@ export function useOwnerInvoices() {
       return true;
     } catch (err) {
       cancelError.value =
-        err.response?.data?.message ?? t("owner_invoices.cancel_error");
+        normalizeApiError(err, t("owner_invoices.cancel_error")).message;
       return false;
     } finally {
       cancellingId.value = null;

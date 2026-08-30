@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import paymentMethodService from "@/services/paymentMethodService";
@@ -17,7 +18,7 @@ export function usePaymentMethods() {
       const payload = data.data;
       methods.value = payload.data ?? payload;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_settings.financial.load_error");
+      error.value = normalizeApiError(err, t("owner_settings.financial.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -66,7 +67,7 @@ export function usePaymentMethods() {
       await paymentMethodService.destroy(id);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("owner_settings.financial.delete_error");
+      deleteError.value = normalizeApiError(err, t("owner_settings.financial.delete_error")).message;
       return false;
     } finally {
       isDeleting.value = false;

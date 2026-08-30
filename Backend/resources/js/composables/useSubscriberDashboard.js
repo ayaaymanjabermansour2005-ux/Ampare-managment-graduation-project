@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import subscriptionService from "@/services/subscriptionService";
@@ -48,7 +49,7 @@ export function useSubscriberDashboard() {
       recentNotifications.value = notificationsPayload.data ?? notificationsPayload ?? [];
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("owner_dashboard.load_error");
+        normalizeApiError(err, t("owner_dashboard.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -80,7 +81,7 @@ export function useSubscriberDashboard() {
       extraStats.value = data.data;
     } catch (err) {
       extraStatsError.value =
-        err.response?.data?.message ?? t("owner_dashboard.load_extra_stats_error");
+        normalizeApiError(err, t("owner_dashboard.load_extra_stats_error")).message;
     } finally {
       isLoadingExtraStats.value = false;
     }

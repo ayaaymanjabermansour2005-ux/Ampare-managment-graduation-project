@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 final class UpdateOwnerCommissionSettingsAction
 {
-    public function execute(User $owner, CommissionMode $mode, ?float $rate): User
+    public function execute(User $owner, CommissionMode $mode, ?float $rate, User $actor): User
     {
         if (! $owner->isOwner()) {
             throw ValidationException::withMessages([
@@ -28,7 +28,7 @@ final class UpdateOwnerCommissionSettingsAction
         ])->save();
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy($actor)
             ->performedOn($owner)
             ->withProperties(['mode' => $mode->value, 'rate' => $rate])
             ->log('owner_commission_settings_updated');

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import faultService from "@/services/faultService";
@@ -18,7 +19,7 @@ export function useSubscriberFaults() {
       faults.value = payload.data ?? payload;
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("support_center_page.faults_load_error");
+        normalizeApiError(err, t("support_center_page.faults_load_error")).message;
     } finally {
       isLoading.value = false;
     }

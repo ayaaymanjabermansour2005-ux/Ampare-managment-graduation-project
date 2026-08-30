@@ -15,7 +15,7 @@ const MAX_ATTEMPTS = 5;
 function notifyDropped() {
   useToastStore().show({
     message: i18n.global.t("common.queued_item_dropped_message"),
-    type: "error",
+    type: "danger",
     duration: 8000,
   });
 }

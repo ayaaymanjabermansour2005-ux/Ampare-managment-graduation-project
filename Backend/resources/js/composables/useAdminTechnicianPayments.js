@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianPaymentService from "@/services/technicianPaymentService";
@@ -36,7 +37,7 @@ export function useAdminTechnicianPayments() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("admin_payments_page.technician_payments_load_error");
+      error.value = normalizeApiError(err, t("admin_payments_page.technician_payments_load_error")).message;
     } finally {
       isLoading.value = false;
     }

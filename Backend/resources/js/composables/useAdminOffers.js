@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import offerService from "@/services/offerService";
@@ -36,7 +37,7 @@ export function useAdminOffers() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("offers_page.load_error");
+      error.value = normalizeApiError(err, t("offers_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -57,7 +58,7 @@ export function useAdminOffers() {
       if (index !== -1) offers.value[index] = data.data;
       return true;
     } catch (err) {
-      cancelError.value = err.response?.data?.message ?? t("offers_page.cancel_error");
+      cancelError.value = normalizeApiError(err, t("offers_page.cancel_error")).message;
       return false;
     } finally {
       cancellingId.value = null;
@@ -72,7 +73,7 @@ export function useAdminOffers() {
       await fetchOffers(pagination.value.current_page);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("offers_page.delete_error");
+      deleteError.value = normalizeApiError(err, t("offers_page.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;

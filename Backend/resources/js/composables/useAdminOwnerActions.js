@@ -4,6 +4,7 @@ import userService from "@/services/userService";
 import planService from "@/services/planService";
 import generatorService from "@/services/generatorService";
 import activityLogService from "@/services/activityLogService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 /**
  * Owner-management operations beyond the core list/create/update/delete CRUD
@@ -32,10 +33,10 @@ export function useAdminOwnerActions({ owners, loadAll }) {
       if (index !== -1) owners.value[index] = data.data;
       return data.data;
     } catch (err) {
-      commissionError.value = err.response?.data?.errors?.commission_rate?.[0]
-        ?? err.response?.data?.errors?.commission_mode?.[0]
-        ?? err.response?.data?.message
-        ?? t("owners_page.commission_save_error");
+      const normalized = normalizeApiError(err, t("owners_page.commission_save_error"));
+      commissionError.value = normalized.fieldError("commission_rate")
+        ?? normalized.fieldError("commission_mode")
+        ?? normalized.message;
       return null;
     } finally {
       isSavingCommission.value = false;
@@ -51,7 +52,7 @@ export function useAdminOwnerActions({ owners, loadAll }) {
       await userService.sendPasswordResetLink(ownerId);
       return { success: true, message: null };
     } catch (err) {
-      return { success: false, message: err.response?.data?.message ?? null };
+      return { success: false, message: normalizeApiError(err, null).message };
     } finally {
       isSendingResetLink.value = false;
     }
@@ -83,7 +84,7 @@ export function useAdminOwnerActions({ owners, loadAll }) {
       if (index !== -1) owners.value[index].plan = plans.value.find((p) => p.id === planId);
       return true;
     } catch (err) {
-      planError.value = err.response?.data?.message ?? t("owners_page.plan_assign_error");
+      planError.value = normalizeApiError(err, t("owners_page.plan_assign_error")).message;
       return false;
     } finally {
       isAssigningPlan.value = false;
@@ -120,9 +121,8 @@ export function useAdminOwnerActions({ owners, loadAll }) {
     } catch (err) {
       // نفس النمط المتكرر — الرسالة المحدَّدة (مثلاً: "هذا المولد مملوك أصلًا
       // لهذا المستخدم") موجودة بـ errors.owner_id، لا بـ message العامة.
-      transferGenError.value = err.response?.data?.errors?.owner_id?.[0]
-        ?? err.response?.data?.message
-        ?? t("owners_page.transfer_error");
+      const normalized = normalizeApiError(err, t("owners_page.transfer_error"));
+      transferGenError.value = normalized.fieldError("owner_id") ?? normalized.message;
       return false;
     } finally {
       isTransferringGenerator.value = false;

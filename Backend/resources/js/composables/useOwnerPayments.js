@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import paymentService from "@/services/paymentService";
@@ -40,7 +41,7 @@ export function useOwnerPayments() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_payments.load_error");
+      error.value = normalizeApiError(err, t("owner_payments.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -81,7 +82,7 @@ export function useOwnerPayments() {
       replaceInList(data.data);
       return true;
     } catch (err) {
-      actionError.value = err.response?.data?.message ?? t("owner_payments.approve_error");
+      actionError.value = normalizeApiError(err, t("owner_payments.approve_error")).message;
       return false;
     } finally {
       isActing.value = false;
@@ -96,7 +97,7 @@ export function useOwnerPayments() {
       replaceInList(data.data);
       return true;
     } catch (err) {
-      actionError.value = err.response?.data?.message ?? t("owner_payments.reject_error");
+      actionError.value = normalizeApiError(err, t("owner_payments.reject_error")).message;
       return false;
     } finally {
       isActing.value = false;
@@ -112,7 +113,7 @@ export function useOwnerPayments() {
       return true;
     } catch (err) {
       actionError.value =
-        err.response?.data?.message ?? t("owner_payments.correction_error");
+        normalizeApiError(err, t("owner_payments.correction_error")).message;
       return false;
     } finally {
       isActing.value = false;

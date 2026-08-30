@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, reactive, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useOwnerPayments } from "@/composables/useOwnerPayments";
@@ -241,7 +242,7 @@ async function fetchFinancialSummary() {
     const { data } = await adminDashboardService.paymentsFinancialSummary();
     financialSummary.value = data.data;
   } catch (err) {
-    financialSummaryError.value = err.response?.data?.message ?? t("admin_payments_page.financial_today");
+    financialSummaryError.value = normalizeApiError(err, t("admin_payments_page.financial_today")).message;
   } finally {
     isLoadingFinancialSummary.value = false;
   }
@@ -446,7 +447,7 @@ async function submitManualPayment() {
     showManualPaymentModal.value = false;
     await fetchPayments(pagination.value.current_page);
   } catch (err) {
-    manualPaymentError.value = err.response?.data?.message ?? t("admin_payments_page.manual_create_error");
+    manualPaymentError.value = normalizeApiError(err, t("admin_payments_page.manual_create_error")).message;
   } finally {
     isSubmittingManual.value = false;
   }

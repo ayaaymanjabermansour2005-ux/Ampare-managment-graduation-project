@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { reactive, ref, onMounted, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTechnicianMeterReadings } from "@/composables/useTechnicianMeterReadings";
@@ -59,7 +60,7 @@ async function handleSubmit() {
       }, 1800);
     }
   } catch (err) {
-    submitError.value = err.response?.data?.message ?? t("owner_meter_readings.submit_error");
+    submitError.value = normalizeApiError(err, t("owner_meter_readings.submit_error")).message;
   } finally {
     isSubmitting.value = false;
   }

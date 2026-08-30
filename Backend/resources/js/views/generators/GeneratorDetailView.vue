@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -117,7 +118,7 @@ async function load() {
       isNotFound.value = true;
     } else {
       errorMessage.value =
-        err.response?.data?.message ?? t("owner_generators.detail.load_error");
+        normalizeApiError(err, t("owner_generators.detail.load_error")).message;
     }
   } finally {
     isLoading.value = false;

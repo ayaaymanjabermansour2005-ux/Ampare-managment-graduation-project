@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { useGeneratorAttachments } from "@/composables/useGeneratorAttachments";
 import { useToastStore } from "@/stores/toast";
 import { useConfirm } from "@/composables/useConfirm";
@@ -215,7 +216,7 @@ async function handleLinkTechnician() {
     toast.show({
       type: "danger",
       title: t("generators_management_page.linking_failed_title"),
-      message: err.response?.data?.message ?? t("generators_management_page.try_again"),
+      message: normalizeApiError(err, t("generators_management_page.try_again")).message,
     });
   } finally {
     isLinkingTechnician.value = false;

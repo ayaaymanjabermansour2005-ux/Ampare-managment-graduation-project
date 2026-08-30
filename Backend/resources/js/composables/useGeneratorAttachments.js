@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useGeneratorAttachments() {
   const { t } = useI18n();
@@ -15,7 +16,7 @@ export function useGeneratorAttachments() {
       const { data } = await generatorService.attachments(generatorId);
       attachments.value = data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_generators.attachments_load_error");
+      error.value = normalizeApiError(err, t("owner_generators.attachments_load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -37,7 +38,10 @@ export function useGeneratorAttachments() {
       attachments.value.unshift(data.data);
       return true;
     } catch (err) {
-      uploadError.value = err.response?.data?.errors ?? { file: [err.response?.data?.message ?? t("owner_generators.attachment_upload_error")] };
+      const normalized = normalizeApiError(err, t("owner_generators.attachment_upload_error"));
+      uploadError.value = Object.keys(normalized.fieldErrors).length
+        ? normalized.fieldErrors
+        : { file: [normalized.message] };
       return false;
     } finally {
       isUploading.value = false;

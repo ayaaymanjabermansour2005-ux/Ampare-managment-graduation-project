@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ownerApplicationService from "@/services/ownerApplicationService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminOwnerApplications() {
   const { t } = useI18n();
@@ -64,11 +65,12 @@ export function useAdminOwnerApplications() {
         };
       }
     } catch (err) {
-      const validationErrors = err.response?.status === 422 ? err.response?.data?.errors : null;
-      if (validationErrors?.to_date || validationErrors?.from_date) {
-        dateRangeError.value = (validationErrors.to_date ?? validationErrors.from_date)[0];
+      const normalized = normalizeApiError(err, t("owner_applications_page.load_error"));
+      const dateFieldError = normalized.fieldError("to_date") ?? normalized.fieldError("from_date");
+      if (dateFieldError) {
+        dateRangeError.value = dateFieldError;
       }
-      error.value = err.response?.data?.message ?? t("owner_applications_page.load_error");
+      error.value = normalized.message;
     } finally {
       isLoading.value = false;
     }
@@ -101,7 +103,7 @@ export function useAdminOwnerApplications() {
       applications.value = applications.value.filter((a) => a.id !== id);
       return data.data;
     } catch (err) {
-      reviewError.value = err.response?.data?.message ?? t("owner_applications_page.approve_error");
+      reviewError.value = normalizeApiError(err, t("owner_applications_page.approve_error")).message;
       return null;
     } finally {
       reviewingId.value = null;
@@ -116,7 +118,7 @@ export function useAdminOwnerApplications() {
       applications.value = applications.value.filter((a) => a.id !== id);
       return data.data;
     } catch (err) {
-      reviewError.value = err.response?.data?.message ?? t("owner_applications_page.reject_error");
+      reviewError.value = normalizeApiError(err, t("owner_applications_page.reject_error")).message;
       return null;
     } finally {
       reviewingId.value = null;
@@ -131,7 +133,7 @@ export function useAdminOwnerApplications() {
       await fetchApplications(1);
       return data.data;
     } catch (err) {
-      bulkError.value = err.response?.data?.message ?? t("owner_applications_page.bulk_approve_error");
+      bulkError.value = normalizeApiError(err, t("owner_applications_page.bulk_approve_error")).message;
       return null;
     } finally {
       isBulkProcessing.value = false;
@@ -146,7 +148,7 @@ export function useAdminOwnerApplications() {
       await fetchApplications(1);
       return data.data;
     } catch (err) {
-      bulkError.value = err.response?.data?.message ?? t("owner_applications_page.bulk_reject_error");
+      bulkError.value = normalizeApiError(err, t("owner_applications_page.bulk_reject_error")).message;
       return null;
     } finally {
       isBulkProcessing.value = false;
@@ -160,7 +162,7 @@ export function useAdminOwnerApplications() {
       if (target) target.internal_note = data?.data?.internal_note ?? note;
       return true;
     } catch (err) {
-      reviewError.value = err.response?.data?.message ?? t("owner_applications_page.note_save_error");
+      reviewError.value = normalizeApiError(err, t("owner_applications_page.note_save_error")).message;
       return false;
     }
   }

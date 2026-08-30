@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import invoiceService from "../services/invoiceService";
@@ -45,7 +46,7 @@ export function usePaymentGateway(invoiceId) {
       paymentMethods.value = methodsRes.data.data;
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("payment_gateway.load_failed");
+        normalizeApiError(err, t("payment_gateway.load_failed")).message;
       throw err;
     } finally {
       isLoading.value = false;
@@ -94,7 +95,7 @@ export function usePaymentGateway(invoiceId) {
 
       return data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("payment_gateway.submit_error");
+      error.value = normalizeApiError(err, t("payment_gateway.submit_error")).message;
     } finally {
       isSubmitting.value = false;
     }

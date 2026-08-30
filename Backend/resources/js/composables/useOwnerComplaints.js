@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import complaintService from "@/services/complaintService";
@@ -47,7 +48,7 @@ export function useOwnerComplaints() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_complaints.load_error");
+      error.value = normalizeApiError(err, t("owner_complaints.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -73,7 +74,7 @@ export function useOwnerComplaints() {
       return true;
     } catch (err) {
       newComplaintError.value =
-        err.response?.data?.message ?? t("owner_complaints.create_error");
+        normalizeApiError(err, t("owner_complaints.create_error")).message;
       return false;
     } finally {
       isSubmittingNew.value = false;
@@ -109,7 +110,7 @@ export function useOwnerComplaints() {
       return true;
     } catch (err) {
       resolveError.value =
-        err.response?.data?.message ?? t("owner_complaints.resolve_error");
+        normalizeApiError(err, t("owner_complaints.resolve_error")).message;
       return false;
     } finally {
       isResolving.value = false;

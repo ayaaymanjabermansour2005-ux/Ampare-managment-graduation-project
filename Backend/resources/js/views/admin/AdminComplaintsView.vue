@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAdminComplaints } from "@/composables/useAdminComplaints";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import complaintService from "@/services/complaintService";
 import { useConfirm } from "@/composables/useConfirm";
 import { vReveal } from "@/directives/reveal";
@@ -372,7 +373,7 @@ async function handleCreateComplaint() {
     isCreateOpen.value = false;
     await fetchComplaints(1);
   } catch (e) {
-    createComplaintError.value = e?.response?.data?.message ?? t("complaints_page.failed_create_complaint");
+    createComplaintError.value = normalizeApiError(e, t("complaints_page.failed_create_complaint")).message;
   } finally {
     isCreatingComplaint.value = false;
   }

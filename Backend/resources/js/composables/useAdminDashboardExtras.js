@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import activityLogService from "@/services/activityLogService";
 import generatorService from "@/services/generatorService";
 import generatorScheduleService from "@/services/generatorScheduleService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 /**
  * Remaining admin-dashboard data-access extracted out of DashboardView.vue
@@ -67,7 +68,7 @@ export function useAdminDashboardExtras() {
       await generatorScheduleService.create(generatorId, payload);
       return true;
     } catch (err) {
-      maintenanceError.value = err.response?.data?.message ?? t("dashboard.maintenance_schedule_error");
+      maintenanceError.value = normalizeApiError(err, t("dashboard.maintenance_schedule_error")).message;
       return false;
     } finally {
       isSavingMaintenance.value = false;

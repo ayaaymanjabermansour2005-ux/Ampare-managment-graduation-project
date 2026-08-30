@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import invoiceService from "@/services/invoiceService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { Check, FilePenLine, LoaderCircle, X } from "@lucide/vue";
 
 
@@ -40,7 +41,7 @@ async function submitCorrection() {
     emit("updated", data.data);
     emit("close");
   } catch (err) {
-    error.value = err.response?.data?.message ?? t("invoice_correction_modal.generic_error");
+    error.value = normalizeApiError(err, t("invoice_correction_modal.generic_error")).message;
   } finally {
     isSaving.value = false;
   }

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
@@ -27,7 +28,7 @@ export function useOwnerDashboard() {
         paymentsRes.data.data?.data ?? paymentsRes.data.data ?? [];
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("owner_dashboard.load_error");
+        normalizeApiError(err, t("owner_dashboard.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -45,7 +46,7 @@ export function useOwnerDashboard() {
       extraStats.value = data.data;
     } catch (err) {
       extraStatsError.value =
-        err.response?.data?.message ?? t("owner_dashboard.load_extra_stats_error");
+        normalizeApiError(err, t("owner_dashboard.load_extra_stats_error")).message;
     } finally {
       isLoadingExtraStats.value = false;
     }

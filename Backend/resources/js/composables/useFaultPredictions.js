@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import faultPredictionService from "@/services/faultPredictionService";
@@ -30,7 +31,7 @@ export function useFaultPredictions() {
       };
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("fault_predictions.load_error");
+        normalizeApiError(err, t("fault_predictions.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -48,7 +49,7 @@ export function useFaultPredictions() {
       return true;
     } catch (err) {
       decisionError.value =
-        err.response?.data?.message ?? t("fault_predictions.confirm_error");
+        normalizeApiError(err, t("fault_predictions.confirm_error")).message;
       return false;
     } finally {
       decidingId.value = null;
@@ -64,7 +65,7 @@ export function useFaultPredictions() {
       return true;
     } catch (err) {
       decisionError.value =
-        err.response?.data?.message ?? t("fault_predictions.dismiss_error");
+        normalizeApiError(err, t("fault_predictions.dismiss_error")).message;
       return false;
     } finally {
       decidingId.value = null;

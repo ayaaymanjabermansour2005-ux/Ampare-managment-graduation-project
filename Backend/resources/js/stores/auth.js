@@ -104,6 +104,23 @@ export const useAuthStore = defineStore("auth", () => {
         "@/composables/useRealtimeNotifications"
       );
       forceLeaveRealtimeChannel();
+
+      // FRONT-009: كاش Workbox (Cache Storage) بيحتفظ باستجابات NetworkFirst
+      // (فواتير، اشتراكات، بيانات فنيين...) لغاية 24 ساعة — كان يبقى بعد
+      // تسجيل الخروج على جهاز مشترك (كانت فقط طابور IndexedDB يتنضّف).
+      // نمسح الكاشات المسمّاة صراحةً بدل مسح كل شيء (service worker نفسه
+      // وأي كاش أصول ثابتة يجب أن يبقيان).
+      if (typeof caches !== "undefined") {
+        try {
+          await Promise.all(
+            ["ampare-api-cache", "ampare-technician-api-cache"].map((name) =>
+              caches.delete(name),
+            ),
+          );
+        } catch (error) {
+          console.warn("Failed to purge Workbox caches on logout.", error);
+        }
+      }
     }
 
     return { hadPendingSync };

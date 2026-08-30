@@ -2,6 +2,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianService from "@/services/technicianService";
 import userService from "@/services/userService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminTechnicians() {
   const { t } = useI18n();
@@ -29,7 +30,7 @@ export function useAdminTechnicians() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("admin_technicians_page.load_error");
+      error.value = normalizeApiError(err, t("admin_technicians_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -50,10 +51,8 @@ export function useAdminTechnicians() {
       await fetchTechnicians(1);
       return true;
     } catch (err) {
-      createError.value = {
-        message: err.response?.data?.message ?? t("admin_technicians_page.create_error"),
-        errors: err.response?.data?.errors ?? null,
-      };
+      const normalized = normalizeApiError(err, t("admin_technicians_page.create_error"));
+      createError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isCreating.value = false;
@@ -76,10 +75,8 @@ export function useAdminTechnicians() {
       if (index !== -1) technicians.value[index] = data.data;
       return true;
     } catch (err) {
-      saveError.value = {
-        message: err.response?.data?.message ?? t("admin_technicians_page.update_error"),
-        errors: err.response?.data?.errors ?? null,
-      };
+      const normalized = normalizeApiError(err, t("admin_technicians_page.update_error"));
+      saveError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isSaving.value = false;
@@ -97,7 +94,7 @@ export function useAdminTechnicians() {
       technicians.value = technicians.value.filter((t) => t.id !== id);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("admin_technicians_page.delete_error");
+      deleteError.value = normalizeApiError(err, t("admin_technicians_page.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;
@@ -116,7 +113,7 @@ export function useAdminTechnicians() {
       if (index !== -1) technicians.value[index].is_locked = false;
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("admin_technicians_page.unlock_error");
+      deleteError.value = normalizeApiError(err, t("admin_technicians_page.unlock_error")).message;
       return false;
     }
   }

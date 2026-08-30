@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import meterReadingService from "@/services/meterReadingService";
@@ -38,7 +39,7 @@ export function useOwnerMeterReadings() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_meter_readings.load_error");
+      error.value = normalizeApiError(err, t("owner_meter_readings.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -103,7 +104,7 @@ export function useOwnerMeterReadings() {
       if (!isQueued) await fetchReadings(1);
       return { success: true, isQueued };
     } catch (err) {
-      submitError.value = err.response?.data?.message ?? t("owner_meter_readings.submit_error");
+      submitError.value = normalizeApiError(err, t("owner_meter_readings.submit_error")).message;
       return { success: false };
     } finally {
       isSubmitting.value = false;
@@ -123,7 +124,7 @@ export function useOwnerMeterReadings() {
       return true;
     } catch (err) {
       approveError.value =
-        err.response?.data?.message ?? t("owner_meter_readings.approve_error");
+        normalizeApiError(err, t("owner_meter_readings.approve_error")).message;
       return false;
     } finally {
       approvingId.value = null;
@@ -146,7 +147,7 @@ export function useOwnerMeterReadings() {
       return true;
     } catch (err) {
       rejectError.value =
-        err.response?.data?.message ?? t("owner_meter_readings.reject_error");
+        normalizeApiError(err, t("owner_meter_readings.reject_error")).message;
       return false;
     } finally {
       rejectingId.value = null;
@@ -170,7 +171,7 @@ export function useOwnerMeterReadings() {
       overdueSubscribers.value = payload.data ?? payload;
     } catch (err) {
       overdueError.value =
-        err.response?.data?.message ?? t("owner_meter_readings.overdue_load_error");
+        normalizeApiError(err, t("owner_meter_readings.overdue_load_error")).message;
       overdueSubscribers.value = [];
     } finally {
       isLoadingOverdue.value = false;
@@ -194,7 +195,7 @@ export function useOwnerMeterReadings() {
       subscriberHistory.value = data.data ?? [];
     } catch (err) {
       historyError.value =
-        err.response?.data?.message ?? t("owner_meter_readings.history_load_error");
+        normalizeApiError(err, t("owner_meter_readings.history_load_error")).message;
     } finally {
       isLoadingHistory.value = false;
     }

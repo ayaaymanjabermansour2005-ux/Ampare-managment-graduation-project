@@ -373,7 +373,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // ==================== الاشتراكات (العقود) ====================
-        Subscription::firstOrCreate(
+        $subscription1 = Subscription::firstOrCreate(
             [
                 'subscriber_meter_id' => $meter1001->id,
                 'generator_id' => $generatorA->id,
@@ -392,7 +392,7 @@ class DatabaseSeeder extends Seeder
         // ==================== قراءات العدادات ====================
         $reading = MeterReading::firstOrCreate(
             [
-                'subscription_id' => 1,
+                'subscription_id' => $subscription1->id,
                 'reading_date' => now()->toDateString(),
             ],
             [
@@ -405,7 +405,7 @@ class DatabaseSeeder extends Seeder
         // ==================== الفواتير ====================
         $invoice = Invoice::firstOrCreate(
             [
-                'subscription_id' => 1,
+                'subscription_id' => $subscription1->id,
                 'due_date' => now()->addDays(7)->toDateString(),
             ],
             [
@@ -479,7 +479,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        Subscription::firstOrCreate(
+        $subscription4 = Subscription::firstOrCreate(
             [
                 'subscriber_meter_id' => $meter2001->id,
                 'generator_id' => $generatorA->id,
@@ -641,12 +641,12 @@ class DatabaseSeeder extends Seeder
 
         // ==================== تنويع حالات الفواتير/الدفعات (Paid/Overdue) ====================
         $readingPaid = MeterReading::firstOrCreate(
-            ['subscription_id' => 1, 'reading_date' => now()->subDays(35)->toDateString()],
+            ['subscription_id' => $subscription1->id, 'reading_date' => now()->subDays(35)->toDateString()],
             ['previous_reading' => 960, 'current_reading' => 1000, 'created_by' => $admin->id]
         );
 
         $invoicePaid = Invoice::firstOrCreate(
-            ['subscription_id' => 1, 'due_date' => now()->subDays(28)->toDateString()],
+            ['subscription_id' => $subscription1->id, 'due_date' => now()->subDays(28)->toDateString()],
             [
                 'meter_reading_id' => $readingPaid->id,
                 'amount' => 20, 'discount_amount' => 0, 'discount_id' => null,
@@ -666,12 +666,12 @@ class DatabaseSeeder extends Seeder
         );
 
         $readingOverdue = MeterReading::firstOrCreate(
-            ['subscription_id' => 1, 'reading_date' => now()->subDays(20)->toDateString()],
+            ['subscription_id' => $subscription1->id, 'reading_date' => now()->subDays(20)->toDateString()],
             ['previous_reading' => 1020, 'current_reading' => 1055, 'created_by' => $admin->id]
         );
 
         Invoice::firstOrCreate(
-            ['subscription_id' => 1, 'due_date' => now()->subDays(13)->toDateString()],
+            ['subscription_id' => $subscription1->id, 'due_date' => now()->subDays(13)->toDateString()],
             [
                 'meter_reading_id' => $readingOverdue->id,
                 'amount' => 17.5, 'discount_amount' => 0, 'discount_id' => null,
@@ -682,12 +682,12 @@ class DatabaseSeeder extends Seeder
 
         // ==================== دفعة جزئية (Partial Payment scenario) ====================
         $readingPartial = MeterReading::firstOrCreate(
-            ['subscription_id' => 1, 'reading_date' => now()->subDays(7)->toDateString()],
+            ['subscription_id' => $subscription1->id, 'reading_date' => now()->subDays(7)->toDateString()],
             ['previous_reading' => 1055, 'current_reading' => 1095, 'created_by' => $admin->id]
         );
 
         $invoicePartial = Invoice::firstOrCreate(
-            ['subscription_id' => 1, 'due_date' => now()->addDays(3)->toDateString()],
+            ['subscription_id' => $subscription1->id, 'due_date' => now()->addDays(3)->toDateString()],
             [
                 'meter_reading_id' => $readingPartial->id,
                 'amount' => 20, 'discount_amount' => 0, 'discount_id' => null,
@@ -708,7 +708,7 @@ class DatabaseSeeder extends Seeder
 
         // ==================== طلبات تحويل عداد تجريبية ====================
         SubscriptionMeterTransferRequest::firstOrCreate(
-            ['subscription_id' => 1, 'from_subscriber_meter_id' => $meter1001->id, 'to_subscriber_meter_id' => $meter1002->id],
+            ['subscription_id' => $subscription1->id, 'from_subscriber_meter_id' => $meter1001->id, 'to_subscriber_meter_id' => $meter1002->id],
             [
                 'requested_by' => $subUser1->id,
                 'status' => SubscriptionMeterTransferStatus::Pending,
@@ -717,7 +717,7 @@ class DatabaseSeeder extends Seeder
         );
 
         SubscriptionMeterTransferRequest::firstOrCreate(
-            ['subscription_id' => 4, 'from_subscriber_meter_id' => $meter2001->id, 'to_subscriber_meter_id' => $meter3001->id],
+            ['subscription_id' => $subscription4->id, 'from_subscriber_meter_id' => $meter2001->id, 'to_subscriber_meter_id' => $meter3001->id],
             [
                 'requested_by' => $subUser2->id,
                 'status' => SubscriptionMeterTransferStatus::Rejected,

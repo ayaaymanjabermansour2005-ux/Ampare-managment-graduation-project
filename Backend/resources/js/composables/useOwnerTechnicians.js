@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import technicianService from "@/services/technicianService";
@@ -36,7 +37,7 @@ export function useOwnerTechnicians() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_technicians.load_error");
+      error.value = normalizeApiError(err, t("owner_technicians.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -128,7 +129,7 @@ export function useOwnerTechnicians() {
       await fetchTechnicians(pagination.value.current_page);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("owner_technicians.delete_error");
+      deleteError.value = normalizeApiError(err, t("owner_technicians.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;

@@ -9,6 +9,7 @@ import generatorService from "@/services/generatorService";
 import userService from "@/services/userService";
 import { useToastStore } from "@/stores/toast";
 import { useConfirm } from "@/composables/useConfirm";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { vReveal } from "@/directives/reveal";
 import AdminGeneratorsMap from "@/components/admin/AdminGeneratorsMap.vue";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
@@ -272,7 +273,7 @@ async function handleVerify(g) {
     toast.show({
       type: "danger",
       title: t("generators_management_page.approval_failed_title"),
-      message: err.response?.data?.message ?? t("generators_management_page.try_again"),
+      message: normalizeApiError(err, t("generators_management_page.try_again")).message,
     });
   } finally {
     isVerifying.value = false;
@@ -305,7 +306,8 @@ async function handleReject() {
     isRejectModalOpen.value = false;
     rejectingGenerator.value = null;
   } catch (err) {
-    rejectFormError.value = err.response?.data?.errors?.reason?.[0] ?? err.response?.data?.message ?? t("generators_management_page.rejection_failed");
+    const normalized = normalizeApiError(err, t("generators_management_page.rejection_failed"));
+    rejectFormError.value = normalized.fieldError("reason") ?? normalized.message;
   } finally {
     isRejecting.value = false;
   }

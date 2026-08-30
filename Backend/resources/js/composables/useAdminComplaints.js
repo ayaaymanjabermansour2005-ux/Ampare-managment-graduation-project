@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import complaintService from "@/services/complaintService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminComplaints() {
   const { t } = useI18n();
@@ -37,7 +38,7 @@ export function useAdminComplaints() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("complaints_page.load_error");
+      error.value = normalizeApiError(err, t("complaints_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -61,7 +62,7 @@ export function useAdminComplaints() {
       if (index !== -1) complaints.value[index] = data.data;
       return true;
     } catch (err) {
-      resolveError.value = err.response?.data?.message ?? t("complaints_page.resolve_error");
+      resolveError.value = normalizeApiError(err, t("complaints_page.resolve_error")).message;
       return false;
     } finally {
       isResolving.value = false;
@@ -76,7 +77,7 @@ export function useAdminComplaints() {
       await fetchComplaints(pagination.value.current_page);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("complaints_page.delete_error");
+      deleteError.value = normalizeApiError(err, t("complaints_page.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;

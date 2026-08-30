@@ -341,18 +341,14 @@ class PaymentTest extends TestCase
         $this->assertSame(1, Payment::count());
     }
 
-    public function test_reusing_an_idempotency_key_with_a_genuinely_different_payload_still_replays_the_original_response(): void
+    public function test_reusing_an_idempotency_key_with_a_genuinely_different_payload_is_rejected(): void
     {
-        // Documents actual, current behavior rather than assumed behavior:
-        // EnsureIdempotency scopes replay by (key, user, route) only — it
-        // does NOT hash/compare the request payload. Reusing a key with a
-        // *different* payload on the same route/user does not error and
-        // does not process the new payload; it silently replays the first
-        // call's stored response. This is a legitimate, common idempotency
-        // design (matches e.g. Stripe's behavior when a key is reused with
-        // a differing request), but is a real, testable, previously-
-        // unverified behavior — recorded here as-is, not fixed, since
-        // TEST-001's scope is proving replay works, not changing its rules.
+        // IDEMPOTENCY-payload fix: EnsureIdempotency now hashes the request
+        // payload (fields + file fingerprints) and stores it alongside the
+        // key. Reusing the same key with a genuinely different payload on
+        // the same route/user now errors with 409 instead of silently
+        // replaying the first call's stored response — closing the "silent
+        // wrong-answer" footgun the prior behavior left open.
         ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
         $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
         $key = Str::uuid()->toString();
@@ -374,15 +370,44 @@ class PaymentTest extends TestCase
             ->post('/api/v1/payments', [
                 'invoice_id' => $invoice->id,
                 'payment_method_id' => $method->id,
-                'amount' => 30, // genuinely different amount — still replayed as the first (50) response.
+                'amount' => 30, // genuinely different amount — now rejected, not silently replayed.
                 'attachments' => [UploadedFile::fake()->image('proof2.jpg')],
             ]);
+
+        $second->assertStatus(409);
+        $this->assertSame(1, Payment::count());
+        $this->assertSame(50.0, (float) Payment::first()->amount);
+    }
+
+    public function test_reusing_an_idempotency_key_with_an_identical_payload_still_replays_correctly(): void
+    {
+        // Sibling of the mismatch test above: the new payload-hash check
+        // must not create false-positive 409s for a genuine retry with the
+        // exact same data (the actual, common case idempotency exists for).
+        ['owner' => $owner, 'subscriberUser' => $subscriber, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $key = Str::uuid()->toString();
+        $payload = [
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 50,
+        ];
+
+        $first = $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', $payload);
+        $first->assertStatus(201);
+
+        $second = $this->actingAs($subscriber)
+            ->withHeader('Idempotency-Key', $key)
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/v1/payments', $payload);
 
         // assertEquals, not assertSame — see the sibling replay test above
         // for why (MySQL JSON column key-order canonicalization).
         $this->assertEquals($first->json(), $second->json());
         $this->assertSame(1, Payment::count());
-        $this->assertSame(50.0, (float) Payment::first()->amount);
     }
 
     public function test_owner_can_approve_pending_payment(): void

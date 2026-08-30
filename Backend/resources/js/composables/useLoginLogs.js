@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import loginLogService from "@/services/loginLogService";
@@ -23,7 +24,7 @@ export function useLoginLogs() {
       };
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("login_logs_page.load_error");
+        normalizeApiError(err, t("login_logs_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }

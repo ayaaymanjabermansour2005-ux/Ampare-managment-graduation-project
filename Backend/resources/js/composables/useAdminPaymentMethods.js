@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import paymentMethodService from "@/services/paymentMethodService";
@@ -29,7 +30,7 @@ export function useAdminPaymentMethods() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("payment_methods_page.load_error");
+      error.value = normalizeApiError(err, t("payment_methods_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -51,7 +52,7 @@ export function useAdminPaymentMethods() {
       await fetchMethods(pagination.value.current_page);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("payment_methods_page.delete_error");
+      deleteError.value = normalizeApiError(err, t("payment_methods_page.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;

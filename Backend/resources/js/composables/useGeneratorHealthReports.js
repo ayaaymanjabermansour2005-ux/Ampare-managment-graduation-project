@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
@@ -15,7 +16,7 @@ export function useGeneratorHealthReports(generatorId) {
       const { data } = await generatorService.healthReports(generatorId);
       reports.value = data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_generators.health_reports_load_error");
+      error.value = normalizeApiError(err, t("owner_generators.health_reports_load_error")).message;
     } finally {
       isLoading.value = false;
     }

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import preferenceService from "@/services/preferenceService";
@@ -36,7 +37,7 @@ export function useNotificationSettings() {
       const { data } = await preferenceService.index();
       preferences.value = data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_settings.notifications.load_error");
+      error.value = normalizeApiError(err, t("owner_settings.notifications.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -50,7 +51,7 @@ export function useNotificationSettings() {
       preferences.value = data.data;
       return true;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_settings.notifications.save_error");
+      error.value = normalizeApiError(err, t("owner_settings.notifications.save_error")).message;
       return false;
     } finally {
       isSaving.value = false;

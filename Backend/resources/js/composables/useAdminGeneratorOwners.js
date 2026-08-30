@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import userService from "@/services/userService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminGeneratorOwners() {
   const { t } = useI18n();
@@ -46,7 +47,7 @@ export function useAdminGeneratorOwners() {
       };
     } catch (err) {
       error.value =
-        err.response?.data?.message ?? t("owners_page.load_error");
+        normalizeApiError(err, t("owners_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -74,9 +75,8 @@ export function useAdminGeneratorOwners() {
       if (index !== -1) owners.value[index] = data.data;
       return true;
     } catch (err) {
-      saveError.value = err.response?.data ?? {
-        message: t("owners_page.update_error"),
-      };
+      const normalized = normalizeApiError(err, t("owners_page.update_error"));
+      saveError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isSaving.value = false;
@@ -99,9 +99,8 @@ export function useAdminGeneratorOwners() {
       // بحقل message ("بيانات غير صالحة") للأخطاء 422، والرسالة المفيدة
       // الفعلية (مثلاً: عدد الاشتراكات الفعالة المانعة للحذف) موجودة بحقل
       // errors.user تحديدًا.
-      deleteError.value = err.response?.data?.errors?.user?.[0]
-        ?? err.response?.data?.message
-        ?? t("owners_page.delete_error");
+      const normalized = normalizeApiError(err, t("owners_page.delete_error"));
+      deleteError.value = normalized.fieldError("user") ?? normalized.message;
       return false;
     } finally {
       deletingId.value = null;
@@ -127,9 +126,8 @@ export function useAdminGeneratorOwners() {
       await fetchStats();
       return true;
     } catch (err) {
-      createError.value = err.response?.data ?? {
-        message: t("owners_page.create_error"),
-      };
+      const normalized = normalizeApiError(err, t("owners_page.create_error"));
+      createError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isCreating.value = false;

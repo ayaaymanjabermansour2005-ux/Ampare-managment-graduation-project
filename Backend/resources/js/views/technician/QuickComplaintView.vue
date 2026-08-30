@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -68,7 +69,7 @@ async function handleSubmit() {
     submitted.value = true;
     setTimeout(() => router.back(), attachmentWarning.value ? 2200 : 1200);
   } catch (err) {
-    submitError.value = err.response?.data?.message ?? t("technician_complaint.default_error");
+    submitError.value = normalizeApiError(err, t("technician_complaint.default_error")).message;
   } finally {
     isSubmitting.value = false;
   }

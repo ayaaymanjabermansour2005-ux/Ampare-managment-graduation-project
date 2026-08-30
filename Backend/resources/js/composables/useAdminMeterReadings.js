@@ -1,18 +1,17 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import meterReadingService from "@/services/meterReadingService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 /* أخطاء الـ validation (422) بترجع رسالة عامة بالـ message وبترجع الرسالة
  * المحدّدة (زي "لا يمكن أن تكون القراءة الحالية أقل من القراءة السابقة")
  * جوا errors.<field>[0] — لازم نعرضها هي، مش الرسالة العامة، حتى يفهم
  * المستخدم سبب الرفض الفعلي بدل رسالة غامضة. */
 function extractErrorMessage(err, fallback) {
-  const fieldErrors = err.response?.data?.errors;
-  if (fieldErrors && typeof fieldErrors === "object") {
-    const firstMessages = Object.values(fieldErrors).flat();
-    if (firstMessages.length) return firstMessages.join(" — ");
-  }
-  return err.response?.data?.message ?? fallback;
+  const normalized = normalizeApiError(err, fallback);
+  const firstMessages = Object.values(normalized.fieldErrors).flat();
+  if (firstMessages.length) return firstMessages.join(" — ");
+  return normalized.message;
 }
 
 export function useAdminMeterReadings() {
@@ -55,7 +54,7 @@ export function useAdminMeterReadings() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("meter_readings_page.load_error");
+      error.value = normalizeApiError(err, t("meter_readings_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -143,7 +142,7 @@ export function useAdminMeterReadings() {
       await fetchReadings(pagination.value.current_page);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("meter_readings_page.delete_error");
+      deleteError.value = normalizeApiError(err, t("meter_readings_page.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;

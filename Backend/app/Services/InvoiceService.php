@@ -39,7 +39,7 @@ class InvoiceService
         $query = Invoice::query()->with([
             'subscription.generator',
             'subscription.subscriberMeter.subscriber.user',
-            'payments',
+            'payments.paymentMethod',
             'commission',
         ]);
         if ($user->isAdmin()) {

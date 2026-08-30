@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import neighborhoodDashboardService from "@/services/neighborhoodDashboardService";
@@ -15,7 +16,7 @@ export function useNeighborhoodDashboard() {
       const { data } = await neighborhoodDashboardService.summary();
       neighborhoods.value = data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("neighborhood_dashboard_page.load_error");
+      error.value = normalizeApiError(err, t("neighborhood_dashboard_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }

@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import subscriptionService from "@/services/subscriptionService";
@@ -27,7 +28,7 @@ export function useMySubscription() {
       const payload = data.data;
       subscription.value = (payload.data ?? payload)[0] ?? null;
     } catch (err) {
-      initialError.value = err.response?.data?.message ?? t("my_subscription_page.load_error");
+      initialError.value = normalizeApiError(err, t("my_subscription_page.load_error")).message;
     } finally {
       isLoadingInitial.value = false;
     }

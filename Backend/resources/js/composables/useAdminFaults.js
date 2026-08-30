@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import faultService from "@/services/faultService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminFaults() {
   const { t } = useI18n();
@@ -37,7 +38,7 @@ export function useAdminFaults() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("faults_page.load_error");
+      error.value = normalizeApiError(err, t("faults_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -61,7 +62,7 @@ export function useAdminFaults() {
       if (index !== -1) faults.value[index] = data.data;
       return true;
     } catch (err) {
-      overrideError.value = err.response?.data?.message ?? t("faults_page.override_error");
+      overrideError.value = normalizeApiError(err, t("faults_page.override_error")).message;
       return false;
     } finally {
       isOverriding.value = false;
@@ -76,7 +77,7 @@ export function useAdminFaults() {
       await fetchFaults(pagination.value.current_page);
       return true;
     } catch (err) {
-      deleteError.value = err.response?.data?.message ?? t("faults_page.delete_error");
+      deleteError.value = normalizeApiError(err, t("faults_page.delete_error")).message;
       return false;
     } finally {
       deletingId.value = null;

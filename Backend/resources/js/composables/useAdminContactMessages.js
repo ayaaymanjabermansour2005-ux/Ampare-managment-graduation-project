@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import contactMessageService from "@/services/contactMessageService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 
 export function useAdminContactMessages() {
   const { t } = useI18n();
@@ -37,7 +38,7 @@ export function useAdminContactMessages() {
         per_page: meta.per_page ?? 15,
       };
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("contact_messages_page.load_error");
+      error.value = normalizeApiError(err, t("contact_messages_page.load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -59,7 +60,7 @@ export function useAdminContactMessages() {
       if (index !== -1) messages.value[index] = data.data;
       return data.data;
     } catch (err) {
-      updateError.value = err.response?.data?.message ?? t("contact_messages_page.update_error");
+      updateError.value = normalizeApiError(err, t("contact_messages_page.update_error")).message;
       return null;
     } finally {
       isUpdating.value = false;

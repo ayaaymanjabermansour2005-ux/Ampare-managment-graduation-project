@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorScheduleService from "@/services/generatorScheduleService";
@@ -26,7 +27,7 @@ export function useGeneratorSchedules(generatorId) {
       const { data } = await generatorScheduleService.list(generatorId);
       schedules.value = data.data;
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_generators.schedule_load_error");
+      error.value = normalizeApiError(err, t("owner_generators.schedule_load_error")).message;
     } finally {
       isLoading.value = false;
     }
@@ -40,7 +41,7 @@ export function useGeneratorSchedules(generatorId) {
       await generatorScheduleService.create(generatorId, payload);
       await fetchSchedules();
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_generators.schedule_create_error");
+      error.value = normalizeApiError(err, t("owner_generators.schedule_create_error")).message;
       throw err;
     } finally {
       isSaving.value = false;
@@ -52,7 +53,7 @@ export function useGeneratorSchedules(generatorId) {
       await generatorScheduleService.destroy(scheduleId);
       schedules.value = schedules.value.filter((s) => s.id !== scheduleId);
     } catch (err) {
-      error.value = err.response?.data?.message ?? t("owner_generators.schedule_delete_error");
+      error.value = normalizeApiError(err, t("owner_generators.schedule_delete_error")).message;
       throw err;
     }
   }

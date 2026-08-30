@@ -1,5 +1,6 @@
 <script setup>
-import { reactive, ref, computed, onMounted, onUnmounted } from "vue";
+import { normalizeApiError } from "@/utils/normalizeApiError";
+import { reactive, ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Chart as ChartJS, registerables } from "chart.js";
@@ -7,6 +8,7 @@ import { Doughnut, Bar, Line } from "vue-chartjs";
 import { useAdminGeneratorOwners } from "@/composables/useAdminGeneratorOwners";
 import { useAdminGenerators } from "@/composables/useAdminGenerators";
 import { useAdminOwnerActions } from "@/composables/useAdminOwnerActions";
+import { useOwnersAnalytics } from "@/composables/useOwnersAnalytics";
 import { useConfirm } from "@/composables/useConfirm";
 import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
@@ -14,10 +16,10 @@ import { vCountUp } from "@/directives/countUp";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import AdminGeneratorFormModal from "@/components/generators/AdminGeneratorFormModal.vue";
 import { useAdminOwnerApplications } from "@/composables/useAdminOwnerApplications";
-import ownerApplicationService from "@/services/ownerApplicationService";
-import activityLogService from "@/services/activityLogService";
+import { useOwnerApplicationsUI } from "@/composables/useOwnerApplicationsUI";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock, Copy, Crown, Download, Eye, FileSpreadsheet, FileText, GripVertical, Inbox, Info, Key, LoaderCircle, LockOpen, Mail, Paperclip, Pencil, Percent, Phone, PlugZap, Plus, Printer, RotateCcwClock, Save, Search, StickyNote, Table2, Trash2, TriangleAlert, User, UserCheck, UserPlus, UserRound, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import LightningCanvas from "@/components/ui/LightningCanvas.vue";
 
 
 ChartJS.register(...registerables);
@@ -84,6 +86,52 @@ const {
   fetchTimeline,
 } = useAdminOwnerActions({ owners, loadAll });
 
+/* ---------------- FRONT-004b (slice 2): تحليلات/عرض لوحة أصحاب المولدات —
+   منقولة لـ useOwnersAnalytics composable (God-component breakdown). ---------------- */
+const {
+  STATUS_META,
+  statusLabel,
+  statusChip,
+  STATUS_PILLS,
+  fmtMoney,
+  initialsOf,
+  avatarColor,
+  commissionLabel,
+  viewMode,
+  sortBy,
+  sortedOwners,
+  sortIconClass,
+  toggleSort,
+  KPI_CARDS,
+  ALERT_ICONS,
+  ALERT_CHIPS,
+  alertTag,
+  handleAlertClick,
+  scrollToOwnersTable,
+  revenuePeriod,
+  revenueYear,
+  fetchRevenueDistribution,
+  setRevenuePeriod,
+  setRevenueYear,
+  revenueYearOptions,
+  revenueDistChartData,
+  lineOptions,
+  planChartData,
+  doughnutOptions,
+  growthChartData,
+  barOptions,
+} = useOwnersAnalytics({
+  owners,
+  stats,
+  statusFilter,
+  onFilterChange,
+  router,
+  revenueDistData,
+  availableYears,
+  fetchRevenueDistributionAction,
+  openView: (owner) => openView(owner),
+});
+
 const { confirm } = useConfirm();
 const toast = useToastStore();
 
@@ -92,81 +140,6 @@ const TABS = computed(() => [
   { key: "applications", label: t("owner_applications_page.breadcrumb"), icon: "fa-inbox", badge: statusCounts.value?.pending ?? 0 },
 ]);
 const activeTab = ref("owners");
-
-const heroCanvas = ref(null);
-let stopLightning = null;
-function startLightningEffect(canvas) {
-  const ctx = canvas.getContext("2d");
-  function resize() {
-    canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = canvas.parentElement.offsetHeight;
-  }
-  window.addEventListener("resize", resize);
-  resize();
-
-  class Lightning {
-    constructor() {
-      this.reset();
-    }
-    reset() {
-      this.startX = Math.random() * canvas.width;
-      this.startY = Math.random() * (canvas.height * 0.3);
-      this.path = [];
-      this.life = 0;
-      this.maxLife = 20 + Math.random() * 20;
-      let x = this.startX;
-      let y = this.startY;
-      this.path.push({ x, y });
-      const steps = 8 + Math.floor(Math.random() * 6);
-      for (let i = 0; i < steps; i++) {
-        x += (Math.random() - 0.5) * 70;
-        y += (canvas.height / steps) * (0.8 + Math.random() * 0.4);
-        this.path.push({ x, y });
-      }
-    }
-    draw() {
-      this.life++;
-      let alpha = Math.max(0, 1 - this.life / this.maxLife);
-      if (Math.random() < 0.25) alpha *= 0.3;
-      const dark = document.documentElement.classList.contains("dark");
-      ctx.save();
-      ctx.shadowBlur = dark ? 16 : 9;
-      ctx.shadowColor = dark ? "#D4AF37" : "#3E582E";
-      ctx.strokeStyle = dark ? `rgba(255,248,220,${alpha * 0.5})` : `rgba(62,88,46,${alpha * 0.35})`;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      this.path.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  let bolts = [new Lightning()];
-  let timer = 0;
-  let frame = null;
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    timer++;
-    if (timer % 90 === 0 || Math.random() < 0.01) bolts.push(new Lightning());
-    for (let i = bolts.length - 1; i >= 0; i--) {
-      bolts[i].draw();
-      if (bolts[i].life >= bolts[i].maxLife) bolts.splice(i, 1);
-    }
-    frame = requestAnimationFrame(animate);
-  }
-  animate();
-
-  return () => {
-    window.removeEventListener("resize", resize);
-    if (frame) cancelAnimationFrame(frame);
-  };
-}
-onMounted(() => {
-  if (heroCanvas.value) stopLightning = startLightningEffect(heroCanvas.value);
-});
-onUnmounted(() => {
-  if (stopLightning) stopLightning();
-});
 
 let searchTimeout = null;
 function handleSearchInput() {
@@ -177,169 +150,12 @@ function handleSearchInput() {
 function onFilterChange() {
   fetchOwners(1);
 }
-const STATUS_PILLS = computed(() => [
-  { value: "", label: t("common.all") },
-  { value: "active", label: statusLabel("active") },
-  { value: "inactive", label: statusLabel("inactive") },
-  { value: "suspended", label: statusLabel("suspended") },
-  { value: "pending_review", label: statusLabel("pending_review") },
-]);
-
-const viewMode = ref("table");
-const sortBy = ref("name-asc");
-const SORT_MAP = {
-  name: "name",
-  generators: "generators_count",
-  subs: "active_subscriptions_count",
-  rev: "monthly_revenue_ils",
-};
-const sortedOwners = computed(() => {
-  const [uiKey, dir] = sortBy.value.split("-");
-  const key = SORT_MAP[uiKey] ?? "name";
-  return [...owners.value].sort((a, b) => {
-    const av = key === "name" ? (a.name ?? "") : (a[key] ?? -1);
-    const bv = key === "name" ? (b.name ?? "") : (b[key] ?? -1);
-    if (typeof av === "string") return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-    return dir === "asc" ? av - bv : bv - av;
-  });
-});
-function sortIconClass(key) {
-  const [curKey, curDir] = sortBy.value.split("-");
-  if (curKey !== key) return "opacity-40";
-  return curDir === "desc" ? "opacity-100 text-[#8A6D1F] dark:text-[#D4AF37] rotate-180" : "opacity-100 text-[#8A6D1F] dark:text-[#D4AF37]";
-}
-function toggleSort(key) {
-  const [curKey, curDir] = sortBy.value.split("-");
-  const newDir = curKey === key && curDir === "desc" ? "asc" : "desc";
-  sortBy.value = `${key}-${newDir}`;
-}
-
-function fmtMoney(n) {
-  return "₪ " + Number(n ?? 0).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US");
-}
-function initialsOf(name) {
-  const parts = (name ?? "").trim().split(/\s+/);
-  return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
-}
-const AVATAR_COLORS = [
-  ["#52733D", "#3E582E"],
-  ["#8A6D1F", "#D4AF37"],
-  ["#17A2B8", "#0f6c7d"],
-  ["#D9534F", "#8A6D1F"],
-];
-function avatarColor(index) {
-  return AVATAR_COLORS[index % AVATAR_COLORS.length];
-}
-
-const ALERT_ICONS = {
-  pending_dues: { icon: "fa-file-invoice-dollar", color: "#D9534F" },
-  pending_review: { icon: "fa-user-clock", color: "#FFC107" },
-  suspended_account: { icon: "fa-ban", color: "#D9534F" },
-};
-const ALERT_CHIPS = { critical: "chip-danger", warning: "chip-warning", info: "chip-info" };
-function alertTag(severity) {
-  const tags = {
-    critical: t("owners_page.alert_tag_critical"),
-    warning: t("owners_page.alert_tag_warning"),
-    info: t("owners_page.alert_tag_info"),
-  };
-  return tags[severity] ?? t("owners_page.alert_tag_warning");
-}
-
-function handleAlertClick(alert) {
-  if (alert.type === "pending_dues") {
-    router.push({ name: "admin.invoices", query: { status: "overdue" } });
-    return;
-  }
-  if (alert.type === "pending_review") {
-    statusFilter.value = "pending_review";
-    onFilterChange();
-    scrollToOwnersTable();
-    return;
-  }
-  if (alert.type === "suspended_account") {
-    statusFilter.value = "suspended";
-    onFilterChange();
-    if (alert.owner_id) {
-      setTimeout(() => {
-        const match = owners.value.find((o) => o.id === alert.owner_id);
-        if (match) openView(match);
-      }, 400);
-    }
-    scrollToOwnersTable();
-  }
-}
-
-function scrollToOwnersTable() {
-  document.getElementById("owners-table-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-const revenuePeriod = ref("6");
-const revenueYear = ref(null);
-
-async function fetchRevenueDistribution() {
-  const params =
-    revenuePeriod.value === "year" && revenueYear.value
-      ? { year: revenueYear.value }
-      : { period: revenuePeriod.value };
-  await fetchRevenueDistributionAction(params);
-  if (!revenueYear.value && availableYears.value.length) {
-    revenueYear.value = availableYears.value[0];
-  }
-}
-
-function setRevenuePeriod(period) {
-  revenuePeriod.value = period;
-  fetchRevenueDistribution();
-}
-
-function setRevenueYear(year) {
-  revenueYear.value = year;
-  revenuePeriod.value = "year";
-  fetchRevenueDistribution();
-}
-
-const revenueYearOptions = computed(() => availableYears.value.map((y) => ({ value: y, label: String(y) })));
-
-onMounted(fetchRevenueDistribution);
-
-const revenueDistChartData = computed(() => {
-  const r = revenueDistData.value;
-  return {
-    labels: r.labels,
-    datasets: [
-      { label: t("owners_page.distributed_revenue"), data: r.revenue, borderColor: "#8A6D1F", backgroundColor: "rgba(138,109,31,0.12)", fill: true, tension: 0.4 },
-      { label: t("owners_page.pending_dues"), data: r.due, borderColor: "#D9534F", backgroundColor: "rgba(217,83,79,0.08)", fill: true, tension: 0.4 },
-    ],
-  };
-});
-const lineOptions = {
-  responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10.5 } } } },
-  scales: { x: { grid: { display: false } }, y: { grid: { color: "rgba(82,115,61,0.08)" } } },
-};
 
 const exportUrl = computed(() =>
   buildOwnersExportUrl({ search: searchTerm.value || undefined, status: statusFilter.value || undefined }),
 );
 function printPage() {
   window.print();
-}
-const STATUS_META = {
-  active: { chip: "chip-success", key: "users_page.status_active" },
-  inactive: { chip: "chip-info", key: "users_page.status_inactive" },
-  suspended: { chip: "chip-danger", key: "users_page.status_suspended" },
-  pending_review: { chip: "chip-warning", key: "owners_page.status_pending_review_admin" },
-};
-function statusLabel(s) {
-  const m = STATUS_META[s];
-  return m ? t(m.key) : s;
-}
-function statusChip(s) {
-  return STATUS_META[s]?.chip ?? "chip-info";
-}
-function commissionLabel(rate) {
-  return rate !== null && rate !== undefined ? `${rate}%` : "-";
 }
 
 const commissionModal = ref(null);
@@ -388,71 +204,6 @@ async function handleSendResetLink(owner) {
     toast.show({ type: "danger", title: t("owners_page.send_failed_toast_title"), message: result.message ?? "" });
   }
 }
-
-const KPI_CARDS = computed(() => {
-  if (!stats.value) return [];
-  const s = stats.value;
-  const activePct = s.total > 0 ? Math.round((s.active / s.total) * 100) : 0;
-  return [
-    {
-      icon: "fa-user-tie", label: t("owners_page.total_owners_kpi"),
-      raw: s.total, decimals: 0, c1: "#52733D", c2: "#3E582E",
-      sub: s.locked > 0
-        ? t("owners_page.locked_accounts_n", { n: s.locked })
-        : t("owners_page.no_locked_accounts"),
-    },
-    {
-      icon: "fa-circle-check", label: t("owners_page.active_owners_kpi"),
-      raw: s.active, decimals: 0, c1: "#28A745", c2: "#1f7a37",
-      sub: `${activePct}%`,
-    },
-    {
-      icon: "fa-plug-circle-bolt", label: t("owners_page.owned_generators_kpi"),
-      raw: s.total_generators, decimals: 0, c1: "#17A2B8", c2: "#0f6c7d",
-      sub: t("owners_page.avg_generators_per_owner", { n: s.avg_generators_per_owner }),
-    },
-    {
-      icon: "fa-wallet", label: t("owners_page.total_revenue_kpi"),
-      raw: s.total_revenue_ils, decimals: 0, prefix: "₪ ", c1: "#8A6D1F", c2: "#D4AF37",
-      sub: t("owners_page.this_month_label"),
-    },
-    {
-      icon: "fa-chart-simple", label: t("owners_page.avg_generators_kpi"),
-      raw: s.avg_generators_per_owner, decimals: 1, c1: "#D4AF37", c2: "#8A6D1F",
-      sub: t("owners_page.across_n_owners", { n: s.total }),
-    },
-  ];
-});
-
-const planChartData = computed(() => {
-  if (!stats.value) return { labels: [], datasets: [{ data: [] }] };
-  return {
-    labels: stats.value.plan_distribution.labels,
-    datasets: [{
-      data: stats.value.plan_distribution.counts,
-      backgroundColor: ["#D4AF37", "#52733D", "#17A2B8", "#8A6D1F", "#9a9d97"],
-      borderWidth: 0,
-    }],
-  };
-});
-const doughnutOptions = { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10.5 } } } } };
-
-const growthChartData = computed(() => {
-  if (!stats.value) return { labels: [], datasets: [{ data: [] }] };
-  return {
-    labels: stats.value.growth.labels,
-    datasets: [{
-      label: t("owners_page.new_owners_label"),
-      data: stats.value.growth.counts,
-      backgroundColor: "#52733D",
-      borderRadius: 6,
-    }],
-  };
-});
-const barOptions = {
-  responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-  scales: { x: { grid: { display: false } }, y: { grid: { color: "rgba(82,115,61,0.08)" }, ticks: { stepSize: 1 } } },
-};
 
 function timeAgo(str) {
   if (!str) return "-";
@@ -595,9 +346,9 @@ async function handleUnlock(owner) {
     });
   } catch (err) {
     toast.show({
-      type: "error",
+      type: "danger",
       title: t("owners_page.unlocked_toast_title"),
-      message: err.response?.data?.message ?? t("common.unexpected_error_retry"),
+      message: normalizeApiError(err, t("common.unexpected_error_retry")).message,
     });
   }
 }
@@ -690,440 +441,93 @@ const {
   updateInternalNote,
 } = useAdminOwnerApplications();
 
-const APPLICATION_STATUS_PILLS = computed(() => [
-  { value: "pending", label: t("owner_applications_page.status_pending"), count: statusCounts.value?.pending ?? 0 },
-  { value: "approved", label: t("owner_applications_page.status_approved"), count: statusCounts.value?.approved ?? 0 },
-  { value: "rejected", label: t("owner_applications_page.status_rejected"), count: statusCounts.value?.rejected ?? 0 },
-  { value: "", label: t("common.all"), count: statusCounts.value?.all ?? 0 },
-]);
-
-const SORT_OPTIONS = computed(() => [
-  { value: "created_desc", label: t("owner_applications_page.sort_newest") },
-  { value: "created_asc", label: t("owner_applications_page.sort_oldest") },
-  { value: "name_asc", label: t("owner_applications_page.sort_name_az") },
-]);
-
-const STATUS_CHIP = {
-  pending: "chip-info",
-  approved: "chip-success",
-  rejected: "chip-danger",
-};
-const STATUS_ICON = {
-  pending: "fa-hourglass-half",
-  approved: "fa-circle-check",
-  rejected: "fa-circle-xmark",
-};
-
-const CURRENCY_SYMBOL = { ILS: "₪", USD: "$" };
-function fmtGeneratorPrice(draft) {
-  if (!draft || draft.price_per_kw === null || draft.price_per_kw === undefined) return "-";
-  const symbol = CURRENCY_SYMBOL[draft.currency] ?? draft.currency ?? "";
-  return `${symbol} ${Number(draft.price_per_kw).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US")}`;
-}
-function generatorLocationLabel(draft) {
-  if (!draft) return "-";
-  const parts = [draft.neighborhood?.name, draft.city].filter(Boolean);
-  return parts.length ? parts.join(" - ") : "-";
-}
-
-const SLA_DAYS = 3;
-function daysSince(dateStr) {
-  if (!dateStr) return 0;
-  const diffMs = Date.now() - new Date(dateStr.replace(" ", "T")).getTime();
-  return Math.max(0, Math.floor(diffMs / 86400000));
-}
-function isOverdue(app) {
-  return app.status === "pending" && daysSince(app.created_at) >= SLA_DAYS;
-}
-
-const overdueCountOnPage = computed(() => applications.value.filter(isOverdue).length);
-const duplicateCountOnPage = computed(
-  () => applications.value.filter((a) => a.is_duplicate_email || a.is_duplicate_phone).length,
-);
-const approvalRate = computed(() => {
-  const approved = statusCounts.value?.approved ?? 0;
-  const rejected = statusCounts.value?.rejected ?? 0;
-  const total = approved + rejected;
-  if (!total) return null;
-  return Math.round((approved / total) * 100);
+/* ---------------- FRONT-004b (slice 3): منطق تبويب طلبات الانضمام —
+   منقولة لـ useOwnerApplicationsUI composable (God-component breakdown). ---------------- */
+const {
+  APPLICATION_STATUS_PILLS,
+  SORT_OPTIONS,
+  STATUS_CHIP,
+  STATUS_ICON,
+  fmtGeneratorPrice,
+  generatorLocationLabel,
+  SLA_DAYS,
+  isOverdue,
+  overdueCountOnPage,
+  duplicateCountOnPage,
+  approvalRate,
+  APPLICATION_KPI_CARDS,
+  ALERT_META,
+  alertItems,
+  isRejectOpen,
+  rejectTarget,
+  rejectBulkIds,
+  rejectReason,
+  openReject,
+  openBulkReject,
+  closeReject,
+  lastResult,
+  dismissLastResult,
+  lastResultWhatsAppLink,
+  handleApprove,
+  submitReject,
+  selectedIds,
+  selectablePendingApplications,
+  isAllSelected,
+  toggleSelect,
+  toggleSelectAll,
+  clearSelection,
+  handleBulkApprove,
+  handleBulkReject,
+  isDocViewerOpen,
+  activeDocApp,
+  activeDocIndex,
+  openDocViewer,
+  closeDocViewer,
+  activeDoc,
+  docCount,
+  nextDoc,
+  prevDoc,
+  isImageDoc,
+  isDetailsOpen,
+  detailsApp,
+  isLoadingDetails,
+  reviewHistory,
+  isLoadingHistory,
+  openDetails,
+  closeDetails,
+  detailsSwitchToReject,
+  detailsApprove,
+  historyEventLabel,
+  historyEventMeta,
+  goToDuplicateUser,
+  internalNoteDrafts,
+  savingInternalNoteId,
+  internalNoteDraft,
+  setInternalNoteDraft,
+  hasUnsavedInternalNote,
+  saveInternalNote,
+  copiedField,
+  copyToClipboard,
+  applicationsExportUrl,
+} = useOwnerApplicationsUI({
+  applications,
+  statusCounts,
+  reviewingId,
+  isBulkProcessing,
+  approveApplication,
+  rejectApplication,
+  bulkApproveApplications,
+  bulkRejectApplications,
+  updateInternalNote,
+  searchQuery,
+  applicationStatusFilter,
+  applicationsSortBy,
+  dateFrom,
+  dateTo,
+  confirm,
+  toast,
+  router,
 });
-
-const APPLICATION_KPI_CARDS = computed(() => [
-  {
-    icon: "fa-inbox",
-    label: t("owner_applications_page.total_requests"),
-    value: statusCounts.value?.all ?? 0,
-    sub: t("owner_applications_page.approved_rejected_summary", { approved: statusCounts.value?.approved ?? 0, rejected: statusCounts.value?.rejected ?? 0 }),
-    c1: "#52733D",
-    c2: "#3E582E",
-  },
-  {
-    icon: "fa-hourglass-half",
-    label: t("users_page.status_pending_review"),
-    value: statusCounts.value?.pending ?? 0,
-    sub: statusCounts.value?.all
-      ? `${Math.round(((statusCounts.value?.pending ?? 0) / statusCounts.value.all) * 100)}% ${t("owner_applications_page.of_total_suffix")}`
-      : t("owner_applications_page.no_requests_yet"),
-    c1: "#D4AF37",
-    c2: "#8A6D1F",
-  },
-  {
-    icon: "fa-clock",
-    label: t("owner_applications_page.overdue_this_page"),
-    value: overdueCountOnPage.value,
-    sub: t("owner_applications_page.overdue_days_desc", { days: SLA_DAYS }),
-    c1: "#D9534F",
-    c2: "#8A6D1F",
-  },
-  {
-    icon: "fa-chart-simple",
-    label: t("owner_applications_page.approval_rate"),
-    value: approvalRate.value !== null ? `${approvalRate.value}%` : "-",
-    sub: (statusCounts.value?.approved || statusCounts.value?.rejected)
-      ? t("owner_applications_page.approved_of_total", { approved: statusCounts.value?.approved ?? 0, total: (statusCounts.value?.approved ?? 0) + (statusCounts.value?.rejected ?? 0) })
-      : t("owner_applications_page.no_reviewed_requests_yet"),
-    c1: "#17A2B8",
-    c2: "#0f6c7d",
-  },
-]);
-
-const ALERT_META = {
-  overdue: { icon: "fa-clock", color: "#D9534F", chip: "chip-danger" },
-  duplicate: { icon: "fa-triangle-exclamation", color: "#FFC107", chip: "chip-warning" },
-};
-const alertItems = computed(() => {
-  const items = [];
-  if (overdueCountOnPage.value > 0) {
-    items.push({
-      type: "overdue",
-      title: t("owner_applications_page.overdue_alert_title", { count: overdueCountOnPage.value }),
-      description: t("owner_applications_page.overdue_alert_desc", { days: SLA_DAYS }),
-    });
-  }
-  if (duplicateCountOnPage.value > 0) {
-    items.push({
-      type: "duplicate",
-      title: t("owner_applications_page.duplicate_alert_title", { count: duplicateCountOnPage.value }),
-      description: t("owner_applications_page.duplicate_alert_desc"),
-    });
-  }
-  return items;
-});
-
-const isRejectOpen = ref(false);
-const rejectTarget = ref(null);
-const rejectBulkIds = ref(null);
-const rejectReason = ref("");
-
-function openReject(application) {
-  rejectTarget.value = application;
-  rejectBulkIds.value = null;
-  rejectReason.value = "";
-  isRejectOpen.value = true;
-}
-function openBulkReject(ids) {
-  rejectTarget.value = null;
-  rejectBulkIds.value = ids;
-  rejectReason.value = "";
-  isRejectOpen.value = true;
-}
-function closeReject() {
-  if (reviewingId.value || isBulkProcessing.value) return;
-  isRejectOpen.value = false;
-  rejectTarget.value = null;
-  rejectBulkIds.value = null;
-}
-
-const lastResult = ref(null);
-
-function dismissLastResult() {
-  lastResult.value = null;
-}
-
-function buildWhatsAppLink(phone, message) {
-  if (!phone) return null;
-  const digits = String(phone).replace(/[^\d]/g, "");
-  if (!digits) return null;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
-}
-
-const lastResultWhatsAppLink = computed(() => {
-  if (!lastResult.value) return null;
-
-  const { type, name, phone, reason } = lastResult.value;
-  const loginUrl = `${window.location.origin}/login`;
-
-  const message =
-    type === "approved"
-      ? t("owner_applications_page.whatsapp_approved_message", { name, loginUrl })
-      : t("owner_applications_page.whatsapp_rejected_message", { name, reasonSuffix: reason ? t("owner_applications_page.whatsapp_rejected_reason_suffix", { reason }) : "" });
-
-  return buildWhatsAppLink(phone, message);
-});
-
-async function handleApprove(application) {
-  const ok = await confirm({
-    title: t("owner_applications_page.approve_confirm_title"),
-    message: t("owner_applications_page.approve_confirm_message", { name: application.name }),
-    confirmLabel: t("owner_applications_page.approve_action"),
-    variant: "default",
-  });
-  if (!ok) return;
-
-  const result = await approveApplication(application.id);
-  if (result) {
-    lastResult.value = {
-      type: "approved",
-      name: application.name,
-      phone: application.phone,
-      reason: null,
-    };
-  }
-}
-
-async function submitReject() {
-  if (rejectBulkIds.value?.length) {
-    const ids = rejectBulkIds.value;
-    const result = await bulkRejectApplications(ids, rejectReason.value || null);
-    if (result) {
-      toast.show({
-        type: result.failed && Object.keys(result.failed).length ? "warning" : "success",
-        title: t("owner_applications_page.bulk_reject_toast_title"),
-        message: t("owner_applications_page.bulk_reject_toast_message", {
-          rejected: result.rejected.length,
-          failedSuffix: Object.keys(result.failed ?? {}).length
-            ? t("owner_applications_page.bulk_reject_failed_suffix", { count: Object.keys(result.failed).length })
-            : "",
-        }),
-      });
-      clearSelection();
-    }
-    closeReject();
-    return;
-  }
-
-  const application = rejectTarget.value;
-  if (!application) return;
-
-  const result = await rejectApplication(application.id, rejectReason.value || null);
-  if (result) {
-    lastResult.value = {
-      type: "rejected",
-      name: application.name,
-      phone: application.phone,
-      reason: rejectReason.value || null,
-    };
-  }
-  closeReject();
-}
-
-const selectedIds = ref([]);
-const selectablePendingApplications = computed(() => applications.value.filter((a) => a.status === "pending"));
-const isAllSelected = computed(
-  () => selectablePendingApplications.value.length > 0
-    && selectablePendingApplications.value.every((a) => selectedIds.value.includes(a.id)),
-);
-
-function toggleSelect(id) {
-  const idx = selectedIds.value.indexOf(id);
-  if (idx === -1) selectedIds.value.push(id);
-  else selectedIds.value.splice(idx, 1);
-}
-function toggleSelectAll() {
-  if (isAllSelected.value) {
-    selectedIds.value = [];
-  } else {
-    selectedIds.value = selectablePendingApplications.value.map((a) => a.id);
-  }
-}
-function clearSelection() {
-  selectedIds.value = [];
-}
-
-async function handleBulkApprove() {
-  const ok = await confirm({
-    title: t("owner_applications_page.approve_selected_title"),
-    message: t("owner_applications_page.approve_selected_message", { count: selectedIds.value.length }),
-    confirmLabel: t("owner_applications_page.approve_all_action"),
-    variant: "default",
-  });
-  if (!ok) return;
-
-  const result = await bulkApproveApplications([...selectedIds.value]);
-  if (result) {
-    toast.show({
-      type: result.failed && Object.keys(result.failed).length ? "warning" : "success",
-      title: t("owner_applications_page.bulk_approve_toast_title"),
-      message: t("owner_applications_page.bulk_approve_toast_message", {
-        approved: result.approved.length,
-        failedSuffix: Object.keys(result.failed ?? {}).length
-          ? t("owner_applications_page.bulk_approve_failed_suffix", { count: Object.keys(result.failed).length })
-          : "",
-      }),
-    });
-    clearSelection();
-  }
-}
-
-function handleBulkReject() {
-  if (!selectedIds.value.length) return;
-  openBulkReject([...selectedIds.value]);
-}
-
-const isDocViewerOpen = ref(false);
-const activeDocApp = ref(null);
-const activeDocIndex = ref(0);
-
-function openDocViewer(app, index = 0) {
-  if (!app.documents?.length) return;
-  activeDocApp.value = app;
-  activeDocIndex.value = index;
-  isDocViewerOpen.value = true;
-}
-function closeDocViewer() {
-  isDocViewerOpen.value = false;
-  activeDocApp.value = null;
-}
-const activeDoc = computed(() => activeDocApp.value?.documents?.[activeDocIndex.value] ?? null);
-function docCount() {
-  return activeDocApp.value?.documents?.length ?? 0;
-}
-function nextDoc() {
-  const len = docCount();
-  if (len <= 1) return;
-  activeDocIndex.value = (activeDocIndex.value + 1) % len;
-}
-function prevDoc() {
-  const len = docCount();
-  if (len <= 1) return;
-  activeDocIndex.value = (activeDocIndex.value - 1 + len) % len;
-}
-function isImageDoc(doc) {
-  if (!doc) return false;
-  if (doc.mime_type) return doc.mime_type.startsWith("image/");
-  return /\.(jpe?g|png|webp|gif)$/i.test(doc.url ?? doc.name ?? "");
-}
-
-const isDetailsOpen = ref(false);
-const detailsApp = ref(null);
-const isLoadingDetails = ref(false);
-const reviewHistory = ref([]);
-const isLoadingHistory = ref(false);
-
-async function openDetails(app) {
-  detailsApp.value = app;
-  isDetailsOpen.value = true;
-  isLoadingDetails.value = true;
-  isLoadingHistory.value = true;
-
-  try {
-    const { data } = await ownerApplicationService.show(app.id);
-    detailsApp.value = data.data;
-  } catch {
-  } finally {
-    isLoadingDetails.value = false;
-  }
-
-  try {
-    const { data } = await activityLogService.index({
-      subject_type: "owner_application",
-      subject_id: app.id,
-      per_page: 20,
-    });
-    reviewHistory.value = data.data.data ?? data.data;
-  } catch {
-    reviewHistory.value = [];
-  } finally {
-    isLoadingHistory.value = false;
-  }
-}
-
-function closeDetails() {
-  isDetailsOpen.value = false;
-  detailsApp.value = null;
-  reviewHistory.value = [];
-}
-
-function detailsSwitchToReject() {
-  const app = detailsApp.value;
-  closeDetails();
-  openReject(app);
-}
-async function detailsApprove() {
-  const app = detailsApp.value;
-  closeDetails();
-  await handleApprove(app);
-}
-
-const HISTORY_EVENT_META = {
-  created: { icon: "fa-inbox", color: "#8A6D1F" },
-  updated: { icon: "fa-user-check", color: "#52733D" },
-  deleted: { icon: "fa-trash", color: "#D9534F" },
-};
-function historyEventLabel(log) {
-  const status = log.changes?.attributes?.status;
-  if (status === "approved") return t("owner_applications_page.history_approved");
-  if (status === "rejected") return t("owner_applications_page.history_rejected");
-  if (log.description === "created") return t("owner_applications_page.history_submitted");
-  return log.description ?? t("owner_applications_page.history_update_fallback");
-}
-function historyEventMeta(log) {
-  const status = log.changes?.attributes?.status;
-  if (status === "approved") return { icon: "fa-circle-check", color: "#28A745" };
-  if (status === "rejected") return { icon: "fa-circle-xmark", color: "#D9534F" };
-  return HISTORY_EVENT_META[log.description] ?? { icon: "fa-clock-rotate-left", color: "#8A6D1F" };
-}
-
-function goToDuplicateUser() {
-  router.push({ name: "admin.users" });
-}
-
-const internalNoteDrafts = reactive({});
-const savingInternalNoteId = ref(null);
-
-function internalNoteDraft(app) {
-  if (internalNoteDrafts[app.id] === undefined) {
-    internalNoteDrafts[app.id] = app.internal_note ?? "";
-  }
-  return internalNoteDrafts[app.id];
-}
-function setInternalNoteDraft(app, value) {
-  internalNoteDrafts[app.id] = value;
-}
-function hasUnsavedInternalNote(app) {
-  return (internalNoteDrafts[app.id] ?? (app.internal_note ?? "")) !== (app.internal_note ?? "");
-}
-async function saveInternalNote(app) {
-  savingInternalNoteId.value = app.id;
-  try {
-    await updateInternalNote(app.id, internalNoteDrafts[app.id] ?? "");
-  } finally {
-    savingInternalNoteId.value = null;
-  }
-}
-
-const copiedField = ref(null);
-async function copyToClipboard(text, key) {
-  if (!text) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    copiedField.value = key;
-    setTimeout(() => {
-      if (copiedField.value === key) copiedField.value = null;
-    }, 1500);
-  } catch {
-  }
-}
-
-const applicationsExportUrl = computed(() =>
-  ownerApplicationService.exportUrl({
-    search: searchQuery.value || undefined,
-    status: applicationStatusFilter.value || undefined,
-    sort: applicationsSortBy.value || undefined,
-    from_date: dateFrom.value || undefined,
-    to_date: dateTo.value || undefined,
-  }),
-);
 
 onMounted(() => fetchApplications());
 </script>
@@ -1132,7 +536,7 @@ onMounted(() => fetchApplications());
 
   <div class="space-y-6">
     <section v-reveal class="glass-card relative overflow-hidden p-6 lg:p-8">
-      <canvas ref="heroCanvas" class="absolute inset-0 w-full h-full pointer-events-none opacity-70"></canvas>
+      <LightningCanvas />
       <div class="absolute -start-16 -top-16 w-72 h-72 bg-[#D4AF37]/20 dark:bg-[#D4AF37]/25 rounded-full blur-[100px] pointer-events-none"></div>
       <div class="absolute -end-10 -bottom-16 w-72 h-72 bg-[#52733D]/20 dark:bg-[#8cc35a]/15 rounded-full blur-[100px] pointer-events-none"></div>
       <div class="relative flex flex-col gap-3">

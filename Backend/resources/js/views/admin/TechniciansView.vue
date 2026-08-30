@@ -1,4 +1,5 @@
 <script setup>
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { reactive, ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAdminTechnicians } from "@/composables/useAdminTechnicians";
@@ -342,7 +343,7 @@ async function handleCreateRequest() {
     await loadMaintenanceRequests(1);
     loadMaintenanceStats();
   } catch (err) {
-    createRequestError.value = err.response?.data?.message ?? t("admin_technicians_page.create_request_error");
+    createRequestError.value = normalizeApiError(err, t("admin_technicians_page.create_request_error")).message;
   } finally {
     isCreatingRequest.value = false;
   }
@@ -373,7 +374,7 @@ async function handleAssignRequest() {
     await loadMaintenanceRequests(maintenancePagination.value.current_page);
     loadMaintenanceStats();
   } catch (err) {
-    assignError.value = err.response?.data?.message ?? t("admin_technicians_page.assign_error");
+    assignError.value = normalizeApiError(err, t("admin_technicians_page.assign_error")).message;
   } finally {
     isAssigning.value = false;
   }
@@ -414,7 +415,7 @@ async function handleReviewRequest() {
     await loadMaintenanceRequests(maintenancePagination.value.current_page);
     loadMaintenanceStats();
   } catch (err) {
-    reviewError.value = err.response?.data?.message ?? t("admin_technicians_page.review_error");
+    reviewError.value = normalizeApiError(err, t("admin_technicians_page.review_error")).message;
   } finally {
     isReviewing.value = false;
   }

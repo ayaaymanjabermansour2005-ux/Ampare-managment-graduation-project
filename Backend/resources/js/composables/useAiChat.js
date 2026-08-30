@@ -1,3 +1,4 @@
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import aiChatService from "@/services/aiChatService";
@@ -16,7 +17,7 @@ export function useAiChat() {
       generators.value = data.data;
     } catch (err) {
       generatorsError.value =
-        err.response?.data?.message ?? t("owner_ai_chat.generators_load_error");
+        normalizeApiError(err, t("owner_ai_chat.generators_load_error")).message;
     } finally {
       isLoadingGenerators.value = false;
     }
@@ -35,7 +36,7 @@ export function useAiChat() {
       sessions.value = payload.data ?? payload;
     } catch (err) {
       sessionsError.value =
-        err.response?.data?.message ?? t("owner_ai_chat.sessions_load_error");
+        normalizeApiError(err, t("owner_ai_chat.sessions_load_error")).message;
     } finally {
       isLoadingSessions.value = false;
     }
@@ -73,7 +74,7 @@ export function useAiChat() {
       sessions.value.unshift(data.data);
       return true;
     } catch (err) {
-      startError.value = err.response?.data?.message ?? t("owner_ai_chat.start_error");
+      startError.value = normalizeApiError(err, t("owner_ai_chat.start_error")).message;
       return false;
     } finally {
       isStarting.value = false;
@@ -113,7 +114,7 @@ export function useAiChat() {
       const tempIndex = messages.value.findIndex((m) => m.id === tempId);
       if (tempIndex !== -1) messages.value.splice(tempIndex, 1);
       sendError.value =
-        err.response?.data?.message ?? t("owner_ai_chat.send_error");
+        normalizeApiError(err, t("owner_ai_chat.send_error")).message;
       return false;
     } finally {
       isSending.value = false;
@@ -132,7 +133,7 @@ export function useAiChat() {
       return true;
     } catch (err) {
       predictionError.value =
-        err.response?.data?.message ?? t("owner_ai_chat.prediction_error");
+        normalizeApiError(err, t("owner_ai_chat.prediction_error")).message;
       return false;
     } finally {
       isSubmittingPrediction.value = false;
@@ -151,7 +152,7 @@ export function useAiChat() {
       return true;
     } catch (err) {
       faultReportError.value =
-        err.response?.data?.message ?? t("owner_ai_chat.fault_report_error");
+        normalizeApiError(err, t("owner_ai_chat.fault_report_error")).message;
       return false;
     } finally {
       isSubmittingFaultReport.value = false;
