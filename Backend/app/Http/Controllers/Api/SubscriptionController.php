@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscription\StoreOwnerSubscriptionRequest;
 use App\Http\Requests\Subscription\StoreSubscriptionRequest;
 use App\Http\Requests\Subscription\TransferSubscriptionRequest;
+use App\Http\Requests\Subscription\UpdateSubscriptionNotesRequest;
 use App\Http\Requests\Subscription\UpdateSubscriptionStatusRequest;
 use App\Http\Resources\SubscriptionResource;
 use App\Models\Generator;
@@ -121,6 +122,18 @@ class SubscriptionController extends Controller
         return $this->success(
             message: 'تم تحديث حالة الاشتراك بنجاح.',
             data: new SubscriptionResource($subscription)
+        );
+    }
+
+    public function updateNotes(UpdateSubscriptionNotesRequest $request, Subscription $subscription): JsonResponse
+    {
+        $this->authorize('updateNotes', $subscription);
+
+        $subscription->update(['notes' => $request->validated('notes')]);
+
+        return $this->success(
+            message: 'تم حفظ الملاحظة بنجاح.',
+            data: new SubscriptionResource($subscription->load(['subscriberMeter.subscriber.user', 'generator.owner']))
         );
     }
 

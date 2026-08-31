@@ -8,6 +8,7 @@ import { useToastStore } from "@/stores/toast";
 import { useConfirm } from "@/composables/useConfirm";
 import { usePermissions } from "@/composables/usePermissions";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
+import AttachmentPreviewModal from "@/components/ui/AttachmentPreviewModal.vue";
 import { File, Info, Link, Link2Off, LoaderCircle, Paperclip, Pencil, Trash2, Upload, UserCog, X } from "@lucide/vue";
 
 
@@ -114,6 +115,7 @@ const newAttachmentType = ref("generator_photo");
 const newAttachmentFile = ref(null);
 const newAttachmentDescription = ref("");
 const attachmentFileInput = ref(null);
+const previewingAttachment = ref(null);
 
 function onAttachmentFileChange(e) {
   newAttachmentFile.value = e.target.files?.[0] ?? null;
@@ -390,7 +392,7 @@ function close() {
                 <div v-for="a in attachments" :key="a.id" class="flex items-center gap-2.5 p-2 rounded-lg bg-[#f4efe5]/50 dark:bg-white/5">
                   <File class="text-[#8A6D1F] text-[13px] shrink-0" aria-hidden="true" />
                   <div class="min-w-0 flex-1">
-                    <a :href="a.download_url" target="_blank" rel="noopener" class="text-[11.5px] font-semibold hover:underline truncate block">{{ a.original_name }}</a>
+                    <button type="button" @click="previewingAttachment = a" class="text-[11.5px] font-semibold hover:underline truncate block text-start">{{ a.original_name }}</button>
                     <p class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ documentTypeLabel(a.document_type) }} · {{ fmtFileSize(a.file_size) }}</p>
                   </div>
                   <button :aria-label="$t('common.delete_attachment')" type="button" @click="handleDeleteAttachment(a.id)" :disabled="deletingAttachmentId === a.id" class="action-btn action-btn--delete shrink-0">
@@ -478,4 +480,6 @@ function close() {
       </div>
     </Transition>
   </Teleport>
+
+  <AttachmentPreviewModal :attachment="previewingAttachment" @close="previewingAttachment = null" />
 </template>

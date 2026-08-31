@@ -6,12 +6,15 @@ import { motion, AnimatePresence, useReducedMotion } from "motion-v";
 import { setLocale } from "@/i18n";
 import { useThemeSync } from "@/composables/useThemeSync";
 import { useScrollToSection } from "@/composables/useScrollToSection";
+import { usePlatformIdentityStore } from "@/stores/platformIdentity";
 import { ArrowUp, Mail, MapPin, Menu, Moon, Phone, Sun, X } from "@lucide/vue";
 
 
 const { t, locale } = useI18n();
 const uiStore = useThemeSync();
 const prefersReducedMotion = useReducedMotion();
+const platformIdentity = usePlatformIdentityStore();
+onMounted(() => platformIdentity.fetch());
 
 /* ---------------- ستارة دخول Landing بالكامل (Navbar + Hero + كل الأقسام) ----------------
  * تشتغل مرة وحدة لكل mount فعلي لـ LandingLayout — يعني أول ما تدخل أي صفحة
@@ -118,9 +121,9 @@ function handleMobileNavClick(id) {
       <div class="landing-nav-grid px-5 sm:px-8 lg:px-10 py-3">
         <button type="button" class="landing-nav-brand" @click="scrollToSection('home')">
           <div class="w-14 h-14 flex items-center justify-center overflow-hidden">
-            <img src="/images/logo.png" :alt="t('auth.logo_alt')" class="w-full h-full object-contain" onerror="this.style.display='none'" />
+            <img :src="platformIdentity.logoUrl || '/images/logo.png'" :alt="t('auth.logo_alt')" class="w-full h-full object-contain" onerror="this.style.display='none'" />
           </div>
-          <span class="text-xl font-extrabold brand-gradient-text">{{ t("auth.brand_name") }}</span>
+          <span class="text-xl font-extrabold brand-gradient-text">{{ platformIdentity.siteName || t("auth.brand_name") }}</span>
         </button>
 
         <nav class="landing-nav-center hidden xl:flex items-center gap-5 text-[14.5px] font-semibold text-[#444] dark:text-[#cfd2cb]">
@@ -216,20 +219,20 @@ function handleMobileNavClick(id) {
           <div>
             <div class="flex items-center gap-2.5 mb-4">
               <div class="w-12 h-12 flex items-center justify-center overflow-hidden">
-                <img src="/images/logo.png" :alt="t('auth.logo_alt')" class="w-full h-full object-contain" onerror="this.style.display='none'" />
+                <img :src="platformIdentity.logoUrl || '/images/logo.png'" :alt="t('auth.logo_alt')" class="w-full h-full object-contain" onerror="this.style.display='none'" />
               </div>
-              <span class="text-lg font-extrabold text-[#F4E0A5]">{{ t("auth.brand_name") }}</span>
+              <span class="text-lg font-extrabold text-[#F4E0A5]">{{ platformIdentity.siteName || t("auth.brand_name") }}</span>
             </div>
             <p class="text-[13px] leading-relaxed text-[#9a9d97] mb-5">{{ t("landing.footer.description") }}</p>
-            <!-- FIX: (item 12) كانت 4 روابط href="#" وهمية — ما في حسابات
-                 سوشال ميديا حقيقية موصولة بعد. حوّلناها لحالة placeholder
-                 واضحة (معطّلة بصريًا + tooltip) بدل رابط ميت صامت، لحد ما
-                 توفَّر الروابط الحقيقية من الجهة المسؤولة (TODO). -->
+            <!-- No Ampere-specific social accounts exist yet — these link to each
+                 platform's own generic public homepage (not a fabricated Ampere
+                 profile) per explicit product decision, pending real account
+                 links from the business. -->
             <div class="flex items-center gap-2">
-              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-facebook-f text-xs"></i></span>
-              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-instagram text-xs"></i></span>
-              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-whatsapp text-xs"></i></span>
-              <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="w-9 h-9 rounded-full bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"><i class="fab fa-x-twitter text-xs"></i></span>
+              <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"><i class="fab fa-facebook-f text-xs"></i></a>
+              <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"><i class="fab fa-instagram text-xs"></i></a>
+              <a href="https://whatsapp.com" target="_blank" rel="noopener" aria-label="WhatsApp" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"><i class="fab fa-whatsapp text-xs"></i></a>
+              <a href="https://x.com" target="_blank" rel="noopener" aria-label="X (Twitter)" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"><i class="fab fa-x-twitter text-xs"></i></a>
             </div>
           </div>
 
@@ -268,13 +271,9 @@ function handleMobileNavClick(id) {
 
         <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11.5px] text-[#8a8f83]">
           <p>{{ t("landing.footer.copyright", { year: new Date().getFullYear() }) }}</p>
-          <!-- FIX: (item 12) لا توجد صفحتا خصوصية/شروط بالمشروع أصلًا (تحقّق
-               عبر grep على ملفات الراوتر) — لا يمكن اختراع محتوى قانوني.
-               نفس حالة placeholder المطبَّقة على روابط السوشال ميديا أعلاه،
-               بانتظار قرار العمل (بناء الصفحات فعليًا أو حذف الروابط). -->
           <div class="flex items-center gap-4">
-            <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="opacity-50 cursor-not-allowed">{{ t("landing.footer.privacy") }}</span>
-            <span :title="t('landing.footer.coming_soon')" aria-disabled="true" class="opacity-50 cursor-not-allowed">{{ t("landing.footer.terms") }}</span>
+            <RouterLink :to="{ name: 'landing.privacy-policy' }" class="hover:text-[#F4E0A5]">{{ t("landing.footer.privacy") }}</RouterLink>
+            <RouterLink :to="{ name: 'landing.terms-of-service' }" class="hover:text-[#F4E0A5]">{{ t("landing.footer.terms") }}</RouterLink>
           </div>
         </div>
       </div>

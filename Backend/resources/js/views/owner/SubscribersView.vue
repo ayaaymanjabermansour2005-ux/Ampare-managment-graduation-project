@@ -8,10 +8,11 @@ import { useOwnerSubscriptionMeterTransfers } from "@/composables/useOwnerSubscr
 import subscriptionService from "@/services/subscriptionService";
 import generatorService from "@/services/generatorService";
 import userService from "@/services/userService";
+import subscriberService from "@/services/subscriberService";
 import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowRightLeft, Bell, Check, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, Gauge, GripVertical, LoaderCircle, MessageCircleMore, Printer, Receipt, RotateCw, Search, Send, Table2, UserPlus, Users, X, ZoomOut } from "@lucide/vue";
+import { ArrowRightLeft, Bell, Check, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, Gauge, GripVertical, LoaderCircle, MessageCircleMore, Pencil, Printer, Receipt, RotateCw, Search, Send, StickyNote, Table2, UserPlus, Users, X, ZoomOut } from "@lucide/vue";
 
 /* ---------------- تبويبات: الاشتراكات / طلبات نقل العداد ----------------
  * FIX: composables/useOwnerSubscriptionMeterTransfers.js كان جاهزًا بالكامل
@@ -431,6 +432,79 @@ function printPage() {
 function messageSubscriber(item) {
   if (!item.subscriber?.id) return;
   router.push({ name: "owner.messages", query: { startUserId: item.subscriber.id } });
+}
+
+/* ---------------- تصنيف المستفيد (عادي / مستفيد من تبرّع) ----------------
+ * PATCH /subscribers/{id}/beneficiary-type — مصرَّح فقط لمالك المولد المرتبط
+ * فعليًا باشتراك هذا المشترك (SubscriberPolicy::updateBeneficiaryType).
+ */
+const BENEFICIARY_TYPE_OPTIONS = computed(() => [
+  { value: "normal", label: t("owner_subscribers.beneficiary_normal", "عادي") },
+  { value: "special", label: t("owner_subscribers.beneficiary_special", "مستفيد من تبرّع") },
+]);
+const isEditingBeneficiaryType = ref(false);
+const beneficiaryTypeDraft = ref("normal");
+const isSavingBeneficiaryType = ref(false);
+const beneficiaryTypeError = ref(null);
+
+function startEditBeneficiaryType() {
+  beneficiaryTypeDraft.value = selected.value?.subscriber?.beneficiary_type ?? "normal";
+  beneficiaryTypeError.value = null;
+  isEditingBeneficiaryType.value = true;
+}
+
+async function saveBeneficiaryType() {
+  if (!selected.value?.subscriber?.id) return;
+  isSavingBeneficiaryType.value = true;
+  beneficiaryTypeError.value = null;
+  try {
+    await subscriberService.updateBeneficiaryType(selected.value.subscriber.id, beneficiaryTypeDraft.value);
+    const option = BENEFICIARY_TYPE_OPTIONS.value.find((o) => o.value === beneficiaryTypeDraft.value);
+    selected.value = {
+      ...selected.value,
+      subscriber: { ...selected.value.subscriber, beneficiary_type: beneficiaryTypeDraft.value, beneficiary_type_label: option?.label },
+    };
+    const idx = subscriptions.value.findIndex((s) => s.id === selected.value.id);
+    if (idx !== -1) subscriptions.value[idx] = selected.value;
+    isEditingBeneficiaryType.value = false;
+  } catch (error) {
+    beneficiaryTypeError.value = normalizeApiError(error, t("owner_subscribers.beneficiary_type_update_error", "تعذّر تحديث تصنيف المستفيد.")).message;
+  } finally {
+    isSavingBeneficiaryType.value = false;
+  }
+}
+
+/* ---------------- ملاحظات الاشتراك (PATCH /subscriptions/{id}/notes) ----------------
+ * subscriptions.updateNotes مصرَّحة لمالك المولد المرتبط فعليًا بالاشتراك
+ * (SubscriptionPolicy::updateNotes)، بنفس منطق updateStatus/transferByOwn.
+ */
+const isEditingNotes = ref(false);
+const notesDraft = ref("");
+const isSavingNotes = ref(false);
+const notesError = ref(null);
+
+function startEditNotes() {
+  notesDraft.value = selected.value?.notes ?? "";
+  notesError.value = null;
+  isEditingNotes.value = true;
+}
+
+async function saveNotes() {
+  if (!selected.value?.id) return;
+  isSavingNotes.value = true;
+  notesError.value = null;
+  try {
+    const { data } = await subscriptionService.updateNotes(selected.value.id, notesDraft.value);
+    const updated = data?.data ?? { ...selected.value, notes: notesDraft.value };
+    selected.value = updated;
+    const idx = subscriptions.value.findIndex((s) => s.id === updated.id);
+    if (idx !== -1) subscriptions.value[idx] = updated;
+    isEditingNotes.value = false;
+  } catch (error) {
+    notesError.value = normalizeApiError(error, t("owner_subscribers.notes_update_error", "تعذّر حفظ الملاحظة.")).message;
+  } finally {
+    isSavingNotes.value = false;
+  }
 }
 
 function goToInvoices(item) {
@@ -914,6 +988,50 @@ onMounted(() => {
             <div class="flex justify-between gap-4"><span class="text-[#858983]">{{ $t("owner_subscribers.schedule_col") }}</span><b>{{ $t(`owner_subscribers.schedule.${selected.schedule}`) }}</b></div>
             <div class="flex justify-between gap-4"><span class="text-[#858983]">{{ $t("owner_subscribers.billing_cycle_col") }}</span><b>{{ $t(`owner_subscribers.cycle.${selected.billing_cycle}`) }}</b></div>
             <div class="flex justify-between gap-4"><span class="text-[#858983]">{{ $t("owner_subscribers.status_col") }}</span><span class="status-chip" :class="statusClass(selected.status)">{{ statusLabel(selected.status) }}</span></div>
+
+            <div v-if="!isEditingBeneficiaryType" class="flex justify-between items-center gap-4">
+              <span class="text-[#858983]">{{ t("owner_subscribers.beneficiary_type_col", "تصنيف المستفيد") }}</span>
+              <button type="button" class="flex items-center gap-1.5 font-bold" @click="startEditBeneficiaryType">
+                <span class="status-chip" :class="selected.subscriber?.beneficiary_type === 'special' ? 'chip-info' : 'chip-neutral'">
+                  {{ selected.subscriber?.beneficiary_type_label || t("owner_subscribers.beneficiary_normal", "عادي") }}
+                </span>
+                <Pencil class="text-[10px] text-[#9a9d97]" aria-hidden="true" />
+              </button>
+            </div>
+            <div v-else class="space-y-2">
+              <div class="flex items-center gap-2">
+                <AppDropdownSelect v-model="beneficiaryTypeDraft" :options="BENEFICIARY_TYPE_OPTIONS" variant="field" width-class="flex-1" />
+                <button type="button" :disabled="isSavingBeneficiaryType" class="btn-fill-brand !text-[11px] !py-2 !px-3 shrink-0" @click="saveBeneficiaryType">
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSavingBeneficiaryType" /><Check aria-hidden="true" v-else />
+                </button>
+                <button type="button" class="btn-outline-brand !text-[11px] !py-2 !px-3 shrink-0" @click="isEditingBeneficiaryType = false">
+                  <X aria-hidden="true" />
+                </button>
+              </div>
+              <p v-if="beneficiaryTypeError" class="text-[10.5px] text-[#D9534F]">{{ beneficiaryTypeError }}</p>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <span class="text-[#858983] flex items-center gap-1.5"><StickyNote class="text-[10px]" aria-hidden="true" /> {{ t("owner_subscribers.notes_label", "ملاحظات") }}</span>
+              <button v-if="!isEditingNotes" type="button" class="flex items-center gap-1.5 font-bold" @click="startEditNotes">
+                <Pencil class="text-[10px] text-[#9a9d97]" aria-hidden="true" />
+              </button>
+            </div>
+            <p v-if="!isEditingNotes" class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] whitespace-pre-line">
+              {{ selected.notes || t("owner_subscribers.notes_empty", "لا توجد ملاحظات بعد.") }}
+            </p>
+            <div v-else class="space-y-2">
+              <textarea v-model="notesDraft" rows="3" maxlength="2000" class="field-input resize-none text-[11.5px]" :placeholder="t('owner_subscribers.notes_placeholder', 'أضف ملاحظة تخص هذا الاشتراك...')"></textarea>
+              <div class="flex items-center gap-2">
+                <button type="button" :disabled="isSavingNotes" class="btn-fill-brand !text-[11px] !py-2 !px-3 shrink-0" @click="saveNotes">
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSavingNotes" /><Check aria-hidden="true" v-else />
+                </button>
+                <button type="button" class="btn-outline-brand !text-[11px] !py-2 !px-3 shrink-0" @click="isEditingNotes = false">
+                  <X aria-hidden="true" />
+                </button>
+              </div>
+              <p v-if="notesError" class="text-[10.5px] text-[#D9534F]">{{ notesError }}</p>
+            </div>
           </div>
 
           <!-- روابط سريعة بدل تضمين سجلات كاملة (تُفتح مفلترة باسم المشترك) -->

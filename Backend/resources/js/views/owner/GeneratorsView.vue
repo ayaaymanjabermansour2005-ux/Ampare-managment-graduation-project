@@ -13,7 +13,7 @@ import GeneratorCard from "@/components/generators/GeneratorCard.vue";
 import GeneratorForm from "@/components/generators/GeneratorForm.vue";
 import GeneratorViewModal from "@/components/generators/GeneratorViewModal.vue";
 import { useLeafletMap } from "@/composables/useLeafletMap";
-import { Activity, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, GripVertical, LoaderCircle, Pencil, PlugZap, Plus, Printer, QrCode, Save, Search, Table2, Trash2, TriangleAlert, X, Zap, ZoomOut } from "@lucide/vue";
+import { Activity, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, GripVertical, LoaderCircle, Pencil, PlugZap, Plus, Printer, QrCode, Save, Search, Sparkles, Table2, Trash2, TriangleAlert, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -306,10 +306,14 @@ const {
   submitDiagnostic,
   isSubmittingDiagnostic,
   diagnosticError,
+  isAnalyzing,
+  analyzeError,
+  analyzeReading,
 } = useMaintenance();
 
 const isDiagnosticModalOpen = ref(false);
 const diagnosticTargetGenerator = ref(null);
+const diagnosticSavedReading = ref(null);
 
 function emptyDiagnosticForm() {
   return {
@@ -330,6 +334,8 @@ function openDiagnosticModal(generator) {
   diagnosticGeneratorId.value = generator.id;
   diagnosticForm.value = emptyDiagnosticForm();
   diagnosticError.value = null;
+  diagnosticSavedReading.value = null;
+  analyzeError.value = null;
   isDiagnosticModalOpen.value = true;
 }
 
@@ -340,9 +346,9 @@ async function submitDiagnosticForm() {
     Object.entries(diagnosticForm.value).filter(([, v]) => v !== null && v !== ""),
   );
 
-  const ok = await submitDiagnostic(payload);
-  if (ok) {
-    isDiagnosticModalOpen.value = false;
+  const reading = await submitDiagnostic(payload);
+  if (reading) {
+    diagnosticSavedReading.value = reading;
     toast.show({
       type: "success",
       title: t("generator_diagnostics.saved_toast_title"),
@@ -353,6 +359,25 @@ async function submitDiagnosticForm() {
       type: "danger",
       title: t("generator_diagnostics.save_failed_title"),
       message: diagnosticError.value?.message ?? t("generator_diagnostics.save_failed_message"),
+    });
+  }
+}
+
+async function runAnalyzeReading() {
+  if (!diagnosticSavedReading.value) return;
+  const ok = await analyzeReading(diagnosticSavedReading.value.id);
+  if (ok) {
+    isDiagnosticModalOpen.value = false;
+    toast.show({
+      type: "success",
+      title: t("generator_diagnostics.analyze_success_title"),
+      message: t("generator_diagnostics.analyze_success_message"),
+    });
+  } else {
+    toast.show({
+      type: "danger",
+      title: t("generator_diagnostics.analyze_failed_title"),
+      message: analyzeError.value?.message ?? t("generator_diagnostics.analyze_failed_message"),
     });
   }
 }
@@ -748,7 +773,7 @@ onMounted(async () => {
               <button type="button" @click="isDiagnosticModalOpen = false" class="modal-head-brand__close"><X aria-hidden="true" /></button>
             </div>
 
-            <form @submit.prevent="submitDiagnosticForm" class="p-5 space-y-3.5">
+            <form v-if="!diagnosticSavedReading" @submit.prevent="submitDiagnosticForm" class="p-5 space-y-3.5">
               <div v-if="diagnosticError?.message" class="alert-box">
                 <CircleAlert class="shrink-0" aria-hidden="true" /> {{ diagnosticError.message }}
               </div>
@@ -807,6 +832,22 @@ onMounted(async () => {
                 </button>
               </div>
             </form>
+
+            <div v-else class="p-5 space-y-3.5">
+              <div v-if="analyzeError?.message" class="alert-box">
+                <CircleAlert class="shrink-0" aria-hidden="true" /> {{ analyzeError.message }}
+              </div>
+              <p class="text-sm text-[#5b5e59] dark:text-[#c9cbc6]">
+                {{ t("generator_diagnostics.analyze_prompt") }}
+              </p>
+              <div class="modal-footer-brand !px-0 !pb-0">
+                <button type="button" @click="isDiagnosticModalOpen = false" class="btn-outline-brand">{{ t("generator_diagnostics.close") }}</button>
+                <button type="button" :disabled="isAnalyzing" @click="runAnalyzeReading" class="btn-fill-brand">
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isAnalyzing" /><Sparkles aria-hidden="true" v-else />
+                  {{ isAnalyzing ? t("generator_diagnostics.analyzing") : t("generator_diagnostics.analyze_button") }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </Transition>

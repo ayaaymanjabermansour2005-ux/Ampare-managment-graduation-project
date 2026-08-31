@@ -6,6 +6,7 @@ use App\Enums\PaymentReviewStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use App\Support\Payment\PaymentReviewLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +37,7 @@ final class RequestPaymentCorrectionAction
 
             $this->reviewLogger->log($payment, $reviewer, PaymentReviewStatus::NeedsCorrection, $note);
 
-            return $payment->fresh(['invoice']);
+            return FreshOrFail::reload($payment, ['invoice']);
         });
     }
 }

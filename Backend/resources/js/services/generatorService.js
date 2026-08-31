@@ -58,6 +58,10 @@ export default {
     return http.get(`/generators/${id}/qr`);
   },
 
+  quickScan(id) {
+    return http.get(`/generators/${id}/quick-scan`);
+  },
+
   attachments(id) {
     return http.get(`/generators/${id}/attachments`);
   },

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PlatformCommissionStatus;
 use App\Models\PlatformCommission;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -65,7 +66,7 @@ class PlatformCommissionService
                 'paid_at' => now(),
             ])->save();
 
-            return $commission->fresh();
+            return FreshOrFail::reload($commission);
         });
     }
 }

@@ -79,30 +79,42 @@ export function useOwnerMeterReadings() {
 
   const isSubmitting = ref(false);
   const submitError = ref(null);
+  const attachmentError = ref(null);
 
   async function submitReading(payload, idempotencyKey, meterImageFile = null) {
     isSubmitting.value = true;
     submitError.value = null;
+    attachmentError.value = null;
     try {
-      // لو فيه صورة عداد مرفوعة، نبني FormData بدل JSON عادي.
-      // meterReadingService.createReading لازم يدعم استقبال FormData
-      // ويمرره لـ axios بدون تحويله لـ JSON (Content-Type: multipart/form-data).
-      let body = payload;
-      if (meterImageFile) {
-        body = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) body.append(key, value);
-        });
-        body.append("meter_image", meterImageFile);
-      }
-
+      // FIX: كانت الصورة تُرفَق ضمن نفس طلب الإنشاء كحقل meter_image عبر
+      // FormData — لكن StoreMeterReadingRequest/MeterReadingService::create()
+      // لا يعرفان هذا الحقل إطلاقًا، فكانت الصورة تُهمَل بصمت في كل مرة
+      // بدون أي خطأ ظاهر. القراءة الآن تُنشأ كـ JSON عادي، والصورة (إن
+      // وُجدت) تُرفَع بعدها كطلب منفصل حقيقي عبر endpoint المرفقات المخصص
+      // (POST /meter-readings/{id}/attachments، حقل file).
       const { data } = await meterReadingService.createReading(
-        body,
+        payload,
         idempotencyKey,
       );
       const isQueued = !!data.queued;
+
+      if (!isQueued && meterImageFile) {
+        const formData = new FormData();
+        formData.append("file", meterImageFile);
+        try {
+          await meterReadingService.storeAttachment(data.data.id, formData);
+        } catch (attachErr) {
+          // القراءة نفسها اتسجلت بنجاح — فشل رفع الصورة فقط ما لازم يُقرأ
+          // كفشل بتسجيل القراءة، بس لازم يبان للمستخدم مش يختفي بصمت.
+          attachmentError.value = normalizeApiError(
+            attachErr,
+            t("owner_meter_readings.attachment_upload_error"),
+          ).message;
+        }
+      }
+
       if (!isQueued) await fetchReadings(1);
-      return { success: true, isQueued };
+      return { success: true, isQueued, attachmentError: attachmentError.value };
     } catch (err) {
       submitError.value = normalizeApiError(err, t("owner_meter_readings.submit_error")).message;
       return { success: false };
@@ -218,6 +230,7 @@ export function useOwnerMeterReadings() {
     loadSubscriptionsFor,
     isSubmitting,
     submitError,
+    attachmentError,
     submitReading,
     approvingId,
     approveError,

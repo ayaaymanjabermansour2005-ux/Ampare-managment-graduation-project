@@ -13,6 +13,9 @@ export default {
   destroy(id) {
     return http.delete(`/admin/articles/${id}`);
   },
+  storeAttachment(id, formData) {
+    return http.post(`/admin/articles/${id}/attachments`, formData);
+  },
   listPublic(params = {}) {
     return http.get("/articles", { baseURL: "/api", params });
   },

@@ -26,6 +26,16 @@ export default [
         name: "landing.live-schedule",
         component: () => import("@/views/landing/LiveScheduleView.vue"),
       },
+      {
+        path: "privacy-policy",
+        name: "landing.privacy-policy",
+        component: () => import("@/views/landing/PrivacyPolicyView.vue"),
+      },
+      {
+        path: "terms-of-service",
+        name: "landing.terms-of-service",
+        component: () => import("@/views/landing/TermsOfServiceView.vue"),
+      },
     ],
   },
 ];

@@ -31,7 +31,7 @@ class QrCodeService
 
     public function generatorQrBase64(Generator $generator): string
     {
-        return $this->toBase64($this->frontendUrl('generators/'.$generator->id));
+        return $this->toBase64($this->frontendUrl('generators/'.$generator->id.'/quick-scan'));
     }
 
     protected function frontendUrl(string $path): string

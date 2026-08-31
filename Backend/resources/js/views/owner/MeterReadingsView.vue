@@ -236,6 +236,13 @@ async function handleSubmit() {
         title: t("owner_meter_readings.recorded_toast_title"),
         message: t("owner_meter_readings.recorded_toast_message"),
       });
+      if (result.attachmentError) {
+        toast.show({
+          type: "warning",
+          title: t("owner_meter_readings.attachment_upload_error_title"),
+          message: result.attachmentError,
+        });
+      }
     }
   } else {
     toast.show({

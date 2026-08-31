@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import settingService from "@/services/settingService";
 import neighborhoodService from "@/services/neighborhoodService";
+import commissionTierService from "@/services/commissionTierService";
 import { useConfirm } from "@/composables/useConfirm";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 import { vReveal } from "@/directives/reveal";
@@ -20,6 +21,7 @@ const TABS = [
   { key: "registration", labelKey: "settings_page.tab_registration", icon: "fa-user-plus" },
   { key: "maintenance", labelKey: "settings_page.tab_maintenance", icon: "fa-screwdriver-wrench" },
   { key: "neighborhoods", labelKey: "settings_page.tab_neighborhoods", icon: "fa-map-location-dot" },
+  { key: "commission_tiers", labelKey: "settings_page.tab_commission_tiers", icon: "fa-percent" },
 ];
 const activeTab = ref("general");
 function tabLabel(tab) {
@@ -201,10 +203,108 @@ async function deleteNeighborhood(id) {
   }
 }
 
+/* ---------------- شرائح العمولة التلقائية (CommissionTier) ----------------
+ * كانت CommissionTierController/Service مبنيّة بالكامل ومستخدَمة فعليًا في
+ * حساب العمولة الحقيقي (CommissionRateResolver) بدون أي واجهة إدارية على
+ * الإطلاق — الطريقة الوحيدة كانت DB/tinker مباشرة.
+ */
+const commissionTiers = ref([]);
+const isLoadingCommissionTiers = ref(false);
+const commissionTierError = ref(null);
+
+async function fetchCommissionTiers() {
+  isLoadingCommissionTiers.value = true;
+  try {
+    const { data } = await commissionTierService.list();
+    commissionTiers.value = data.data;
+  } finally {
+    isLoadingCommissionTiers.value = false;
+  }
+}
+
+function emptyTierForm() {
+  return { min_generators_count: "", max_generators_count: "", commission_rate: "", is_active: true };
+}
+const newTierForm = reactive(emptyTierForm());
+const isSavingTier = ref(false);
+
+async function addCommissionTier() {
+  isSavingTier.value = true;
+  commissionTierError.value = null;
+  try {
+    await commissionTierService.create({
+      min_generators_count: Number(newTierForm.min_generators_count),
+      max_generators_count: newTierForm.max_generators_count === "" ? null : Number(newTierForm.max_generators_count),
+      commission_rate: Number(newTierForm.commission_rate),
+      is_active: newTierForm.is_active,
+    });
+    Object.assign(newTierForm, emptyTierForm());
+    await fetchCommissionTiers();
+  } catch (err) {
+    const normalized = normalizeApiError(err, t("settings_page.add_commission_tier_failed"));
+    commissionTierError.value = normalized.fieldError("min_generators_count") ?? normalized.fieldError("max_generators_count") ?? normalized.fieldError("commission_rate") ?? normalized.message;
+  } finally {
+    isSavingTier.value = false;
+  }
+}
+
+const editingTierId = ref(null);
+const editingTierForm = reactive(emptyTierForm());
+
+function startEditTier(tier) {
+  editingTierId.value = tier.id;
+  editingTierForm.min_generators_count = tier.min_generators_count;
+  editingTierForm.max_generators_count = tier.max_generators_count ?? "";
+  editingTierForm.commission_rate = tier.commission_rate;
+  editingTierForm.is_active = tier.is_active;
+}
+
+async function saveEditTier(id) {
+  commissionTierError.value = null;
+  try {
+    await commissionTierService.update(id, {
+      min_generators_count: Number(editingTierForm.min_generators_count),
+      max_generators_count: editingTierForm.max_generators_count === "" ? null : Number(editingTierForm.max_generators_count),
+      commission_rate: Number(editingTierForm.commission_rate),
+      is_active: editingTierForm.is_active,
+    });
+    editingTierId.value = null;
+    await fetchCommissionTiers();
+  } catch (err) {
+    const normalized = normalizeApiError(err, t("settings_page.update_commission_tier_failed"));
+    commissionTierError.value = normalized.fieldError("min_generators_count") ?? normalized.fieldError("max_generators_count") ?? normalized.fieldError("commission_rate") ?? normalized.message;
+  }
+}
+
+const deletingTierId = ref(null);
+async function deleteCommissionTier(id) {
+  const confirmed = await confirm({
+    title: t("settings_page.delete_commission_tier_title"),
+    message: t("settings_page.delete_commission_tier_confirm_message"),
+    confirmLabel: t("common.delete"),
+    variant: "danger",
+  });
+  if (!confirmed) return;
+
+  deletingTierId.value = id;
+  commissionTierError.value = null;
+  try {
+    await commissionTierService.destroy(id);
+    await fetchCommissionTiers();
+  } catch (err) {
+    commissionTierError.value = normalizeApiError(err, t("settings_page.delete_commission_tier_failed")).message;
+  } finally {
+    deletingTierId.value = null;
+  }
+}
+
 function onTabChange(tab) {
   activeTab.value = tab;
   if (tab === "neighborhoods" && neighborhoods.value.length === 0) {
     fetchNeighborhoods();
+  }
+  if (tab === "commission_tiers" && commissionTiers.value.length === 0) {
+    fetchCommissionTiers();
   }
 }
 
@@ -494,6 +594,93 @@ onMounted(() => fetchSettings());
                   class="text-[11.5px] font-bold text-[#D9534F] hover:underline disabled:opacity-50"
                 >
                   {{ deletingId === n.id ? $t("settings_page.deleting_ellipsis") : $t("common.delete") }}
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== شرائح العمولة التلقائية ==================== -->
+      <section v-else-if="activeTab === 'commission_tiers'" v-reveal class="glass-card p-6">
+        <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#EBF1E7] dark:bg-white/5 rounded-lg p-3 mb-4">
+          <Info class="me-1.5" aria-hidden="true" />
+          {{ $t("settings_page.commission_tiers_notice") }}
+        </p>
+
+        <div v-if="commissionTierError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg p-3 mb-4">{{ commissionTierError }}</div>
+
+        <!-- إضافة شريحة جديدة -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+          <div>
+            <label class="text-[10.5px] font-bold block mb-1">{{ $t("settings_page.tier_min_generators") }}</label>
+            <input v-model="newTierForm.min_generators_count" type="number" min="0" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#8A6D1F]" />
+          </div>
+          <div>
+            <label class="text-[10.5px] font-bold block mb-1">{{ $t("settings_page.tier_max_generators") }}</label>
+            <input v-model="newTierForm.max_generators_count" type="number" min="0" :placeholder="$t('settings_page.tier_no_limit')" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#8A6D1F]" />
+          </div>
+          <div>
+            <label class="text-[10.5px] font-bold block mb-1">{{ $t("settings_page.tier_commission_rate") }}</label>
+            <input v-model="newTierForm.commission_rate" type="number" min="0" max="100" step="0.01" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#8A6D1F]" />
+          </div>
+          <div class="flex items-end">
+            <button
+              type="button"
+              @click="addCommissionTier"
+              :disabled="isSavingTier || !newTierForm.min_generators_count || !newTierForm.commission_rate"
+              class="btn-fill relative w-full px-4 py-2 rounded-lg text-[12px] font-bold text-white bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] shadow-md disabled:opacity-60 transition"
+            >
+              {{ $t("users_page.add_button") }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="isLoadingCommissionTiers" class="space-y-2">
+          <div v-for="i in 3" :key="i" class="h-12 rounded-lg thumb-loading"></div>
+        </div>
+        <div v-else-if="commissionTiers.length === 0" class="text-center py-10">
+          <AppIcon name="fa-percent" class="text-2xl text-[#9a9d97] dark:text-[#8f938a] mb-2" />
+          <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("settings_page.no_commission_tiers_yet") }}</p>
+        </div>
+        <div v-else class="space-y-2">
+          <div
+            v-for="tier in commissionTiers"
+            :key="tier.id"
+            class="flex items-center justify-between p-3 rounded-xl border border-[#e7e2d6] dark:border-white/10"
+          >
+            <template v-if="editingTierId === tier.id">
+              <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <input v-model="editingTierForm.min_generators_count" type="number" min="0" class="bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-[#8A6D1F]" />
+                <input v-model="editingTierForm.max_generators_count" type="number" min="0" :placeholder="$t('settings_page.tier_no_limit')" class="bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-[#8A6D1F]" />
+                <input v-model="editingTierForm.commission_rate" type="number" min="0" max="100" step="0.01" class="bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-[#8A6D1F]" />
+                <label class="flex items-center gap-1.5 text-[11.5px]">
+                  <input v-model="editingTierForm.is_active" type="checkbox" class="rounded border-[#e7e2d6] dark:border-white/10 text-[#3E582E]" />
+                  {{ $t("settings_page.tier_active") }}
+                </label>
+              </div>
+              <div class="flex items-center gap-3 ms-3 shrink-0">
+                <button type="button" @click="saveEditTier(tier.id)" class="text-[11.5px] font-bold text-[#28A745] px-2">{{ $t("users_page.save_action") }}</button>
+                <button type="button" @click="editingTierId = null" class="text-[11.5px] font-bold text-[#9a9d97] dark:text-[#8f938a] px-2">{{ $t("dashboard.cancel") }}</button>
+              </div>
+            </template>
+            <template v-else>
+              <div class="min-w-0 flex items-center gap-3">
+                <span class="status-chip" :class="tier.is_active ? 'chip-success' : 'chip-neutral'">{{ tier.is_active ? $t("settings_page.tier_active") : $t("settings_page.tier_inactive") }}</span>
+                <span class="text-[12.5px] font-semibold">
+                  {{ tier.min_generators_count }} – {{ tier.max_generators_count ?? $t("settings_page.tier_no_limit") }} {{ $t("settings_page.tier_generators_suffix") }}
+                </span>
+                <span class="text-[12.5px] font-bold text-[#8A6D1F]">{{ tier.commission_rate }}%</span>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <button type="button" @click="startEditTier(tier)" class="text-[11.5px] font-bold text-[#3E582E] dark:text-[#a8d19a] hover:underline">{{ $t("common.edit") }}</button>
+                <button
+                  type="button"
+                  @click="deleteCommissionTier(tier.id)"
+                  :disabled="deletingTierId === tier.id"
+                  class="text-[11.5px] font-bold text-[#D9534F] hover:underline disabled:opacity-50"
+                >
+                  {{ deletingTierId === tier.id ? $t("settings_page.deleting_ellipsis") : $t("common.delete") }}
                 </button>
               </div>
             </template>

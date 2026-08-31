@@ -26,6 +26,7 @@ class RolePermissionSeeder extends Seeder
             'subscriptions.view',
             'subscriptions.create',
             'subscriptions.updateStatus',
+            'subscriptions.updateNotes',
             'subscriptions.transfer',
             'service-requests.view',
             'service-requests.review',

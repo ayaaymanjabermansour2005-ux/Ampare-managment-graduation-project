@@ -38,6 +38,7 @@ class Subscription extends Model
         'contract_type',
         'start_date',
         'end_date',
+        'notes',
     ];
 
     protected function casts(): array

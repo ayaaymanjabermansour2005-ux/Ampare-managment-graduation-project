@@ -32,19 +32,47 @@ export function useMaintenance() {
     diagnosticError.value = null;
     diagnosticSuccess.value = false;
     try {
-      await generatorDiagnosticService.create(
+      const { data } = await generatorDiagnosticService.create(
         selectedGeneratorId.value,
         payload,
       );
       diagnosticSuccess.value = true;
-      return true;
+      return data.data;
     } catch (err) {
       diagnosticError.value = err.response?.data ?? {
         message: t("generator_diagnostics.save_failed_message"),
       };
-      return false;
+      return null;
     } finally {
       isSubmittingDiagnostic.value = false;
+    }
+  }
+
+  /* ---------------- تحليل القراءة بالذكاء الاصطناعي ----------------
+   * POST /generator-diagnostics/{reading}/analyze كان جاهزًا بالكامل
+   * (AnalyzeGeneratorDiagnosticAction، ينشئ FaultPrediction) بدون أي زر
+   * يستدعيه — نتيجته تظهر لاحقًا بلوحة "توقعات الأعطال" الموجودة أصلًا
+   * بلوحة تحكم المالك (FaultPredictionsPanel.vue).
+   */
+  const isAnalyzing = ref(false);
+  const analyzeError = ref(null);
+  const analyzeSuccess = ref(false);
+
+  async function analyzeReading(readingId) {
+    isAnalyzing.value = true;
+    analyzeError.value = null;
+    analyzeSuccess.value = false;
+    try {
+      await generatorDiagnosticService.analyze(readingId);
+      analyzeSuccess.value = true;
+      return true;
+    } catch (err) {
+      analyzeError.value = err.response?.data ?? {
+        message: t("generator_diagnostics.analyze_failed_message"),
+      };
+      return false;
+    } finally {
+      isAnalyzing.value = false;
     }
   }
 
@@ -111,6 +139,10 @@ export function useMaintenance() {
     diagnosticError,
     diagnosticSuccess,
     submitDiagnostic,
+    isAnalyzing,
+    analyzeError,
+    analyzeSuccess,
+    analyzeReading,
     isSubmittingFuelPurchase,
     fuelPurchaseError,
     fuelPurchaseSuccess,

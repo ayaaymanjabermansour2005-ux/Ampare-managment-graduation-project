@@ -4,6 +4,7 @@ namespace App\Actions\TechnicianTask;
 
 use App\Enums\TechnicianTaskStatus;
 use App\Models\TechnicianTask;
+use App\Support\Eloquent\FreshOrFail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,7 +23,7 @@ final class MarkTaskOnTheWayAction
 
             $task->forceFill(['status' => TechnicianTaskStatus::OnTheWay])->save();
 
-            return $task->fresh();
+            return FreshOrFail::reload($task);
         });
     }
 }

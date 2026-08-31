@@ -12,6 +12,7 @@ import { useOwnerComplaints } from "@/composables/useOwnerComplaints";
 import { useOwnerOffers } from "@/composables/useOwnerOffers";
 import { useCommissionReports } from "@/composables/useCommissionReports";
 import { useOwnerMeterReadings } from "@/composables/useOwnerMeterReadings";
+import { useOwnerRatings } from "@/composables/useOwnerRatings";
 import { useConfirm } from "@/composables/useConfirm";
 import { useLeafletMap } from "@/composables/useLeafletMap";
 import { useToastStore } from "@/stores/toast";
@@ -20,7 +21,7 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 import GazaWeatherCard from "@/components/dashboard/GazaWeatherCard.vue";
 import GeneratorSummaryCard from "@/components/dashboard/GeneratorSummaryCard.vue";
 import FaultPredictionsPanel from "@/components/faults/FaultPredictionsPanel.vue";
-import { ChartColumn, ChartLine, Check, ClipboardList, Gauge, HandCoins, LoaderCircle, MessageCircleMore, Tags, Zap } from "@lucide/vue";
+import { ChartColumn, ChartLine, Check, ClipboardList, Gauge, HandCoins, LoaderCircle, MessageCircleMore, Star, Tags, Zap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -99,6 +100,17 @@ const {
   approveReading,
 } = useOwnerMeterReadings();
 
+/* ---------------- تقييمات المشتركين لصاحب المولد ----------------
+ * GET /owners/{id}/ratings كان مبنيًا بالكامل بالباك اند بدون أي واجهة تعرضه.
+ */
+const {
+  ratings: ownerRatings,
+  averageRating: ownerAverageRating,
+  ratingsCount: ownerRatingsCount,
+  isLoading: isLoadingOwnerRatings,
+  fetchRatings: fetchOwnerRatings,
+} = useOwnerRatings();
+
 onMounted(() => {
   load();
   loadExtraStats();
@@ -110,6 +122,7 @@ onMounted(() => {
   fetchAllGenerators();
   fetchMapPoints().then(() => fillMap());
   fetchMonthlyPerformance();
+  fetchOwnerRatings(authStore.user?.id);
 });
 
 /* ==========================================================================
@@ -329,6 +342,32 @@ async function handleQuickApproveReading(reading) {
     <div v-if="error" class="text-[12.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-xl p-4">
       {{ error }}
     </div>
+
+    <!-- ===== تقييمات المشتركين ===== -->
+    <section v-if="!isLoadingOwnerRatings && ownerRatingsCount > 0" v-reveal class="glass-card p-5">
+      <div class="flex items-center justify-between mb-3.5">
+        <h2 class="text-[13.5px] font-bold flex items-center gap-2">
+          <Star class="text-[#D4AF37]" aria-hidden="true" />
+          {{ t("owner_dashboard.ratings_title") }}
+        </h2>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="font-extrabold text-[15px]">{{ Number(ownerAverageRating).toFixed(1) }}</span>
+          <Star class="text-[#D4AF37] text-[13px]" fill="currentColor" aria-hidden="true" />
+          <span class="text-[11px] text-[#9a9d97]">({{ t("owner_dashboard.ratings_count", { count: ownerRatingsCount }) }})</span>
+        </div>
+      </div>
+      <div class="space-y-2.5">
+        <div v-for="r in ownerRatings.slice(0, 5)" :key="r.id" class="p-3 rounded-xl border border-[#eee8da] dark:border-white/10">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-[12px] font-bold">{{ r.rated_by?.name ?? "-" }}</span>
+            <div class="flex items-center gap-0.5 shrink-0">
+              <Star v-for="n in 5" :key="n" class="text-[11px]" :class="n <= r.rating ? 'text-[#D4AF37]' : 'text-[#e7e2d6] dark:text-white/15'" :fill="n <= r.rating ? 'currentColor' : 'none'" aria-hidden="true" />
+            </div>
+          </div>
+          <p v-if="r.comment" class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5]">{{ r.comment }}</p>
+        </div>
+      </div>
+    </section>
 
     <!-- ==========================================================================
          =====================  قسم 1: ما يحتاج انتباهك الآن  =====================

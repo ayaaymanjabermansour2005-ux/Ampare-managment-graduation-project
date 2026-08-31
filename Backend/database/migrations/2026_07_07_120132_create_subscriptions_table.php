@@ -27,6 +27,7 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->string('status', 20)->default('pending');
+            $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->index(['generator_id', 'status']);

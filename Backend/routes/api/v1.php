@@ -40,7 +40,6 @@ use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\PlatformCommissionController;
 use App\Http\Controllers\Api\PublicAnalyticsController;
 use App\Http\Controllers\Api\PublicGeneratorsListController;
-use App\Http\Controllers\Api\PublicGeneratorsMapController;
 use App\Http\Controllers\Api\PublicPlatformStatsController;
 use App\Http\Controllers\Api\RoleDashboardController;
 use App\Http\Controllers\Api\RolePermissionController;
@@ -477,6 +476,9 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
 
     Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])
         ->middleware('permission:subscriptions.updateStatus');
+
+    Route::patch('subscriptions/{subscription}/notes', [SubscriptionController::class, 'updateNotes'])
+        ->middleware('permission:subscriptions.updateNotes');
 
     Route::get('subscriptions/{subscription}/contract-pdf', [SubscriptionController::class, 'downloadContractPdf'])
         ->middleware('permission:subscriptions.view');
@@ -1124,9 +1126,6 @@ Route::get('platform-identity', [SettingController::class, 'publicIndex'])
 |    خريطة تغطية المولدات لصفحة الهبوط
 |----------------------------------------------------------------------
 */
-Route::get('public/generators-map', [PublicGeneratorsMapController::class, 'index'])
-    ->name('public.generators-map');
-
 Route::get('public/generators-list', [PublicGeneratorsListController::class, 'index'])
     ->name('public.generators-list');
 

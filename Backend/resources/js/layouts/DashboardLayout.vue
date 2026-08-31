@@ -4,11 +4,9 @@ import { useI18n } from "vue-i18n";
 import AppSidebar from "@/components/sidebar/AppSidebar.vue";
 import AppNavbar from "@/components/navbar/AppNavbar.vue";
 import { useThemeSync } from "@/composables/useThemeSync";
-import { useRealtimeNotifications } from "@/composables/useRealtimeNotifications";
 
 const ui = useThemeSync("admin-shell");
 const { locale } = useI18n();
-useRealtimeNotifications();
 
 const mainAreaClasses = computed(() => [
   "flex-1 flex flex-col min-w-0 transition-all duration-300",

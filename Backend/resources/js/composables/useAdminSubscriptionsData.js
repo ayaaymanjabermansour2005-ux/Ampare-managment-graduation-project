@@ -157,6 +157,27 @@ export function useAdminSubscriptionsData() {
     }
   }
 
+  /* ---------------- ملاحظات الاشتراك ---------------- */
+  const updatingNotesId = ref(null);
+  const notesUpdateError = ref(null);
+
+  async function updateSubscriptionNotes(sub, notes) {
+    updatingNotesId.value = sub.id;
+    notesUpdateError.value = null;
+    try {
+      const { data } = await subscriptionService.updateNotes(sub.id, notes);
+      const updated = data?.data ?? { ...sub, notes };
+      const index = subscriptions.value.findIndex((s) => s.id === sub.id);
+      if (index !== -1) subscriptions.value[index] = updated;
+      return updated;
+    } catch (err) {
+      notesUpdateError.value = normalizeApiError(err, t("subscriptions_page.notes_update_error")).message;
+      return null;
+    } finally {
+      updatingNotesId.value = null;
+    }
+  }
+
   function contractUrl(sub) {
     return subscriptionService.downloadContractPdfUrl(sub.id);
   }
@@ -264,6 +285,10 @@ export function useAdminSubscriptionsData() {
     updatingStatusId,
     statusUpdateError,
     updateSubscriptionStatus,
+
+    updatingNotesId,
+    notesUpdateError,
+    updateSubscriptionNotes,
 
     contractUrl,
 

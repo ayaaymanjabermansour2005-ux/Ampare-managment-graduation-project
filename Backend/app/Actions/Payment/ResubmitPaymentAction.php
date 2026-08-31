@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\AttachmentService;
 use App\Services\ExchangeRateService;
+use App\Support\Eloquent\FreshOrFail;
 use App\Support\Money;
 use App\Support\Payment\InvoiceBalanceValidator;
 use Illuminate\Support\Facades\DB;
@@ -70,10 +71,10 @@ final class ResubmitPaymentAction
             }
 
             PaymentSubmitted::dispatch(
-                $payment->fresh(['invoice.subscription.generator', 'paymentMethod'])
+                FreshOrFail::reload($payment, ['invoice.subscription.generator', 'paymentMethod'])
             );
 
-            return $payment->fresh(['invoice', 'paymentMethod', 'attachments.uploader']);
+            return FreshOrFail::reload($payment, ['invoice', 'paymentMethod', 'attachments.uploader']);
         });
     }
 }

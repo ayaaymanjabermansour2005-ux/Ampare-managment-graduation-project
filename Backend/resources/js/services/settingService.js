@@ -7,4 +7,7 @@ export default {
   update(settings) {
     return http.patch("/admin/settings", { settings });
   },
+  publicIdentity() {
+    return http.get("/platform-identity");
+  },
 };

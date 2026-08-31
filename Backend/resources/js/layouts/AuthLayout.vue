@@ -4,11 +4,14 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { setLocale } from "@/i18n";
 import { useThemeSync } from "@/composables/useThemeSync";
+import { usePlatformIdentityStore } from "@/stores/platformIdentity";
 import { House, Moon, Sun } from "@lucide/vue";
 
 
 const route = useRoute();
 const { t, locale } = useI18n();
+const platformIdentity = usePlatformIdentityStore();
+onMounted(() => platformIdentity.fetch());
 
 const uiStore = useThemeSync();
 const isDark = computed(() => uiStore.isDark);
@@ -216,14 +219,14 @@ onBeforeUnmount(() => {
         <div class="text-center mb-4">
           <div class="w-16 h-16 flex items-center justify-center mx-auto mb-1">
             <img
-              src="/images/logo.png"
+              :src="platformIdentity.logoUrl || '/images/logo.png'"
               :alt="t('auth.logo_alt')"
               class="w-full h-full object-contain drop-shadow"
               onerror="this.style.display='none'"
             />
           </div>
           <div class="auth-brand-name text-xl font-bold bg-gradient-to-r from-secondary-700 to-primary-600 bg-clip-text text-transparent mb-0.5">
-            {{ t("auth.brand_name") }}
+            {{ platformIdentity.siteName || t("auth.brand_name") }}
           </div>
           <div class="auth-brand-desc text-[10.5px] leading-relaxed">
             {{ t("auth.brand_desc") }}

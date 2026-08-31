@@ -129,4 +129,63 @@ class OwnerRatingTest extends TestCase
         $this->postJson("/api/v1/subscriptions/{$subscription->id}/owner-rating", ['rating' => 5])
             ->assertStatus(403);
     }
+
+    public function test_owner_can_view_own_ratings(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::GENERATOR_OWNER->value);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson("/api/v1/owners/{$owner->id}/ratings")
+            ->assertStatus(200)
+            ->assertJsonPath('success', true);
+    }
+
+    public function test_admin_can_view_any_owners_ratings(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::GENERATOR_OWNER->value);
+
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::ADMIN->value);
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson("/api/v1/owners/{$owner->id}/ratings")
+            ->assertStatus(200)
+            ->assertJsonPath('success', true);
+    }
+
+    // SEC-004: viewAny() previously only checked `$user->id === $owner->id`,
+    // with no check that $owner is actually an owner-role user — a
+    // non-owner requesting their own user id as the {owner} route
+    // parameter would pass authorization (and just see an empty ratings
+    // list, since no OwnerRating rows reference a non-owner id). Not
+    // exploitable for data leakage, but a real authorization-robustness gap:
+    // this should be a clean 403, not an authorized-but-empty 200.
+    public function test_non_owner_cannot_view_their_own_id_as_owner_ratings(): void
+    {
+        $subscriber = User::factory()->create();
+        $subscriber->assignRole(Role::SUBSCRIBER->value);
+
+        Sanctum::actingAs($subscriber);
+
+        $this->getJson("/api/v1/owners/{$subscriber->id}/ratings")
+            ->assertStatus(403);
+    }
+
+    public function test_owner_cannot_view_another_owners_ratings(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::GENERATOR_OWNER->value);
+
+        $otherOwner = User::factory()->create();
+        $otherOwner->assignRole(Role::GENERATOR_OWNER->value);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson("/api/v1/owners/{$otherOwner->id}/ratings")
+            ->assertStatus(403);
+    }
 }

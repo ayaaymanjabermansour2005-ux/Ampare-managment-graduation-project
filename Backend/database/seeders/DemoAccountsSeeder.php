@@ -23,6 +23,20 @@ class DemoAccountsSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            // DEMO-ACCOUNTS-no-guard: this seeder creates demo accounts with
+            // fixed, publicly-guessable email addresses (demo-owner@ampare.test,
+            // demo-subscriber@ampare.test). Passwords are already random
+            // (str()->random(40)), so this was never a credential-exposure
+            // issue like SEC-005/SEC-006 — but running it on production would
+            // still create real accounts under those known addresses nobody
+            // asked for. Guarded for consistency with every other
+            // account-creating seeder, per explicit product decision:
+            // php artisan demo:reset is not meant to run against a
+            // production-flagged environment.
+            return;
+        }
+
         Model::unguarded(fn () => $this->seed());
     }
 

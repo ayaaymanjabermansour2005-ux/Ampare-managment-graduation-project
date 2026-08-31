@@ -60,6 +60,12 @@ export default [
         meta: { permission: "complaints.view" },
       },
       {
+        path: "service-requests",
+        name: "owner.service-requests",
+        component: () => import("@/views/owner/ServiceRequestsView.vue"),
+        meta: { permission: "service-requests.view" },
+      },
+      {
         path: "messages",
         name: "owner.messages",
         component: () => import("@/views/owner/MessagesView.vue"),

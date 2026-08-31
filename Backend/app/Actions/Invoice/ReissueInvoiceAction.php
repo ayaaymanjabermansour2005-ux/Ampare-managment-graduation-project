@@ -5,6 +5,7 @@ namespace App\Actions\Invoice;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -45,7 +46,7 @@ final class ReissueInvoiceAction
                 ])
                 ->log('admin_reissued_invoice');
 
-            return $newInvoice->fresh();
+            return FreshOrFail::reload($newInvoice);
         });
     }
 }

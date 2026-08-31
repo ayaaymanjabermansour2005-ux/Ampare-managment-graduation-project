@@ -18,7 +18,7 @@ import activityLogService from "@/services/activityLogService";
 import { useToastStore } from "@/stores/toast";
 import TransferSubscriptionModal from "@/components/admin/TransferSubscriptionModal.vue";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, StickyNote, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import LightningCanvas from "@/components/ui/LightningCanvas.vue";
 
@@ -130,6 +130,9 @@ const {
   updatingStatusId,
   statusUpdateError,
   updateSubscriptionStatus,
+  updatingNotesId,
+  notesUpdateError,
+  updateSubscriptionNotes,
   contractUrl,
   monthlyGrowth,
   fetchMonthlyGrowth,
@@ -456,6 +459,25 @@ function activityText(entry) {
 const viewingSubscription = ref(null);
 function openSubscriptionView(sub) {
   viewingSubscription.value = sub;
+  isEditingNotes.value = false;
+}
+
+/* ---------------- ملاحظات الاشتراك (PATCH /subscriptions/{id}/notes) ---------------- */
+const isEditingNotes = ref(false);
+const notesDraft = ref("");
+
+function startEditNotes() {
+  notesDraft.value = viewingSubscription.value?.notes ?? "";
+  notesUpdateError.value = null;
+  isEditingNotes.value = true;
+}
+
+async function saveNotes() {
+  if (!viewingSubscription.value) return;
+  const updated = await updateSubscriptionNotes(viewingSubscription.value, notesDraft.value);
+  if (!updated) return;
+  viewingSubscription.value = updated;
+  isEditingNotes.value = false;
 }
 
 /* ---------------- نقل الاشتراك لمولد آخر ---------------- */
@@ -2227,6 +2249,28 @@ onMounted(() => {
                   <CalendarPlus class="text-[#17A2B8] text-[13px] mb-1" aria-hidden="true" />
                   <div class="text-sm font-extrabold">{{ formatDate(viewingSubscription.created_at) }}</div>
                   <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("subscriptions_page.requested_label") }}</div>
+                </div>
+              </div>
+
+              <div class="glass-card p-4">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <h5 class="text-[12px] font-bold flex items-center gap-2"><StickyNote class="text-[#8A6D1F] text-[11px]" aria-hidden="true" /> {{ $t("subscriptions_page.notes_title") }}</h5>
+                  <button v-if="!isEditingNotes" type="button" @click="startEditNotes" class="action-btn action-btn--view !w-6 !h-6" :title="$t('common.edit')"><Pencil class="text-[10px]" aria-hidden="true" /></button>
+                </div>
+                <p v-if="!isEditingNotes" class="text-[12px] text-[#6B6B6B] dark:text-[#a8aaa5] whitespace-pre-line">
+                  {{ viewingSubscription.notes || $t("subscriptions_page.notes_empty") }}
+                </p>
+                <div v-else class="space-y-2">
+                  <textarea v-model="notesDraft" rows="3" maxlength="2000" class="field-input resize-none text-[12px]" :placeholder="$t('subscriptions_page.notes_placeholder')"></textarea>
+                  <div class="flex items-center gap-2">
+                    <button type="button" :disabled="updatingNotesId === viewingSubscription.id" class="btn-fill-brand !text-[11px] !py-2 !px-3 shrink-0" @click="saveNotes">
+                      <LoaderCircle class="animate-spin" aria-hidden="true" v-if="updatingNotesId === viewingSubscription.id" /><Check aria-hidden="true" v-else />
+                    </button>
+                    <button type="button" class="btn-outline-brand !text-[11px] !py-2 !px-3 shrink-0" @click="isEditingNotes = false">
+                      <X aria-hidden="true" />
+                    </button>
+                  </div>
+                  <p v-if="notesUpdateError" class="text-[10.5px] text-[#D9534F]">{{ notesUpdateError }}</p>
                 </div>
               </div>
 

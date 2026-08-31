@@ -5,6 +5,8 @@ import { useI18n } from "vue-i18n";
 import { useArticles } from "@/composables/useArticles";
 import { useAdminArticleComments } from "@/composables/useAdminArticleComments";
 import { useConfirm } from "@/composables/useConfirm";
+import { normalizeApiError } from "@/utils/normalizeApiError";
+import articleService from "@/services/articleService";
 import { vReveal } from "@/directives/reveal";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, FileText, Languages, LoaderCircle, MessageSquareOff, MessagesSquare, Newspaper, Pencil, Plus, Reply, Save, Trash2, TriangleAlert, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -76,6 +78,7 @@ function openCreate() {
 function openEdit(article) {
   editingArticle.value = article;
   form.value = { ...article };
+  coverUploadError.value = null;
   isFormOpen.value = true;
 }
 
@@ -84,6 +87,35 @@ async function handleSubmit() {
     ? await updateArticle(editingArticle.value.id, form.value)
     : await createArticle(form.value);
   if (ok) isFormOpen.value = false;
+}
+
+/* ---------------- رفع صورة غلاف كملف (بديل عن لصق رابط يدويًا) ----------------
+ * POST /admin/articles/{id}/attachments موجود بالباك اند من زمان (AttachmentService،
+ * DocumentType::ArticleImage) لكن كان بدون أي واجهة — الفورم هون كان بيقبل رابط نصي
+ * فقط. attachments.cover_image_url عمود مستقل تمامًا عن جدول attachments، فمفيش أي
+ * ربط تلقائي بينهم؛ الرفع هون بيحدّث cover_image_url يدويًا بالـ preview_url المرجَع.
+ * متاح فقط أثناء التعديل (بعد ما المقال موجود فعليًا وله id حقيقي).
+ */
+const isUploadingCover = ref(false);
+const coverUploadError = ref(null);
+
+async function uploadCoverImage(e) {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file || !editingArticle.value?.id) return;
+
+  isUploadingCover.value = true;
+  coverUploadError.value = null;
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await articleService.storeAttachment(editingArticle.value.id, formData);
+    form.value.cover_image_url = data.data.preview_url;
+  } catch (err) {
+    coverUploadError.value = normalizeApiError(err, t("articles_page.cover_image_upload_error")).message;
+  } finally {
+    isUploadingCover.value = false;
+  }
 }
 
 async function handleDelete(article) {
@@ -438,6 +470,15 @@ onMounted(() => {
                     :placeholder="$t('articles_page.cover_image_placeholder')"
                     class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F]"
                   />
+                  <div v-if="editingArticle" class="flex items-center gap-2.5 mt-2">
+                    <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-12 h-12 rounded-lg object-cover border border-[#e7e2d6] dark:border-white/10 shrink-0" />
+                    <label class="text-[11px] font-bold text-[#8A6D1F] cursor-pointer hover:underline">
+                      <LoaderCircle v-if="isUploadingCover" class="animate-spin inline" aria-hidden="true" />
+                      {{ isUploadingCover ? $t("articles_page.cover_image_uploading") : $t("articles_page.cover_image_upload_button") }}
+                      <input type="file" accept="image/*" class="hidden" :disabled="isUploadingCover" @change="uploadCoverImage" />
+                    </label>
+                  </div>
+                  <p v-if="coverUploadError" class="text-[10.5px] text-[#D9534F] mt-1">{{ coverUploadError }}</p>
                 </div>
 
                 <label class="flex items-center gap-2 text-[12.5px] cursor-pointer">

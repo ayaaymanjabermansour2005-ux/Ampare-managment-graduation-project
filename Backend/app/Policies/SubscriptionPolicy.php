@@ -75,6 +75,19 @@ class SubscriptionPolicy
         return $user->isOwner() && $user->id === $subscription->generator?->owner_id;
     }
 
+    public function updateNotes(User $user, Subscription $subscription): bool
+    {
+        if (! $user->can('subscriptions.updateNotes')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->isOwner() && $user->id === $subscription->generator?->owner_id;
+    }
+
     public function delete(User $user, Subscription $subscription): bool
     {
         return false;

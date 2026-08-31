@@ -35,6 +35,10 @@ export default {
     return http.patch(`/meter-readings/${id}`, payload);
   },
 
+  storeAttachment(id, formData) {
+    return http.post(`/meter-readings/${id}/attachments`, formData);
+  },
+
   delete(id) {
     return http.delete(`/meter-readings/${id}`);
   },

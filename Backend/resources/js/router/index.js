@@ -39,6 +39,11 @@ const routes = [
         name: "generators.show",
         component: () => import("@/views/generators/GeneratorDetailView.vue"),
       },
+      {
+        path: "quick-scan",
+        name: "generators.quick-scan",
+        component: () => import("@/views/generators/GeneratorQuickScanView.vue"),
+      },
     ],
   },
   {

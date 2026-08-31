@@ -42,6 +42,7 @@ class PermissionSeeder extends Seeder
         'subscriptions.view',
         'subscriptions.create',
         'subscriptions.updateStatus',
+        'subscriptions.updateNotes',
         'subscriptions.transfer',
 
         // Subscription Service Requests

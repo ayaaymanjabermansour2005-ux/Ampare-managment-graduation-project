@@ -3,6 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { FileText, User, Wallet, X, ZoomIn } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import AttachmentPreviewModal from "@/components/ui/AttachmentPreviewModal.vue";
 
 
 const props = defineProps({
@@ -43,7 +44,7 @@ watch(
   },
 );
 
-const lightboxSrc = ref(null);
+const previewingAttachment = ref(null);
 
 const imageAttachments = computed(
   () =>
@@ -202,7 +203,7 @@ function submitCorrection() {
                 :key="att.id"
                 type="button"
                 :aria-label="`${$t('common.view')}: ${att.original_name}`"
-                @click="lightboxSrc = att.preview_url"
+                @click="previewingAttachment = att"
                 class="relative aspect-video rounded-xl overflow-hidden border border-[#e7e2d6] dark:border-white/10 group"
               >
                 <img
@@ -217,16 +218,16 @@ function submitCorrection() {
                 </div>
               </button>
 
-              <a
+              <button
                 v-for="att in otherAttachments"
                 :key="att.id"
-                :href="att.preview_url"
-                target="_blank"
-                class="glass-card hoverable flex items-center gap-2.5 p-3 col-span-2 text-[12px]"
+                type="button"
+                @click="previewingAttachment = att"
+                class="glass-card hoverable flex items-center gap-2.5 p-3 col-span-2 text-[12px] text-start"
               >
                 <FileText class="text-[15px] text-[#D9534F]" aria-hidden="true" />
                 <span class="truncate">{{ att.original_name }}</span>
-              </a>
+              </button>
             </div>
           </div>
 
@@ -311,27 +312,6 @@ function submitCorrection() {
       </aside>
     </Transition>
 
-    <!-- Lightbox -->
-    <Transition
-      enter-active-class="transition-opacity duration-150"
-      leave-active-class="transition-opacity duration-100"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="lightboxSrc"
-        class="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
-        @click="lightboxSrc = null"
-      >
-        <img :src="lightboxSrc" class="max-w-full max-h-full rounded-lg" />
-        <button :aria-label="$t('common.close')"
-          type="button"
-          @click="lightboxSrc = null"
-          class="absolute top-5 end-5 text-white/80 hover:text-white text-2xl"
-        >
-          <X aria-hidden="true" />
-        </button>
-      </div>
-    </Transition>
+    <AttachmentPreviewModal :attachment="previewingAttachment" @close="previewingAttachment = null" />
   </Teleport>
 </template>

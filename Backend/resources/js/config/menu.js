@@ -299,6 +299,16 @@ export default [
     groupKey: "menu_groups.maintenance_support",
   },
   {
+    label: "طلبات الخدمة",
+    labelKey: "menu.service_requests",
+    icon: "fa-solid fa-bolt-lightning",
+    route: "owner.service-requests",
+    roles: ["generator_owner"],
+    permission: "service-requests.view",
+    group: "الصيانة والدعم",
+    groupKey: "menu_groups.maintenance_support",
+  },
+  {
     label: "التقارير",
     labelKey: "menu.reports",
     icon: "fa-solid fa-chart-line",

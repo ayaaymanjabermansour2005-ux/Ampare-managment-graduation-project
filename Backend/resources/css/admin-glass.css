@@ -235,7 +235,7 @@
 .admin-shell.dark .status-chip.chip-neutral { color: #8fc3e8; background: rgba(61,107,145,0.16); }
 
 /* ===== هوية موحّدة لهيدر/فوتر النوافذ (Modal) — مقيَّدة بـ .admin-shell فقط
-   لأن AdminLayout.vue يزامن صنفي admin-shell/dark مع document.documentElement،
+   لأن DashboardLayout.vue (عبر useThemeSync) يزامن صنفي admin-shell/dark مع document.documentElement،
    فتعمل تلقائيًا لأي نافذة Teleported بأي صفحة أدمن حالية أو مستقبلية دون
    تكرارها محليًا بكل ملف. ===== */
 .admin-shell .modal-head-brand { position: relative; padding: 16px 20px; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; overflow: hidden; }

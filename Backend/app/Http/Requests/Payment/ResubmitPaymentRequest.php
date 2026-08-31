@@ -13,16 +13,24 @@ class ResubmitPaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        /** @var Payment $payment */
         $payment = $this->route('payment');
 
-        return $this->user()->can('resubmit', $payment);
+        return $payment instanceof Payment && $this->user()->can('resubmit', $payment);
     }
 
     public function rules(): array
     {
-        /** @var Payment $payment */
+        // The `{payment}` route parameter is implicitly model-bound (see
+        // PaymentController::resubmit()'s `Payment $payment` type-hint) — it
+        // is always a real Payment by the time rules() runs, but
+        // Illuminate\Http\Request::route() itself is typed
+        // `object|string|null`. Narrowed via instanceof (a genuine,
+        // PHPStan-verifiable type check) instead of the previous `@var
+        // Payment $payment` PHPDoc override, which asserted non-nullability
+        // PHPStan couldn't verify and made the null-guard below and the
+        // nullsafe access on transaction_reference below look like dead code.
         $payment = $this->route('payment');
+        $payment = $payment instanceof Payment ? $payment : null;
 
         return [
             'amount' => [
@@ -64,7 +72,7 @@ class ResubmitPaymentRequest extends FormRequest
             'attachments.*' => [
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
-                'max:' . config('attachments.max_size_kb'),
+                'max:'.config('attachments.max_size_kb'),
             ],
         ];
     }
@@ -73,7 +81,7 @@ class ResubmitPaymentRequest extends FormRequest
     {
         return [
             'attachments.*.mimes' => 'المرفقات يجب أن تكون JPG أو JPEG أو PNG أو PDF.',
-            'attachments.*.max' => 'حجم كل مرفق يجب ألا يتجاوز ' . round(config('attachments.max_size_kb') / 1024, 1) . ' ميجابايت.',
+            'attachments.*.max' => 'حجم كل مرفق يجب ألا يتجاوز '.round(config('attachments.max_size_kb') / 1024, 1).' ميجابايت.',
         ];
     }
 }

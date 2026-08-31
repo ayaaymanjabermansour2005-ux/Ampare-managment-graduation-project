@@ -10,6 +10,7 @@ use App\Models\Fault;
 use App\Models\FaultPrediction;
 use App\Models\Generator;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -91,7 +92,7 @@ class FaultPredictionService
                 'status' => FaultPredictionStatus::Dismissed->value,
             ]);
 
-            return $prediction->fresh();
+            return FreshOrFail::reload($prediction);
         });
     }
 }

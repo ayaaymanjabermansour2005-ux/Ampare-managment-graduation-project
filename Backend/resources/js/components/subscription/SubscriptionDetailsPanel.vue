@@ -7,7 +7,7 @@ import { useSubscriptionMeterTransfer } from "@/composables/useSubscriptionMeter
 import { useConfirm } from "@/composables/useConfirm";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowRightLeft, CircleAlert, FilePenLine, FileQuestionMark, LoaderCircle, MessageCircleMore, Send, TriangleAlert, X } from "@lucide/vue";
+import { ArrowRightLeft, CircleAlert, FilePenLine, FileQuestionMark, LoaderCircle, MessageCircleMore, Send, Star, TriangleAlert, X } from "@lucide/vue";
 
 
 const emit = defineEmits(["loaded"]);
@@ -19,6 +19,12 @@ const {
   hasActiveOrPendingSubscription,
   loadInitial,
   contractDownloadUrl,
+  canRateOwner,
+  ratingForm,
+  isSubmittingRating,
+  ratingSubmitted,
+  ratingError,
+  submitOwnerRating,
 } = useMySubscription();
 
 const {
@@ -232,6 +238,52 @@ onMounted(async () => {
             {{ TRANSFER_STATUS_LABELS[latestTransferRequest.status] ?? latestTransferRequest.status }}
           </span>
         </div>
+      </section>
+
+      <!-- ===== تقييم صاحب المولد ===== -->
+      <section v-if="canRateOwner" class="glass-card p-5 max-w-lg">
+        <h3 class="font-extrabold text-[13px] flex items-center gap-2 mb-3">
+          <Star class="text-[#D4AF37] text-xs" aria-hidden="true" />
+          <span>{{ t("my_subscription_page.rate_owner_title") }}</span>
+        </h3>
+
+        <div v-if="ratingSubmitted" class="text-[12px] text-[#28A745] flex items-center gap-2">
+          <Star class="shrink-0" aria-hidden="true" />
+          {{ t("my_subscription_page.rate_owner_thanks") }}
+        </div>
+        <template v-else>
+          <div v-if="ratingError" class="alert-box mb-3">
+            <CircleAlert class="shrink-0" aria-hidden="true" />
+            <span>{{ ratingError }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 mb-3">
+            <button
+              v-for="n in 5" :key="n" type="button"
+              @click="ratingForm.rating = n"
+              :aria-label="t('my_subscription_page.rate_owner_stars_aria', { n })"
+              class="text-xl transition-colors"
+              :class="n <= ratingForm.rating ? 'text-[#D4AF37]' : 'text-[#e7e2d6] dark:text-white/15'"
+            >
+              <Star :fill="n <= ratingForm.rating ? 'currentColor' : 'none'" aria-hidden="true" />
+            </button>
+          </div>
+          <textarea
+            v-model="ratingForm.comment"
+            rows="2"
+            maxlength="500"
+            :placeholder="t('my_subscription_page.rate_owner_comment_placeholder')"
+            class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] transition resize-none mb-3"
+          ></textarea>
+          <button
+            type="button"
+            @click="submitOwnerRating"
+            :disabled="isSubmittingRating"
+            class="btn-fill-brand !text-[11.5px] !py-2 !px-4"
+          >
+            <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSubmittingRating" /><Send aria-hidden="true" v-else />
+            {{ isSubmittingRating ? t("my_subscription_page.rate_owner_submitting") : t("my_subscription_page.rate_owner_submit_button") }}
+          </button>
+        </template>
       </section>
     </div>
 

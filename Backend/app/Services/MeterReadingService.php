@@ -9,6 +9,7 @@ use App\Models\MeterReading;
 use App\Models\Subscription;
 use App\Models\Technician;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -125,10 +126,10 @@ class MeterReadingService
             ])->save();
 
             if ($isAutoApproved) {
-                $this->invoiceService->createFromMeterReading($meterReading->fresh(), $subscription);
+                $this->invoiceService->createFromMeterReading(FreshOrFail::reload($meterReading), $subscription);
             }
 
-            $fresh = $meterReading->fresh(['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice']);
+            $fresh = FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice']);
 
             if ($isEarly) {
                 $daysEarly = $readingDate->diffInDays($dueDate);
@@ -154,7 +155,7 @@ class MeterReadingService
                 'current_reading' => $data['current_reading'],
             ]);
 
-            return $meterReading->fresh(['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator']);
+            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator']);
         });
     }
 
@@ -191,11 +192,11 @@ class MeterReadingService
             ])->save();
 
             $this->invoiceService->createFromMeterReading(
-                $meterReading->fresh(),
+                FreshOrFail::reload($meterReading),
                 $meterReading->subscription
             );
 
-            return $meterReading->fresh(['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice']);
+            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice']);
         });
     }
 
@@ -217,7 +218,7 @@ class MeterReadingService
                 'rejection_reason' => $reason,
             ])->save();
 
-            return $meterReading->fresh(['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator']);
+            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator']);
         });
     }
 

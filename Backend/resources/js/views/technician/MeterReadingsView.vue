@@ -3,10 +3,12 @@ import { normalizeApiError } from "@/utils/normalizeApiError";
 import { reactive, ref, onMounted, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTechnicianMeterReadings } from "@/composables/useTechnicianMeterReadings";
+import { useToastStore } from "@/stores/toast";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { Clock, Gauge, WifiOff, Zap } from "@lucide/vue";
 
 const { t } = useI18n();
+const toast = useToastStore();
 
 const {
   generators,
@@ -29,12 +31,34 @@ const isSubmitting = ref(false);
 const submitError = ref(null);
 const submitResult = ref(null);
 
+const meterImageFile = ref(null);
+const meterImagePreview = ref(null);
+const meterImageInput = ref(null);
+
+function onMeterImageChange(e) {
+  const file = e.target.files?.[0];
+  if (!file) {
+    meterImageFile.value = null;
+    meterImagePreview.value = null;
+    return;
+  }
+  meterImageFile.value = file;
+  meterImagePreview.value = URL.createObjectURL(file);
+}
+
+function clearMeterImage() {
+  meterImageFile.value = null;
+  meterImagePreview.value = null;
+  if (meterImageInput.value) meterImageInput.value.value = "";
+}
+
 function openReadingForm(subscription) {
   readingTarget.value = subscription;
   readingForm.current_reading = "";
   readingForm.reading_date = new Date().toISOString().slice(0, 10);
   submitError.value = null;
   submitResult.value = null;
+  clearMeterImage();
 }
 
 async function handleSubmit() {
@@ -42,11 +66,14 @@ async function handleSubmit() {
   submitError.value = null;
 
   try {
-    const result = await submitReading({
-      subscription_id: readingTarget.value.id,
-      reading_date: readingForm.reading_date,
-      current_reading: readingForm.current_reading,
-    });
+    const result = await submitReading(
+      {
+        subscription_id: readingTarget.value.id,
+        reading_date: readingForm.reading_date,
+        current_reading: readingForm.current_reading,
+      },
+      meterImageFile.value,
+    );
 
     submitResult.value = {
       success: true,
@@ -55,6 +82,14 @@ async function handleSubmit() {
     };
 
     if (!result.isQueued) {
+      if (result.attachmentError) {
+        toast.show({
+          type: "warning",
+          title: t("owner_meter_readings.attachment_upload_error_title"),
+          message: normalizeApiError(result.attachmentError, t("owner_meter_readings.attachment_upload_error")).message,
+        });
+      }
+      clearMeterImage();
       setTimeout(() => {
         readingTarget.value = null;
       }, 1800);
@@ -243,6 +278,29 @@ onMounted(async () => {
                 autofocus
                 class="w-full rounded-lg border border-border dark:border-white/10 bg-transparent px-3.5 py-2.5 text-sm font-mono text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
               />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5"
+                >{{ t("owner_meter_readings.meter_image_label") }}</label
+              >
+              <div v-if="!meterImagePreview" class="flex items-center gap-2">
+                <input
+                  ref="meterImageInput"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  @change="onMeterImageChange"
+                  class="w-full rounded-lg border border-border dark:border-white/10 bg-transparent px-3.5 py-1.5 text-[11px] text-gray-700 dark:text-gray-200"
+                />
+              </div>
+              <div v-else class="flex items-center gap-2.5">
+                <img :src="meterImagePreview" class="w-14 h-14 rounded-lg object-cover border border-border dark:border-white/10" />
+                <button type="button" @click="clearMeterImage" class="text-[11px] font-bold text-danger hover:underline">
+                  {{ t("owner_meter_readings.remove_image") }}
+                </button>
+              </div>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{{ t("owner_meter_readings.meter_image_hint") }}</p>
             </div>
 
             <div class="flex gap-3">

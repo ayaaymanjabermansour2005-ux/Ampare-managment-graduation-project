@@ -11,6 +11,7 @@ use App\Models\Generator;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -154,7 +155,7 @@ class SubscriptionService
                 'end_date' => $data['end_date'] ?? null,
             ]);
 
-            return $subscription->fresh();
+            return FreshOrFail::reload($subscription);
         });
     }
 
@@ -227,7 +228,7 @@ class SubscriptionService
                 SubscriptionApproved::dispatch($locked);
             }
 
-            return $locked->fresh(['subscriberMeter.subscriber.neighborhood', 'subscriberMeter.subscriber.user', 'generator.owner']);
+            return FreshOrFail::reload($locked, ['subscriberMeter.subscriber.neighborhood', 'subscriberMeter.subscriber.user', 'generator.owner']);
         });
     }
 }

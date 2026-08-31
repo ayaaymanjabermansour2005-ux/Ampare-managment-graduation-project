@@ -14,6 +14,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Notifications\GeneratorRejectedNotification;
 use App\Notifications\GeneratorVerifiedNotification;
+use App\Support\Eloquent\FreshOrFail;
 use App\Support\Notification\NotificationPreferenceGate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -182,7 +183,7 @@ class GeneratorService
 
             $generator = Generator::create($data);
 
-            return $generator->fresh(['owner', 'location.neighborhood']);
+            return FreshOrFail::reload($generator, ['owner', 'location.neighborhood']);
         });
     }
 
@@ -203,7 +204,7 @@ class GeneratorService
                 'verified_at' => now(),
             ])->save();
 
-            $fresh = $generator->fresh(['owner', 'location.neighborhood']);
+            $fresh = FreshOrFail::reload($generator, ['owner', 'location.neighborhood']);
 
             if (NotificationPreferenceGate::allows($fresh->owner, 'notify_generator_verified')) {
                 $fresh->owner->notify(new GeneratorVerifiedNotification($fresh));
@@ -231,7 +232,7 @@ class GeneratorService
                 'rejection_reason' => $reason,
             ])->save();
 
-            $fresh = $generator->fresh(['owner', 'location.neighborhood']);
+            $fresh = FreshOrFail::reload($generator, ['owner', 'location.neighborhood']);
 
             if (NotificationPreferenceGate::allows($fresh->owner, 'notify_generator_rejected')) {
                 $fresh->owner->notify(new GeneratorRejectedNotification($fresh));
@@ -272,7 +273,7 @@ class GeneratorService
 
             $generator->update($data);
 
-            return $generator->fresh([
+            return FreshOrFail::reload($generator, [
                 'owner',
                 'location.neighborhood',
             ]);

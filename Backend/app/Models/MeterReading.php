@@ -9,6 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property string|null $reading_warning Transient, non-persisted warning attached in-memory by
+ *                                        MeterReadingService::create() when a reading is submitted before the expected billing date; surfaced
+ *                                        to the API response by MeterReadingResource. Never stored in the database.
+ */
 class MeterReading extends Model
 {
     use HasAttachments, HasFactory;

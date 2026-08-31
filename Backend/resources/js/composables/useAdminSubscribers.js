@@ -132,9 +132,8 @@ export function useAdminSubscribers() {
       pagination.value.total += 1;
       return true;
     } catch (err) {
-      createError.value = err.response?.data ?? {
-        message: t("subscribers_page.create_error"),
-      };
+      const normalized = normalizeApiError(err, t("subscribers_page.create_error"));
+      createError.value = { message: normalized.message, errors: normalized.fieldErrors };
       return false;
     } finally {
       isCreating.value = false;

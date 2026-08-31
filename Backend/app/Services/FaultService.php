@@ -13,6 +13,7 @@ use App\Events\FaultReported;
 use App\Models\Fault;
 use App\Models\Generator;
 use App\Models\User;
+use App\Support\Eloquent\FreshOrFail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -96,7 +97,7 @@ class FaultService
                 'verified_at' => now(),
             ]);
 
-            return $fault->fresh(['generator']);
+            return FreshOrFail::reload($fault, ['generator']);
         });
     }
 
@@ -125,7 +126,7 @@ class FaultService
                     'closed_at' => now(),
                 ]);
 
-                return $fault->fresh(['generator']);
+                return FreshOrFail::reload($fault, ['generator']);
             }
 
             $fault->update([
@@ -145,7 +146,7 @@ class FaultService
                 $user
             );
 
-            return $fault->fresh(['generator', 'technicianTasks']);
+            return FreshOrFail::reload($fault, ['generator', 'technicianTasks']);
         });
     }
 
@@ -179,7 +180,7 @@ class FaultService
                 'admin_override_reason' => $reason,
             ]);
 
-            return $fault->fresh(['generator']);
+            return FreshOrFail::reload($fault, ['generator']);
         });
     }
 }

@@ -14,11 +14,11 @@ class AiChatService
     public function availableGeneratorsFor(User $user): Collection
     {
         if ($user->isAdmin()) {
-            return Generator::query()->where('status', GeneratorStatus::Active->value)->get();
+            return Generator::query()->where('status', GeneratorStatus::Active->value)->with('owner')->get();
         }
 
         if ($user->isOwner()) {
-            return Generator::where('owner_id', $user->id)->get();
+            return Generator::where('owner_id', $user->id)->with('owner')->get();
         }
 
         if ($user->isSubscriber()) {
@@ -36,6 +36,7 @@ class AiChatService
                         fn ($q2) => $q2->where('id', $subscriber->id)
                     )
                 )
+                ->with('owner')
                 ->get();
         }
 
@@ -51,7 +52,7 @@ class AiChatService
             // مولدات مش مرتبط فيها بقائمة "بدء محادثة جديدة"، وبعدين لما
             // يختارها بيترفض الطلب (GeneratorPolicy::isLinkedTechnician بتفحص
             // pivot فعلي مش owner_id). لازم نفس منطق الربط هون تمامًا.
-            return $technician->generators()->get();
+            return $technician->generators()->with('owner')->get();
         }
 
         return collect();

@@ -14,13 +14,18 @@ class UpdateMeterReadingRequest extends FormRequest
 
     public function rules(): array
     {
+        // The `{meter_reading}` route parameter is implicitly model-bound
+        // (see MeterReadingController::update()'s `MeterReading $meterReading`
+        // type-hint) — it is always a real MeterReading by the time rules()
+        // runs, but Illuminate\Http\Request::route() itself is typed
+        // `object|string|null`, which PHPStan takes at face value.
         $meterReading = $this->route('meter_reading');
 
         return [
             'current_reading' => [
                 'required',
                 'numeric',
-                'min:' . ($meterReading?->previous_reading ?? 0),
+                'min:'.($meterReading instanceof MeterReading ? $meterReading->previous_reading : 0),
             ],
         ];
     }

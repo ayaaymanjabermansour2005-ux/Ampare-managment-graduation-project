@@ -9,7 +9,9 @@ class SubscriptionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $isTechnician = $request->user()?->isTechnician() ?? false;
+        $user = $request->user();
+        $isTechnician = $user?->isTechnician() ?? false;
+        $canSeeNotes = ($user?->isAdmin() ?? false) || ($user?->isOwner() ?? false);
 
         return [
             'id' => $this->id,
@@ -26,6 +28,7 @@ class SubscriptionResource extends JsonResource
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
             'status' => $this->status,
+            'notes' => $this->when($canSeeNotes, $this->notes),
             'subscriber_meter' => [
                 'id' => $this->subscriberMeter?->id,
                 'meter_number' => $this->subscriberMeter?->meter_number,
@@ -38,6 +41,8 @@ class SubscriptionResource extends JsonResource
                 'email' => $this->subscriberMeter?->subscriber?->user?->email,
                 'phone' => $this->subscriberMeter?->subscriber?->user?->phone,
                 'neighborhood' => $this->subscriberMeter?->subscriber?->neighborhood?->name,
+                'beneficiary_type' => $this->subscriberMeter?->subscriber?->beneficiary_type?->value,
+                'beneficiary_type_label' => $this->subscriberMeter?->subscriber?->beneficiary_type?->label(),
             ],
             'generator' => [
                 'id' => $this->generator?->id,
