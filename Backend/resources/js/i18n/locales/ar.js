@@ -2433,6 +2433,8 @@ export default {
     status_col: "الحالة",
     actions_col: "إجراءات",
     filter_by_status: "الحالة",
+    owner_commission_search_placeholder: "بحث باسم صاحب المولد...",
+    technician_payment_search_placeholder: "بحث باسم الفني أو صاحب المولد...",
     no_matching_owner_payments: "لا توجد دفعات عمولة مطابقة.",
     no_matching_technician_payments: "لا توجد دفعات فنيين مطابقة.",
     mark_paid_action: "تأكيد التحويل",

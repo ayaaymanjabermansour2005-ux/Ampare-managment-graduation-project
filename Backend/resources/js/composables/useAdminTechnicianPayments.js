@@ -18,6 +18,7 @@ export function useAdminTechnicianPayments() {
   const isLoading = ref(false);
   const error = ref(null);
   const statusFilter = ref("");
+  const search = ref("");
 
   async function fetchPayments(page = 1) {
     isLoading.value = true;
@@ -26,6 +27,7 @@ export function useAdminTechnicianPayments() {
       const { data } = await technicianPaymentService.list({
         page,
         status: statusFilter.value || undefined,
+        search: search.value || undefined,
       });
       const payload = data.data;
       payments.value = payload.data ?? payload;
@@ -43,12 +45,20 @@ export function useAdminTechnicianPayments() {
     }
   }
 
+  let debounceHandle = null;
+  function onSearchInput() {
+    clearTimeout(debounceHandle);
+    debounceHandle = setTimeout(() => fetchPayments(1), 300);
+  }
+
   return {
     payments,
     pagination,
     isLoading,
     error,
     statusFilter,
+    search,
     fetchPayments,
+    onSearchInput,
   };
 }

@@ -101,6 +101,45 @@ class AdminDashboardService
         });
     }
 
+    /**
+     * حركة المدفوعات الموافَق عليها آخر 7 أيام + توزيعها حسب طريقة
+     * الدفع — محسوبة من كامل جدول الدفعات (وليس من صفحة/فلتر الجدول
+     * المعروض بالواجهة، الذي كان يجعل الرسمين يبدوان ثابتين).
+     */
+    public function paymentsActivityLast7Days(): array
+    {
+        return Cache::remember('admin.dashboard.payments_activity_7d', self::TTL_SHORT, function () {
+            $labels = [];
+            $totals = [];
+
+            for ($i = 6; $i >= 0; $i--) {
+                $day = now()->subDays($i);
+
+                $labels[] = $day->translatedFormat('D');
+
+                $totals[] = (float) Payment::where('status', PaymentStatus::Paid)
+                    ->whereDate('paid_at', $day->toDateString())
+                    ->sum('amount_ils');
+            }
+
+            $methodCounts = Payment::where('status', PaymentStatus::Paid)
+                ->join('payment_methods', 'payments.payment_method_id', '=', 'payment_methods.id')
+                ->selectRaw('payment_methods.type as type, count(*) as total')
+                ->groupBy('payment_methods.type')
+                ->pluck('total', 'type');
+
+            return [
+                'labels' => $labels,
+                'totals' => $totals,
+                'method_counts' => [
+                    'cash' => (int) ($methodCounts['cash'] ?? 0),
+                    'bank' => (int) ($methodCounts['bank'] ?? 0),
+                    'wallet' => (int) ($methodCounts['wallet'] ?? 0),
+                ],
+            ];
+        });
+    }
+
     public function invoiceStatusBreakdown(): array
     {
         return Cache::remember('admin.dashboard.invoice_status_breakdown', self::TTL_SHORT, function () {
@@ -383,6 +422,7 @@ class AdminDashboardService
         $keys = [
             'admin.dashboard.stats',
             'admin.dashboard.payments_financial_summary',
+            'admin.dashboard.payments_activity_7d',
             'admin.dashboard.invoice_status_breakdown',
             'admin.dashboard.alerts.5',
             'admin.dashboard.revenue_vs_outstanding.7',

@@ -8,7 +8,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class TechnicianPaymentService
 {
-    public function list(User $user, int $perPage = 15, ?int $technicianId = null, ?string $status = null): LengthAwarePaginator
+    public function list(User $user, int $perPage = 15, ?int $technicianId = null, ?string $status = null, ?string $search = null): LengthAwarePaginator
     {
         $query = TechnicianPayment::query()->with(['technician.user', 'owner', 'paymentMethod', 'reviewedBy']);
 
@@ -28,6 +28,13 @@ class TechnicianPaymentService
 
         if ($status) {
             $query->where('status', $status);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('technician.user', fn ($tq) => $tq->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('owner', fn ($oq) => $oq->where('name', 'like', "%{$search}%"));
+            });
         }
 
         return $query->latest()->paginate($perPage);

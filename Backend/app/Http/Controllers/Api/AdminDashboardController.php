@@ -27,6 +27,13 @@ class AdminDashboardController extends Controller
         return $this->success(message: __('admin.payments_financial_summary_message'), data: $service->paymentsFinancialSummary());
     }
 
+    public function paymentsActivityChart(AdminDashboardService $service, AdminDashboardPolicy $policy): JsonResponse
+    {
+        abort_unless($policy->view(auth()->user()), 403, __('admin.unauthorized'));
+
+        return $this->success(message: __('admin.payments_activity_message'), data: $service->paymentsActivityLast7Days());
+    }
+
     public function invoiceStatusBreakdown(AdminDashboardService $service, AdminDashboardPolicy $policy): JsonResponse
     {
         abort_unless($policy->view(auth()->user()), 403, __('admin.unauthorized'));

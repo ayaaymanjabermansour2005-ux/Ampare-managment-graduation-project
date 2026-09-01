@@ -309,99 +309,35 @@ onMounted(() => {
             class="bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2 ps-8 pe-3 text-[11.5px] outline-none focus:border-[#8A6D1F] w-56 md:w-72"
           />
         </div>
-        <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
+
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
+            <button
+              v-for="pill in STATUS_PILLS" :key="pill.value" type="button"
+              @click="statusFilter = pill.value; onFilterChange()"
+              class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+              :class="statusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+            >{{ pill.label }}</button>
+          </div>
+
+          <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
+
+          <a
+            :href="exportUrl"
+            target="_blank"
+            class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
+            :title="$t('faults_page.export_excel')"
+          >
+            <FileSpreadsheet class="text-[11px]" aria-hidden="true" />
+          </a>
           <button
-            v-for="pill in STATUS_PILLS" :key="pill.value" type="button"
-            @click="statusFilter = pill.value; onFilterChange()"
-            class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
-            :class="statusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
-          >{{ pill.label }}</button>
-        </div>
-        <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
-        <a
-          :href="exportUrl"
-          target="_blank"
-          class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
-          :title="$t('faults_page.export_excel')"
-        >
-          <FileSpreadsheet class="text-[11px]" aria-hidden="true" />
-        </a>
-        <button
-          type="button"
-          @click="handlePrint"
-          class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
-          :title="$t('faults_page.print')"
-        >
-          <Printer class="text-[11px]" aria-hidden="true" />
-        </button>
-      </div>
-    </section>
-
-    <!-- ===== FAULT PREDICTIONS ===== -->
-    <section v-reveal class="glass-card p-4 overflow-hidden print-hidden">
-      <h3 class="text-[13.5px] font-bold mb-3">{{ $t("owner_dashboard.fault_predictions_title") }}</h3>
-
-      <div v-if="predictionDecisionError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">
-        {{ predictionDecisionError }}
-      </div>
-
-      <div v-if="isLoadingPredictions" class="space-y-2">
-        <div v-for="i in 2" :key="i" class="h-16 rounded-lg thumb-loading"></div>
-      </div>
-
-      <div v-else-if="predictionsError" class="text-center py-8 text-[12px] text-[#D9534F]">{{ predictionsError }}</div>
-
-      <div v-else-if="predictions.length === 0" class="text-center py-8">
-        <CircleCheck class="text-2xl text-[#28A745] mb-2" aria-hidden="true" />
-        <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("faults_page.no_predictions_pending") }}</p>
-      </div>
-
-      <div v-else class="divide-y divide-[#f0ece0] dark:divide-white/5">
-        <div
-          v-for="p in predictions"
-          :key="p.id"
-          class="flex items-center gap-3.5 py-3.5 px-1.5"
-          :class="{ 'opacity-50 pointer-events-none': decidingPredictionId === p.id }"
-        >
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#8A6D1F] to-[#D4AF37] flex items-center justify-center shrink-0 text-white">
-            <WandSparkles class="text-[12px]" aria-hidden="true" />
-          </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <p class="text-[12.5px] font-bold truncate">{{ p.prediction_type }}</p>
-              <span
-                v-if="p.confidence !== null"
-                class="status-chip chip-info shrink-0"
-              >{{ $t("faults_page.confidence_label") }} {{ Math.round(p.confidence * 100) }}{{ percentSign() }}</span>
-            </div>
-            <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5 truncate">
-              {{ p.generator?.name ?? "—" }} · {{ p.source_label }}
-            </p>
-            <p v-if="p.recommendation" class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-1 truncate">
-              {{ p.recommendation }}
-            </p>
-          </div>
-
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              @click="handleConfirmPrediction(p)"
-              :disabled="decidingPredictionId === p.id"
-              class="px-3 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-l from-[#3E582E] to-[#52733D] hover:opacity-90 transition disabled:opacity-50"
-            >
-              {{ $t("fault_predictions.confirm_button") }}
-            </button>
-            <button
-              type="button"
-              @click="handleDismissPrediction(p)"
-              :disabled="decidingPredictionId === p.id"
-              class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#D9534F] hover:bg-[#D9534F]/10 transition"
-              :title="$t('fault_predictions.reject_button')"
-            >
-              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="decidingPredictionId === p.id" style="font-size:12px" /><X aria-hidden="true" v-else style="font-size:12px" />
-            </button>
-          </div>
+            type="button"
+            @click="handlePrint"
+            class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
+            :title="$t('faults_page.print')"
+          >
+            <Printer class="text-[11px]" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </section>
@@ -512,6 +448,74 @@ onMounted(() => {
       </div>
     </section>
 
+        <!-- ===== FAULT PREDICTIONS ===== -->
+    <section v-reveal class="glass-card p-4 overflow-hidden print-hidden">
+      <h3 class="text-[13.5px] font-bold mb-3">{{ $t("owner_dashboard.fault_predictions_title") }}</h3>
+
+      <div v-if="predictionDecisionError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">
+        {{ predictionDecisionError }}
+      </div>
+
+      <div v-if="isLoadingPredictions" class="space-y-2">
+        <div v-for="i in 2" :key="i" class="h-16 rounded-lg thumb-loading"></div>
+      </div>
+
+      <div v-else-if="predictionsError" class="text-center py-8 text-[12px] text-[#D9534F]">{{ predictionsError }}</div>
+
+      <div v-else-if="predictions.length === 0" class="text-center py-8">
+        <CircleCheck class="text-2xl text-[#28A745] mb-2" aria-hidden="true" />
+        <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("faults_page.no_predictions_pending") }}</p>
+      </div>
+
+      <div v-else class="divide-y divide-[#f0ece0] dark:divide-white/5">
+        <div
+          v-for="p in predictions"
+          :key="p.id"
+          class="flex items-center gap-3.5 py-3.5 px-1.5"
+          :class="{ 'opacity-50 pointer-events-none': decidingPredictionId === p.id }"
+        >
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#8A6D1F] to-[#D4AF37] flex items-center justify-center shrink-0 text-white">
+            <WandSparkles class="text-[12px]" aria-hidden="true" />
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <p class="text-[12.5px] font-bold truncate">{{ p.prediction_type }}</p>
+              <span
+                v-if="p.confidence !== null"
+                class="status-chip chip-info shrink-0"
+              >{{ $t("faults_page.confidence_label") }} {{ Math.round(p.confidence * 100) }}{{ percentSign() }}</span>
+            </div>
+            <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5 truncate">
+              {{ p.generator?.name ?? "—" }} · {{ p.source_label }}
+            </p>
+            <p v-if="p.recommendation" class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-1 truncate">
+              {{ p.recommendation }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              @click="handleConfirmPrediction(p)"
+              :disabled="decidingPredictionId === p.id"
+              class="px-3 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-l from-[#3E582E] to-[#52733D] hover:opacity-90 transition disabled:opacity-50"
+            >
+              {{ $t("fault_predictions.confirm_button") }}
+            </button>
+            <button
+              type="button"
+              @click="handleDismissPrediction(p)"
+              :disabled="decidingPredictionId === p.id"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#D9534F] hover:bg-[#D9534F]/10 transition"
+              :title="$t('fault_predictions.reject_button')"
+            >
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="decidingPredictionId === p.id" style="font-size:12px" /><X aria-hidden="true" v-else style="font-size:12px" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
     <!-- ===== نافذة التفاصيل + تجاوز الحالة ===== -->
     <Teleport to="body">
       <div v-if="isDetailOpen && activeFault" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="isDetailOpen = false">

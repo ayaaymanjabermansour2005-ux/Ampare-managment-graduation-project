@@ -8,6 +8,7 @@ return [
     'revenue_chart_message' => 'Revenue vs outstanding payments.',
     'subscriber_growth_message' => 'Subscriber growth.',
     'fuel_chart_message' => 'Weekly fuel purchases.',
+    'payments_activity_message' => 'Payments activity and method distribution.',
     'maintenance_chart_message' => 'Maintenance and faults by city.',
     'generators_map_message' => 'Generators coordinates.',
     'announcement_sent_message' => 'Announcement sent successfully.',

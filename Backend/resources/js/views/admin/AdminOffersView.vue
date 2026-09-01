@@ -2,11 +2,10 @@
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAdminOffers } from "@/composables/useAdminOffers";
-import offerService from "@/services/offerService";
 import { useConfirm } from "@/composables/useConfirm";
 import { vReveal } from "@/directives/reveal";
 import { useToastStore } from "@/stores/toast";
-import { ArrowRight, Ban, ChevronLeft, ChevronRight, Eye, FileSpreadsheet, LoaderCircle, Printer, Search, Tags, Trash2, UserRound, X } from "@lucide/vue";
+import { ArrowRight, Ban, ChevronLeft, ChevronRight, Eye, LoaderCircle, Search, Tags, Trash2, UserRound, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -114,12 +113,6 @@ function openView(o) {
   viewingOffer.value = o;
 }
 
-const exportUrl = computed(() => offerService.exportUrl({ search: search.value }));
-
-function handlePrint() {
-  window.print();
-}
-
 onMounted(() => fetchOffers(1));
 </script>
 
@@ -146,24 +139,6 @@ onMounted(() => fetchOffers(1));
           <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#aeb1ab] max-w-lg">
             {{ $t("offers_page.subtitle") }}
           </p>
-        </div>
-        <div class="relative flex flex-wrap gap-2.5 print-hidden">
-          <a
-            :href="exportUrl"
-            target="_blank"
-            class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2"
-          >
-            <FileSpreadsheet aria-hidden="true" />
-            {{ $t("offers_page.export_excel") }}
-          </a>
-          <button
-            type="button"
-            @click="handlePrint"
-            class="icon-btn !w-10 !h-10 !bg-[#f4efe5]/70 dark:!bg-white/5"
-            :title="$t('offers_page.print')"
-          >
-            <Printer class="text-[13px]" aria-hidden="true" />
-          </button>
         </div>
       </div>
     </section>
@@ -239,13 +214,14 @@ onMounted(() => fetchOffers(1));
             >
               <Eye aria-hidden="true" style="font-size:11px" />
             </button>
+            <span class="flex-1"></span>
             <button
               v-if="o.status === 'active'"
               type="button" @click="handleCancel(o)" :disabled="cancellingId === o.id"
-              class="flex-1 text-[10.5px] font-bold px-3 py-2 rounded-full border border-[#D9534F]/40 text-[#D9534F] hover:bg-[#D9534F]/10 disabled:opacity-50"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-[#D9534F] hover:bg-[#D9534F]/10 disabled:opacity-40 shrink-0"
+              :title="$t('dashboard.cancel')"
             >
-              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="cancellingId === o.id" /><Ban aria-hidden="true" v-else />
-              {{ $t("dashboard.cancel") }}
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="cancellingId === o.id" style="font-size:11px" /><Ban aria-hidden="true" v-else style="font-size:11px" />
             </button>
             <button
               type="button" @click="handleDelete(o)" :disabled="deletingId === o.id"

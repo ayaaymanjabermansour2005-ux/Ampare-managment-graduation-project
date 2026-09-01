@@ -37,7 +37,8 @@ class TechnicianPaymentController extends Controller
             $request->user(),
             PerPageResolver::resolve($request),
             $request->integer('technician_id') ?: null,
-            $request->string('status')->toString() ?: null
+            $request->string('status')->toString() ?: null,
+            $request->string('search')->toString() ?: null
         );
 
         return $this->success(

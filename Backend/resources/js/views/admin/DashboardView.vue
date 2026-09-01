@@ -18,7 +18,7 @@ import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import GeneratorsTablePanel from "@/components/generators/GeneratorsTablePanel.vue";
 import GazaWeatherCard from "@/components/dashboard/GazaWeatherCard.vue";
 import { downloadCsv } from "@/utils/csv";
-import { CalendarDays, Check, CircleAlert, Database, FileDown, ListChecks, LoaderCircle, Megaphone, Plus, UserPlus, UserRound, UsersRound, WandSparkles, Wrench, X } from "@lucide/vue";
+import { CalendarDays, Check, CircleAlert, Database, Eye, EyeOff, FileDown, ListChecks, LoaderCircle, Megaphone, Plus, UserPlus, UserRound, UsersRound, WandSparkles, Wrench, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -285,6 +285,14 @@ const {
   isRunningBackup,
   handleRunBackup,
 } = useAdminQuickCreate({ onSubscriberCreated: loadAll });
+
+/* ---------------- إظهار/إخفاء كلمة السر بنوافذ الإنشاء السريع ---------------- */
+const showOwnerPassword = ref(false);
+const showOwnerPasswordConfirmation = ref(false);
+const showSubscriberPassword = ref(false);
+const showSubscriberPasswordConfirmation = ref(false);
+const showTechnicianPassword = ref(false);
+const showTechnicianPasswordConfirmation = ref(false);
 
 /* ---------------- إضافة: تصدير تقرير اليوم (زر الهيرو) — يعتمد على بيانات KPI الحقيقية المحمّلة أصلًا ---------------- */
 function exportTodayReport() {
@@ -803,11 +811,21 @@ onMounted(async () => {
             <div class="grid sm:grid-cols-2 gap-3.5">
               <div>
                 <label class="field-label">{{ t("dashboard.password") }}</label>
-                <input v-model="ownerForm.password" type="password" dir="ltr" required class="field-input" />
+                <div class="relative">
+                  <input v-model="ownerForm.password" :type="showOwnerPassword ? 'text' : 'password'" dir="ltr" required class="field-input pr-8" />
+                  <button type="button" @click="showOwnerPassword = !showOwnerPassword" class="absolute top-1/2 -translate-y-1/2 right-2 text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]" :aria-label="showOwnerPassword ? t('common.hide_password') : t('common.show_password')">
+                    <EyeOff class="text-[12px]" aria-hidden="true" v-if="showOwnerPassword" /><Eye class="text-[12px]" aria-hidden="true" v-else />
+                  </button>
+                </div>
               </div>
               <div>
                 <label class="field-label">{{ t("dashboard.confirm_password") }}</label>
-                <input v-model="ownerForm.password_confirmation" type="password" dir="ltr" required class="field-input" />
+                <div class="relative">
+                  <input v-model="ownerForm.password_confirmation" :type="showOwnerPasswordConfirmation ? 'text' : 'password'" dir="ltr" required class="field-input pr-8" />
+                  <button type="button" @click="showOwnerPasswordConfirmation = !showOwnerPasswordConfirmation" class="absolute top-1/2 -translate-y-1/2 right-2 text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]" :aria-label="showOwnerPasswordConfirmation ? t('common.hide_password') : t('common.show_password')">
+                    <EyeOff class="text-[12px]" aria-hidden="true" v-if="showOwnerPasswordConfirmation" /><Eye class="text-[12px]" aria-hidden="true" v-else />
+                  </button>
+                </div>
               </div>
             </div>
             <p class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("dashboard.password_hint") }}</p>
@@ -865,11 +883,21 @@ onMounted(async () => {
             </div>
             <div>
               <label class="field-label">{{ t("dashboard.password") }}</label>
-              <input v-model="subscriberForm.password" type="password" dir="ltr" required autocomplete="new-password" class="field-input" />
+              <div class="relative">
+                <input v-model="subscriberForm.password" :type="showSubscriberPassword ? 'text' : 'password'" dir="ltr" required autocomplete="new-password" class="field-input pr-8" />
+                <button type="button" @click="showSubscriberPassword = !showSubscriberPassword" class="absolute top-1/2 -translate-y-1/2 right-2 text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]" :aria-label="showSubscriberPassword ? t('common.hide_password') : t('common.show_password')">
+                  <EyeOff class="text-[12px]" aria-hidden="true" v-if="showSubscriberPassword" /><Eye class="text-[12px]" aria-hidden="true" v-else />
+                </button>
+              </div>
             </div>
             <div>
               <label class="field-label">{{ t("dashboard.confirm_password") }}</label>
-              <input v-model="subscriberForm.password_confirmation" type="password" dir="ltr" required autocomplete="new-password" class="field-input" />
+              <div class="relative">
+                <input v-model="subscriberForm.password_confirmation" :type="showSubscriberPasswordConfirmation ? 'text' : 'password'" dir="ltr" required autocomplete="new-password" class="field-input pr-8" />
+                <button type="button" @click="showSubscriberPasswordConfirmation = !showSubscriberPasswordConfirmation" class="absolute top-1/2 -translate-y-1/2 right-2 text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]" :aria-label="showSubscriberPasswordConfirmation ? t('common.hide_password') : t('common.show_password')">
+                  <EyeOff class="text-[12px]" aria-hidden="true" v-if="showSubscriberPasswordConfirmation" /><Eye class="text-[12px]" aria-hidden="true" v-else />
+                </button>
+              </div>
             </div>
             <div>
               <label class="field-label">{{ t("dashboard.address_optional") }}</label>
@@ -937,11 +965,21 @@ onMounted(async () => {
             </div>
             <div>
               <label class="field-label">{{ t("dashboard.password") }}</label>
-              <input v-model="technicianForm.password" type="password" dir="ltr" autocomplete="new-password" required class="field-input" />
+              <div class="relative">
+                <input v-model="technicianForm.password" :type="showTechnicianPassword ? 'text' : 'password'" dir="ltr" autocomplete="new-password" required class="field-input pr-8" />
+                <button type="button" @click="showTechnicianPassword = !showTechnicianPassword" class="absolute top-1/2 -translate-y-1/2 right-2 text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]" :aria-label="showTechnicianPassword ? t('common.hide_password') : t('common.show_password')">
+                  <EyeOff class="text-[12px]" aria-hidden="true" v-if="showTechnicianPassword" /><Eye class="text-[12px]" aria-hidden="true" v-else />
+                </button>
+              </div>
             </div>
             <div>
               <label class="field-label">{{ t("dashboard.confirm_password") }}</label>
-              <input v-model="technicianForm.password_confirmation" type="password" dir="ltr" autocomplete="new-password" required class="field-input" />
+              <div class="relative">
+                <input v-model="technicianForm.password_confirmation" :type="showTechnicianPasswordConfirmation ? 'text' : 'password'" dir="ltr" autocomplete="new-password" required class="field-input pr-8" />
+                <button type="button" @click="showTechnicianPasswordConfirmation = !showTechnicianPasswordConfirmation" class="absolute top-1/2 -translate-y-1/2 right-2 text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F]" :aria-label="showTechnicianPasswordConfirmation ? t('common.hide_password') : t('common.show_password')">
+                  <EyeOff class="text-[12px]" aria-hidden="true" v-if="showTechnicianPasswordConfirmation" /><Eye class="text-[12px]" aria-hidden="true" v-else />
+                </button>
+              </div>
             </div>
             <div>
               <label class="field-label">{{ t("users_page.notes_optional_label") }}</label>

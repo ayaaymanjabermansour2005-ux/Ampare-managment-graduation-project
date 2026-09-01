@@ -2436,6 +2436,8 @@ export default {
     status_col: "Status",
     actions_col: "Actions",
     filter_by_status: "Status",
+    owner_commission_search_placeholder: "Search by generator owner name...",
+    technician_payment_search_placeholder: "Search by technician or owner name...",
     no_matching_owner_payments: "No matching commission records.",
     no_matching_technician_payments: "No matching technician payments.",
     mark_paid_action: "Confirm Transfer",

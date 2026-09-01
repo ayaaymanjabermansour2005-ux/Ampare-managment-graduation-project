@@ -138,6 +138,7 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
 
         Route::get('admin/dashboard/stats', [AdminDashboardController::class, 'stats']);
         Route::get('admin/dashboard/payments-financial-summary', [AdminDashboardController::class, 'paymentsFinancialSummary']);
+        Route::get('admin/dashboard/payments-activity', [AdminDashboardController::class, 'paymentsActivityChart']);
         Route::get('admin/dashboard/invoice-status-breakdown', [AdminDashboardController::class, 'invoiceStatusBreakdown']);
         Route::get('admin/dashboard/alerts', [AdminDashboardController::class, 'alerts']);
         Route::get('admin/dashboard/charts/revenue', [AdminDashboardController::class, 'revenueChart']);

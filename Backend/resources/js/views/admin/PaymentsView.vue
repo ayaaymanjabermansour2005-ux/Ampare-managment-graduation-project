@@ -66,11 +66,15 @@ const OWNER_COMMISSION_STATUS_PILLS = computed(() => [
   { value: "earned", label: ownerCommissionStatusLabel("earned") },
   { value: "paid", label: ownerCommissionStatusLabel("paid") },
 ]);
-const filteredOwnerCommissions = computed(() =>
-  ownerCommissionStatusFilter.value
-    ? ownerCommissions.value.filter((c) => c.status === ownerCommissionStatusFilter.value)
-    : ownerCommissions.value
-);
+const ownerCommissionOwnerSearch = ref("");
+const filteredOwnerCommissions = computed(() => {
+  const query = ownerCommissionOwnerSearch.value.trim().toLowerCase();
+  return ownerCommissions.value.filter((c) => {
+    const matchesStatus = !ownerCommissionStatusFilter.value || c.status === ownerCommissionStatusFilter.value;
+    const matchesSearch = !query || (c.owner?.name ?? "").toLowerCase().includes(query);
+    return matchesStatus && matchesSearch;
+  });
+});
 
 async function handleMarkCommissionPaid(commission) {
   const confirmed = await confirm({
@@ -97,7 +101,9 @@ const {
   isLoading: isAdminTechnicianPaymentsLoading,
   error: adminTechnicianPaymentsError,
   statusFilter: technicianPaymentStatusFilter,
+  search: technicianPaymentSearch,
   fetchPayments: fetchAdminTechnicianPayments,
+  onSearchInput: onTechnicianPaymentSearchInput,
 } = useAdminTechnicianPayments();
 
 const ADMIN_TECHNICIAN_PAYMENT_STATUS_META = { pending: "chip-warning", approved: "chip-success", rejected: "chip-danger" };
@@ -256,21 +262,36 @@ const FINANCIAL_SUMMARY = computed(() => {
   ];
 });
 
-/* ---------------- توزيع طرق الدفع (محسوب من دفعات الصفحة الحالية) ---------------- */
+/* ---------------- حركة المدفوعات (آخر 7 أيام) وتوزيع طرق الدفع
+   (بيانات حقيقية من الـAPI محسوبة على كامل جدول الدفعات — كانت سابقًا
+   تُحسب من دفعات الصفحة/الفلتر المعروض بالجدول فقط، ما يجعلها تبدو
+   ثابتة تقريبًا) ---------------- */
 const METHOD_COLORS = { cash: "#28A745", bank: "#17A2B8", wallet: "#8A6D1F" };
+const paymentsActivity = ref(null);
+const isLoadingPaymentsActivity = ref(true);
+
+async function fetchPaymentsActivity() {
+  isLoadingPaymentsActivity.value = true;
+  try {
+    const { data } = await adminDashboardService.paymentsActivity();
+    paymentsActivity.value = data.data;
+  } catch {
+    paymentsActivity.value = null;
+  } finally {
+    isLoadingPaymentsActivity.value = false;
+  }
+}
+
 const methodDistribution = computed(() => {
-  const total = payments.value.length;
-  const counts = { cash: 0, bank: 0, wallet: 0 };
-  payments.value.forEach((p) => {
-    if (counts[p.payment_method_type] !== undefined) counts[p.payment_method_type]++;
-  });
+  const counts = paymentsActivity.value?.method_counts ?? { cash: 0, bank: 0, wallet: 0 };
+  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
   return Object.keys(METHOD_LABELS_KEYS).map((key) => ({
     key,
     label: methodLabel(key),
     icon: METHOD_ICONS[key],
     color: METHOD_COLORS[key],
-    count: counts[key],
-    pct: total ? Math.round((counts[key] / total) * 100) : 0,
+    count: counts[key] ?? 0,
+    pct: total ? Math.round(((counts[key] ?? 0) / total) * 100) : 0,
   }));
 });
 const methodDonutStyle = computed(() => {
@@ -285,20 +306,10 @@ const methodDonutStyle = computed(() => {
   return { background: stops.length ? `conic-gradient(${stops.join(", ")})` : "#e7e2d6" };
 });
 
-const WEEKDAY_LABELS = computed(() => t("owner_settings.notifications.day_labels").split(","));
 const last7DaysActivity = computed(() => {
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    days.push({ key: d.toDateString(), label: WEEKDAY_LABELS.value[d.getDay()], total: 0 });
-  }
-  payments.value.forEach((p) => {
-    if (!p.created_at) return;
-    const pd = new Date(p.created_at);
-    const day = days.find((d) => d.key === pd.toDateString());
-    if (day) day.total += Number(p.amount) || 0;
-  });
+  const labels = paymentsActivity.value?.labels ?? [];
+  const totals = paymentsActivity.value?.totals ?? [];
+  const days = labels.map((label, i) => ({ key: i, label, total: totals[i] ?? 0 }));
   const max = Math.max(1, ...days.map((d) => d.total));
   return days.map((d) => ({ ...d, pct: Math.round((d.total / max) * 100) }));
 });
@@ -584,6 +595,7 @@ function handleExportMethodsCsv() {
 onMounted(() => {
   fetchPayments();
   fetchFinancialSummary();
+  fetchPaymentsActivity();
   fetchMethods(1);
   fetchOwnerCommissions();
   fetchAdminTechnicianPayments();
@@ -913,13 +925,24 @@ onMounted(() => {
          ========================================================== -->
     <template v-else-if="activeTab === 'owner_payments'">
       <section v-reveal class="glass-card p-4">
-        <div class="flex flex-wrap items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 w-fit">
-          <button
-            v-for="pill in OWNER_COMMISSION_STATUS_PILLS" :key="pill.value" type="button"
-            @click="ownerCommissionStatusFilter = pill.value"
-            class="px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors"
-            :class="ownerCommissionStatusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
-          >{{ pill.label }}</button>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="relative flex-1 min-w-[220px] max-w-lg">
+            <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[#9a9d97] dark:text-[#8f938a] text-[10px]" aria-hidden="true" />
+            <input
+              v-model="ownerCommissionOwnerSearch"
+              type="text"
+              :placeholder="$t('admin_payments_page.owner_commission_search_placeholder')"
+              class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2 ps-8 pe-3 text-[11.5px] outline-none focus:border-[#8A6D1F]"
+            />
+          </div>
+          <div class="flex flex-wrap items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1">
+            <button
+              v-for="pill in OWNER_COMMISSION_STATUS_PILLS" :key="pill.value" type="button"
+              @click="ownerCommissionStatusFilter = pill.value"
+              class="px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors shrink-0"
+              :class="ownerCommissionStatusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+            >{{ pill.label }}</button>
+          </div>
         </div>
       </section>
 
@@ -956,17 +979,17 @@ onMounted(() => {
                 <td class="py-2.5 px-3 font-bold" dir="ltr">{{ commission.commission_amount }}</td>
                 <td class="py-2.5 px-3"><span class="status-chip" :class="OWNER_COMMISSION_STATUS_META[commission.status] ?? 'chip-info'">{{ ownerCommissionStatusLabel(commission.status) }}</span></td>
                 <td class="py-2.5 px-3">
-                  <div class="row-actions">
+                  <div v-if="commission.status === 'earned'" class="row-actions">
                     <button
-                      v-if="commission.status === 'earned'" type="button"
+                      type="button"
                       @click="handleMarkCommissionPaid(commission)"
                       :disabled="updatingCommissionId === commission.id"
                       class="action-btn action-btn--edit" :title="$t('admin_payments_page.mark_paid_action')" :aria-label="$t('admin_payments_page.mark_paid_action')"
                     >
                       <LoaderCircle class="animate-spin" aria-hidden="true" v-if="updatingCommissionId === commission.id" /><Check aria-hidden="true" v-else />
                     </button>
-                    <span v-else class="text-[#9a9d97] dark:text-[#8f938a]">-</span>
                   </div>
+                  <span v-else class="text-[#9a9d97] dark:text-[#8f938a]">-</span>
                 </td>
               </tr>
             </tbody>
@@ -980,13 +1003,22 @@ onMounted(() => {
          ========================================================== -->
     <template v-else-if="activeTab === 'technician_payments'">
       <section v-reveal class="glass-card p-4">
-        <div class="flex flex-wrap items-center gap-2">
-          <label class="text-[11.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5]">{{ $t("admin_payments_page.filter_by_status") }}</label>
-          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="relative flex-1 min-w-[220px] max-w-lg">
+            <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[#9a9d97] dark:text-[#8f938a] text-[10px]" aria-hidden="true" />
+            <input
+              v-model="technicianPaymentSearch"
+              type="text"
+              @input="onTechnicianPaymentSearchInput"
+              :placeholder="$t('admin_payments_page.technician_payment_search_placeholder')"
+              class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2 ps-8 pe-3 text-[11.5px] outline-none focus:border-[#8A6D1F]"
+            />
+          </div>
+          <div class="flex flex-wrap items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1">
             <button
               v-for="pill in TECHNICIAN_PAYMENT_STATUS_PILLS" :key="pill.value" type="button"
               @click="technicianPaymentStatusFilter = pill.value; fetchAdminTechnicianPayments(1)"
-              class="px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+              class="px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors shrink-0"
               :class="technicianPaymentStatusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
             >{{ pill.label }}</button>
           </div>

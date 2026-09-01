@@ -7,6 +7,9 @@ export default {
   paymentsFinancialSummary() {
     return http.get("/admin/dashboard/payments-financial-summary");
   },
+  paymentsActivity() {
+    return http.get("/admin/dashboard/payments-activity");
+  },
   invoiceStatusBreakdown() {
     return http.get("/admin/dashboard/invoice-status-breakdown");
   },

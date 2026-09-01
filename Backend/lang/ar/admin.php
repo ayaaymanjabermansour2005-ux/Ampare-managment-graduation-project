@@ -8,6 +8,7 @@ return [
     'revenue_chart_message' => 'الإيرادات مقابل المستحقات.',
     'subscriber_growth_message' => 'نمو الاشتراكات.',
     'fuel_chart_message' => 'مشتريات الوقود الأسبوعية.',
+    'payments_activity_message' => 'حركة المدفوعات وتوزيع طرق الدفع.',
     'maintenance_chart_message' => 'الصيانة والأعطال حسب المدينة.',
     'generators_map_message' => 'إحداثيات المولدات.',
     'announcement_sent_message' => 'تم إرسال الإشعار بنجاح.',

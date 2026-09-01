@@ -90,7 +90,3 @@ This app uses [Laravel Reverb](https://reverb.laravel.com/) (`BROADCAST_CONNECTI
 - Run `php artisan app:check-production` as part of your deploy pipeline before switching traffic to a new release — it fails loudly if production-unsafe settings (e.g. `APP_DEBUG=true`, an insecure session cookie) are detected. It is intentionally **not** wired into this repo's push/PR CI (see `DEVOPS-CI-check` in the audit report), since CI runs against `.env.example`'s dev-oriented defaults.
 - `compose.yaml` provides a Docker-based local/staging environment (`./vendor/bin/sail up -d`). Container boot has not been verified in every environment — see `DEVOPS-003-boot` in the audit report.
 - Set real production values for `REVERB_*`, `FLARE_KEY` (error tracking — see `DEVOPS-004-verify`), and mail/queue drivers before going live; `.env.example`'s defaults are for local development only.
-
-## Full audit trail
-
-Every hardening/remediation finding, fix, and its verification evidence for this project is tracked in [`docs/audit/FULL_PROJECT_AUDIT_REPORT.md`](docs/audit/FULL_PROJECT_AUDIT_REPORT.md) — the single source of truth for what's been fixed, what's confirmed-but-not-fixed, and what's still open.

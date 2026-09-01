@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\SafelyEncrypted;
 use App\Enums\Currency;
 use App\Enums\PaymentMethodType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,7 +34,7 @@ class PaymentMethod extends Model
             'is_default' => 'boolean',
             'type' => PaymentMethodType::class,
             'currency' => Currency::class,
-            'account_number' => 'encrypted',
+            'account_number' => SafelyEncrypted::class,
         ];
     }
 
