@@ -1,0 +1,1 @@
+import{h as t}from"./app-CN81J3tJ.js";const s={ownerStats(){return t.get("/owner/dashboard/stats")},subscriberStats(){return t.get("/subscriber/dashboard/stats")},technicianStats(){return t.get("/technician/dashboard/stats")}};export{s as r};

@@ -35,6 +35,7 @@ class StoreGeneratorRequest extends FormRequest
             'currency' => ['sometimes', Rule::enum(Currency::class)],
             'capacity_kw' => ['nullable', 'integer', 'min:1'],
             'fuel_type' => ['nullable', Rule::enum(FuelType::class)],
+            'tank_capacity_liters' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'lines_count' => ['sometimes', 'integer', 'min:1', 'max:20'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],

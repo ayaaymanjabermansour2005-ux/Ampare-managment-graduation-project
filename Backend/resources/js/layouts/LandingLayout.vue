@@ -16,18 +16,6 @@ const prefersReducedMotion = useReducedMotion();
 const platformIdentity = usePlatformIdentityStore();
 onMounted(() => platformIdentity.fetch());
 
-/* ---------------- ستارة دخول Landing بالكامل (Navbar + Hero + كل الأقسام) ----------------
- * تشتغل مرة وحدة لكل mount فعلي لـ LandingLayout — يعني أول ما تدخل أي صفحة
- * Landing قادم من خارجها (بعد الـ Splash، أو من route تاني متل /login). طالما
- * LandingLayout نفسه ما انعمل unmount (تنقّل بين صفحات Landing الداخلية:
- * الرئيسية/المدونة/المقال/البث المباشر)، العنصر ما بيتكرّر لأنه onMounted ما
- * بيرجع يشتغل. الحركة نفسها CSS transition بحتة (leave transition من Vue
- * Transition)، فما في أي setTimeout أو rAF loop متحكم فيها. */
-const showEntrance = ref(!prefersReducedMotion.value);
-onMounted(() => {
-  if (showEntrance.value) showEntrance.value = false;
-});
-
 function toggleTheme() {
   uiStore.toggleTheme();
 }
@@ -101,10 +89,6 @@ function handleMobileNavClick(id) {
     :class="{ dark: uiStore.isDark }"
     :dir="locale === 'ar' ? 'rtl' : 'ltr'"
   >
-    <Transition name="landing-entrance">
-      <div v-if="showEntrance" class="landing-entrance-overlay" aria-hidden="true"></div>
-    </Transition>
-
     <!-- ===================== NAVBAR ===================== -->
     <!-- Full-bleed 3-zone grid header: brand / centered nav / actions. Grid (not flex+justify-between)
          so the center nav stays truly centered on the viewport regardless of how wide the brand and
@@ -215,8 +199,8 @@ function handleMobileNavClick(id) {
       <div class="absolute -top-24 start-1/4 w-72 h-72 bg-[#52733D]/10 rounded-full blur-[110px] pointer-events-none"></div>
       <div class="absolute -top-24 end-1/4 w-72 h-72 bg-[#D4AF37]/10 rounded-full blur-[110px] pointer-events-none"></div>
       <div class="max-w-7xl mx-auto px-5 sm:px-8 relative">
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-white/10">
-          <div>
+        <div class="flex flex-col lg:flex-row gap-10 pb-12 border-b border-white/10">
+          <div class="lg:w-72 shrink-0">
             <div class="flex items-center gap-2.5 mb-4">
               <div class="w-12 h-12 flex items-center justify-center overflow-hidden">
                 <img :src="platformIdentity.logoUrl || '/images/logo.png'" :alt="t('auth.logo_alt')" class="w-full h-full object-contain" onerror="this.style.display='none'" />
@@ -236,36 +220,39 @@ function handleMobileNavClick(id) {
             </div>
           </div>
 
-          <div>
-            <h4 class="font-bold text-[13px] text-white mb-4">{{ t("landing.footer.quick_links") }}</h4>
-            <ul class="space-y-2.5 text-[12.5px]">
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('home')">{{ t("landing.nav.home") }}</button></li>
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('story')">{{ t("landing.nav.story") }}</button></li>
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('features')">{{ t("landing.nav.features") }}</button></li>
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('services')">{{ t("landing.nav.services") }}</button></li>
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('map')">{{ t("landing.nav.map") }}</button></li>
-            </ul>
-          </div>
+          <!-- روابط سريعة / الدعم / تواصل معنا — مجموعة واحدة ثابتة 3 أعمدة جنب بعض دائمًا، منفصلة عن عمود العلامة/السوشال. -->
+          <div class="grid grid-cols-3 gap-4 sm:gap-10 flex-1">
+            <div>
+              <h4 class="font-bold text-[11.5px] sm:text-[13px] text-white mb-3 sm:mb-4">{{ t("landing.footer.quick_links") }}</h4>
+              <ul class="space-y-2 sm:space-y-2.5 text-[10.5px] sm:text-[12.5px]">
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('home')">{{ t("landing.nav.home") }}</button></li>
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('story')">{{ t("landing.nav.story") }}</button></li>
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('features')">{{ t("landing.nav.features") }}</button></li>
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('services')">{{ t("landing.nav.services") }}</button></li>
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('map')">{{ t("landing.nav.map") }}</button></li>
+              </ul>
+            </div>
 
-          <div>
-            <h4 class="font-bold text-[13px] text-white mb-4">{{ t("landing.footer.support") }}</h4>
-            <ul class="space-y-2.5 text-[12.5px]">
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('blog')">{{ t("landing.nav.blog") }}</button></li>
-              <li><RouterLink :to="{ name: 'landing.live-schedule' }" class="hover:text-[#F4E0A5]">{{ t("landing.nav.live_schedule") }}</RouterLink></li>
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('faq')">{{ t("landing.nav.faq") }}</button></li>
-              <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('contact')">{{ t("landing.nav.contact") }}</button></li>
-              <li><RouterLink :to="{ name: 'login' }" class="hover:text-[#F4E0A5]">{{ t("landing.nav.login") }}</RouterLink></li>
-              <li><RouterLink :to="{ name: 'register' }" class="hover:text-[#F4E0A5]">{{ t("landing.nav.get_started") }}</RouterLink></li>
-            </ul>
-          </div>
+            <div>
+              <h4 class="font-bold text-[11.5px] sm:text-[13px] text-white mb-3 sm:mb-4">{{ t("landing.footer.support") }}</h4>
+              <ul class="space-y-2 sm:space-y-2.5 text-[10.5px] sm:text-[12.5px]">
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('blog')">{{ t("landing.nav.blog") }}</button></li>
+                <li><RouterLink :to="{ name: 'landing.live-schedule' }" class="hover:text-[#F4E0A5]">{{ t("landing.nav.live_schedule") }}</RouterLink></li>
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('faq')">{{ t("landing.nav.faq") }}</button></li>
+                <li><button type="button" class="hover:text-[#F4E0A5]" @click="scrollToSection('contact')">{{ t("landing.nav.contact") }}</button></li>
+                <li><RouterLink :to="{ name: 'login' }" class="hover:text-[#F4E0A5]">{{ t("landing.nav.login") }}</RouterLink></li>
+                <li><RouterLink :to="{ name: 'register' }" class="hover:text-[#F4E0A5]">{{ t("landing.nav.get_started") }}</RouterLink></li>
+              </ul>
+            </div>
 
-          <div>
-            <h4 class="font-bold text-[13px] text-white mb-4">{{ t("landing.nav.contact") }}</h4>
-            <ul class="space-y-3 text-[12.5px]">
-              <li class="flex items-center gap-2"><Phone class="text-[#8A6D1F]" aria-hidden="true" /> <span dir="ltr">+970 59 123 4567</span></li>
-              <li class="flex items-center gap-2"><Mail class="text-[#8A6D1F]" aria-hidden="true" /> <span dir="ltr">support@ampir.ps</span></li>
-              <li class="flex items-center gap-2"><MapPin class="text-[#8A6D1F]" aria-hidden="true" /> {{ t("landing.contact.info.location_value") }}</li>
-            </ul>
+            <div>
+              <h4 class="font-bold text-[11.5px] sm:text-[13px] text-white mb-3 sm:mb-4">{{ t("landing.nav.contact") }}</h4>
+              <ul class="space-y-2 sm:space-y-3 text-[10.5px] sm:text-[12.5px]">
+                <li class="flex items-start sm:items-center gap-1.5 sm:gap-2"><Phone class="text-[#8A6D1F] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" /> <span dir="ltr" class="break-all">+970 597939790</span></li>
+                <li class="flex items-start sm:items-center gap-1.5 sm:gap-2"><Mail class="text-[#8A6D1F] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" /> <span dir="ltr" class="break-all">support@ampir.ps</span></li>
+                <li class="flex items-start sm:items-center gap-1.5 sm:gap-2"><MapPin class="text-[#8A6D1F] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" /> {{ t("landing.contact.info.location_value") }}</li>
+              </ul>
+            </div>
           </div>
         </div>
 

@@ -97,37 +97,26 @@ export function useOwnerApplicationsUI({
       icon: "fa-inbox",
       label: t("owner_applications_page.total_requests"),
       value: statusCounts.value?.all ?? 0,
-      sub: t("owner_applications_page.approved_rejected_summary", { approved: statusCounts.value?.approved ?? 0, rejected: statusCounts.value?.rejected ?? 0 }),
-      c1: "#52733D",
-      c2: "#3E582E",
+      tone: "primary",
     },
     {
       icon: "fa-hourglass-half",
       label: t("users_page.status_pending_review"),
       value: statusCounts.value?.pending ?? 0,
-      sub: statusCounts.value?.all
-        ? `${Math.round(((statusCounts.value?.pending ?? 0) / statusCounts.value.all) * 100)}% ${t("owner_applications_page.of_total_suffix")}`
-        : t("owner_applications_page.no_requests_yet"),
-      c1: "#D4AF37",
-      c2: "#8A6D1F",
+      tone: "secondary",
     },
     {
       icon: "fa-clock",
       label: t("owner_applications_page.overdue_this_page"),
       value: overdueCountOnPage.value,
-      sub: t("owner_applications_page.overdue_days_desc", { days: SLA_DAYS }),
-      c1: "#D9534F",
-      c2: "#8A6D1F",
+      tone: "danger",
     },
     {
       icon: "fa-chart-simple",
       label: t("owner_applications_page.approval_rate"),
-      value: approvalRate.value !== null ? `${approvalRate.value}%` : "-",
-      sub: (statusCounts.value?.approved || statusCounts.value?.rejected)
-        ? t("owner_applications_page.approved_of_total", { approved: statusCounts.value?.approved ?? 0, total: (statusCounts.value?.approved ?? 0) + (statusCounts.value?.rejected ?? 0) })
-        : t("owner_applications_page.no_reviewed_requests_yet"),
-      c1: "#17A2B8",
-      c2: "#0f6c7d",
+      value: approvalRate.value ?? "-",
+      suffix: approvalRate.value !== null ? "%" : "",
+      tone: "info",
     },
   ]);
 

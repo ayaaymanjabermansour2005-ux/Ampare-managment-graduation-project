@@ -24,7 +24,7 @@ final class CancelPaymentAction
                 'status' => PaymentStatus::Cancelled,
             ])->save();
 
-            return $payment->fresh();
+            return $payment->fresh(['paymentMethod']);
         });
     }
 }

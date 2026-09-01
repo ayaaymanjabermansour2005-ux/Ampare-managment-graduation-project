@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\GeneratorStatus;
 use App\Models\AiChatSession;
 use App\Models\Generator;
 use App\Models\User;
@@ -14,7 +13,7 @@ class AiChatService
     public function availableGeneratorsFor(User $user): Collection
     {
         if ($user->isAdmin()) {
-            return Generator::query()->where('status', GeneratorStatus::Active->value)->with('owner')->get();
+            return Generator::query()->with('owner')->get();
         }
 
         if ($user->isOwner()) {

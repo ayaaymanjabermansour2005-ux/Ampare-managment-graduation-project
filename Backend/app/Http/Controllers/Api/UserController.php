@@ -58,7 +58,11 @@ class UserController extends Controller
             $request->input('search'),
             PerPageResolver::resolve($request),
             $request->input('status'),
-            $request->input('subscription_status')
+            $request->input('subscription_status'),
+            $request->filled('generators_count_min') ? (int) $request->input('generators_count_min') : null,
+            $request->filled('generators_count_max') ? (int) $request->input('generators_count_max') : null,
+            $request->filled('commission_rate_min') ? (float) $request->input('commission_rate_min') : null,
+            $request->filled('commission_rate_max') ? (float) $request->input('commission_rate_max') : null,
         );
 
         return $this->success(

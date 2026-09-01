@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethodType;
 use App\Enums\PaymentStatus;
 use App\Enums\PlatformCommissionStatus;
+use App\Events\InvoiceOverdue;
 use App\Events\InvoicePaid;
 use App\Jobs\SendInvoiceEmail;
 use App\Models\Invoice;
@@ -242,6 +243,7 @@ class InvoiceService
             ->chunkById(200, function ($invoices) use (&$count) {
                 foreach ($invoices as $invoice) {
                     $invoice->forceFill(['status' => InvoiceStatus::Overdue])->save();
+                    InvoiceOverdue::dispatch($invoice);
                     $count++;
                 }
             });

@@ -1,4 +1,5 @@
 import http from "./http";
+import { buildExportUrl } from "@/utils/exportUrl";
 
 export default {
   list(params = {}) {
@@ -23,10 +24,6 @@ export default {
     return http.delete(`/faults/${id}`);
   },
   exportUrl(params = {}) {
-    const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""),
-    );
-    const query = new URLSearchParams(cleanParams).toString();
-    return `/api/v1/faults/export${query ? `?${query}` : ""}`;
+    return buildExportUrl("/api/v1/faults/export", params);
   },
 };

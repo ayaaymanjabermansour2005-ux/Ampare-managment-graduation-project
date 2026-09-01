@@ -8,7 +8,10 @@
     --why-icon-fg: #6B5A2E;
     /* ترانزيشن "تعبئة" الهيرو — راجع HeroSection.vue والتعليق بالأسفل قرب hero-fill-* */
     --hero-fill-duration: 1.3s;
-    --hero-fill-delay: 1.5s;
+    /* كانت 1.5s (بانتظار انتهاء ستارة .landing-entrance-overlay قبل ما تصير
+       مرئية) — الستارة اتشالت بالكامل (طلب صريح)، فأي تأخير هون صار وقت ميت
+       بدون سبب. تأخير بسيط بس لإحساس دخول لطيف، مش انتظار حقيقي. */
+    --hero-fill-delay: 0.15s;
 }
 .landing-shell.dark {
     --why-icon-bg: rgba(228, 217, 190, 0.16);
@@ -213,6 +216,24 @@
     background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
 }
 
+/* Alternating section backgrounds — every section was the same near-white
+   #F8FAF7, giving the page no visual rhythm. Applied to alternating <section>
+   roots in HomeView.vue's tree so the page reads as distinct bands rather
+   than one continuous scroll of white. Kept as soft, glowing washes (not flat
+   fills) so .glass-card's translucent-white look still reads correctly on top. */
+.landing-shell .section-tint-sage {
+    background: linear-gradient(180deg, rgba(82, 115, 61, 0.13) 0%, rgba(82, 115, 61, 0.03) 100%);
+}
+.landing-shell.dark .section-tint-sage {
+    background: linear-gradient(180deg, rgba(140, 195, 90, 0.11) 0%, rgba(140, 195, 90, 0.02) 100%);
+}
+.landing-shell .section-tint-gold {
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.03) 100%);
+}
+.landing-shell.dark .section-tint-gold {
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.13) 0%, rgba(212, 175, 55, 0.03) 100%);
+}
+
 .landing-shell .reveal {
     opacity: 0;
     transform: translateY(28px) scale(0.98);
@@ -288,40 +309,13 @@
     }
 }
 
-/* ===== ستارة دخول Landing بالكامل (Navbar + Hero + كل الأقسام + Footer) =====
-   عنصر واحد position:fixed يغطي الشاشة كلها بلون الهوية (كريمي → ذهبي → زيتي)
-   عند أول mount لـ LandingLayout، ثم يفرغ بحركة scaleY من تحت لفوق ليكشف
-   الصفحة. fixed + transform فقط (بدون تعديل width/height/top/left) عشان ما
-   في أي layout shift أو scrollbar إضافي. راجع LandingLayout.vue: onMounted
-   يقلب showEntrance لـ false فورًا، فـ Vue <Transition> (leave) هو اللي بيشغّل
-   الحركة عبر transition-delay/duration بالـ CSS تحت — بدون أي setTimeout. */
-.landing-entrance-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    pointer-events: auto;
-    transform-origin: bottom;
-    background: linear-gradient(175deg, #FBF6E8 0%, #F4E0A5 26%, #D4AF37 50%, #8A6D1F 74%, #52733D 100%);
-    will-change: transform;
-}
-.landing-entrance-leave-active {
-    transition: transform 1.5s cubic-bezier(0.65, 0, 0.35, 1);
-}
-.landing-entrance-leave-to {
-    transform: scaleY(0);
-}
-@media (prefers-reduced-motion: reduce) {
-    .landing-entrance-overlay { display: none; }
-}
-
 /* ===== ترانزيشن "تعبئة" قسم الهيرو (Fill/Empty Entrance) — راجع HeroSection.vue =====
    clip-path bottom-up reveal: يبلش الهيرو "فاضي" (inset 100% من فوق) وبيتعبى
    لتحت-لفوق للحالة الطبيعية عبر <Transition name="hero-fill" appear>. نفس الحركة
    معكوسة لو صار Leave (يتفضى) عند إزالة الكومبوننت من الشجرة.
-   --hero-fill-delay أكبر من مدة .landing-entrance-overlay فوق (1.5s) عشان الحركة
-   تضل مرئية بعد ما ينكشف الـ Curtain العام، مش تخلص وهي مخفية وراه. عدّلي القيمة
-   هون لو غيّرتي مدة الـ Curtain بـ LandingLayout.vue (المتغيرات معرّفة بأول
-   الملف جوا .landing-shell). */
+   --hero-fill-delay بسيط بس (0.15s) لإحساس دخول لطيف — كان أكبر (1.5s) لما
+   كانت ستارة .landing-entrance-overlay موجودة (اتشالت بالكامل، طلب صريح)؛
+   المتغير معرّف بأول الملف جوا .landing-shell. */
 .landing-shell .hero-fill-enter-active,
 .landing-shell .hero-fill-leave-active {
     transition: clip-path var(--hero-fill-duration) cubic-bezier(0.65, 0, 0.35, 1);
@@ -616,6 +610,13 @@
 .landing-shell .flip-card-back::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.4); border-radius: 999px; }
 .landing-shell .flip-hint { transition: opacity .3s ease; }
 .landing-shell .flip-card:hover .flip-hint { opacity: 1; }
+/* .flip-card-front/-back also carry .glass-card, whose :hover rule sets its
+   own `transform` (translateY + scale) — on these two faces that silently
+   overwrites the `transform: rotateY(...)` the flip needs, making a flipped
+   card snap back / "jump" the moment it's hovered. Restore each face's
+   correct resting transform on hover instead of the generic lift. */
+.landing-shell .flip-card-front:hover { transform: none; }
+.landing-shell .flip-card-back:hover { transform: rotateY(180deg); }
 
 .landing-shell .form-field {
     width: 100%;
@@ -747,10 +748,37 @@
 .landing-shell .stack-card:active { cursor: grabbing; }
 
 .landing-shell .why-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     justify-content: center;
+    background: linear-gradient(135deg, #FAF7EF 0%, #F4EFE5 100%);
+    border: none;
+}
+.landing-shell.dark .why-card {
+    /* Fully opaque, single solid olive tone — no alpha blending, no second
+       (green-leaning) hue mixed in. Any transparency here lets the very dark
+       page background (and the inherited .glass-card backdrop-blur) show
+       through and wash the color out, which read as "not olive enough". */
+    background: #4A3B14;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* Hand-drawn / sketchy olive outline: a filtered ::before overlay (SVG
+   turbulence + displacement, defined once in WhyUsSection.vue) instead of a
+   flat, uniform-thickness CSS border. */
+.landing-shell .why-card::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 3px solid rgba(138, 109, 31, 0.7);
+    filter: url(#why-card-sketch-filter);
+    pointer-events: none;
+}
+.landing-shell.dark .why-card::before {
+    border-color: rgba(212, 175, 55, 0.6);
 }
 .landing-shell .why-card-icon {
     width: 3rem;

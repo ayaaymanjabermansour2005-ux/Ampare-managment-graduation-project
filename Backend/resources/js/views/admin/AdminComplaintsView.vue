@@ -7,8 +7,10 @@ import complaintService from "@/services/complaintService";
 import { useConfirm } from "@/composables/useConfirm";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
+import ColumnFilterPopover from "@/components/ui/ColumnFilterPopover.vue";
 import { ChartColumn, Check, ChevronLeft, ChevronRight, CircleCheck, Eye, FileSpreadsheet, FileText, LoaderCircle, MessageCircleMore, Plus, Search, SlidersHorizontal, Trash2, User, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -163,12 +165,12 @@ function slaInfo(c) {
 const countOnPage = (status) => complaints.value.filter((c) => c.status === status).length;
 const countSlaBreached = computed(() => complaints.value.filter((c) => slaInfo(c).late).length);
 const KPI_CARDS = computed(() => [
-  { icon: "fa-comment-dots", label: t("complaints_page.total_complaints"), value: pagination.value.total, c1: "#D9534F", c2: "#8A6D1F" },
-  { icon: "fa-sparkles", label: statusLabel("pending"), value: countOnPage("pending"), c1: "#FFC107", c2: "#a3760a" },
-  { icon: "fa-spinner", label: statusLabel("in_progress"), value: countOnPage("in_progress"), c1: "#17A2B8", c2: "#0f6c7d" },
-  { icon: "fa-comment-medical", label: statusLabel("waiting_subscriber"), value: countOnPage("waiting_subscriber"), c1: "#8A5FD0", c2: "#5b3c8a" },
-  { icon: "fa-circle-check", label: statusLabel("resolved"), value: countOnPage("resolved"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-triangle-exclamation", label: t("complaints_page.sla_breached_kpi"), value: countSlaBreached.value, c1: "#D9534F", c2: "#8A2E2E" },
+  { icon: "fa-comment-dots", label: t("complaints_page.total_complaints"), value: pagination.value.total, tone: "danger" },
+  { icon: "fa-sparkles", label: statusLabel("pending"), value: countOnPage("pending"), tone: "warning" },
+  { icon: "fa-spinner", label: statusLabel("in_progress"), value: countOnPage("in_progress"), tone: "info" },
+  { icon: "fa-comment-medical", label: statusLabel("waiting_subscriber"), value: countOnPage("waiting_subscriber"), tone: "secondary" },
+  { icon: "fa-circle-check", label: statusLabel("resolved"), value: countOnPage("resolved"), tone: "success" },
+  { icon: "fa-triangle-exclamation", label: t("complaints_page.sla_breached_kpi"), value: countSlaBreached.value, tone: "danger" },
 ]);
 
 const COMPLAINT_CATEGORIES = computed(() => [
@@ -189,6 +191,14 @@ const assigneeFilter = ref("");
 const dateFrom = ref("");
 const dateTo = ref("");
 const showAdvancedFilters = ref(false);
+
+const openedAtFilter = computed({
+  get: () => ({ min: dateFrom.value, max: dateTo.value }),
+  set: (val) => {
+    dateFrom.value = val.min;
+    dateTo.value = val.max;
+  },
+});
 
 const filteredComplaints = computed(() => {
   return complaints.value.filter((c) => {
@@ -438,16 +448,10 @@ onMounted(() => fetchComplaints(1));
     <!-- ===== KPI CARDS ===== -->
     <section v-reveal>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+        />
       </div>
     </section>
 
@@ -488,12 +492,12 @@ onMounted(() => fetchComplaints(1));
 
         <AppDropdownSelect
           v-model="statusFilter" @update:model-value="onFilterChange"
-          :options="STATUS_OPTIONS" width-class="w-44" :panel-width="180"
+          :options="STATUS_OPTIONS" width-class="w-40" :panel-width="180"
         />
 
         <AppDropdownSelect
           v-model="priorityFilter"
-          :options="PRIORITY_OPTIONS" width-class="w-36" :panel-width="160"
+          :options="PRIORITY_OPTIONS" width-class="w-40" :panel-width="180"
         />
 
         <AppDropdownSelect
@@ -578,10 +582,15 @@ onMounted(() => fetchComplaints(1));
               <th class="py-2.5 px-2 font-bold text-start">{{ $t("complaints_page.col_channel") }}</th>
               <th class="py-2.5 px-2 font-bold text-start">{{ $t("complaints_page.col_priority") }}</th>
               <th class="py-2.5 px-2 font-bold text-start">{{ $t("complaints_page.col_assignee") }}</th>
-              <th class="py-2.5 px-2 font-bold text-start">{{ $t("complaints_page.col_opened_at") }}</th>
+              <th class="py-2.5 px-2 font-bold text-start">
+                <span class="inline-flex items-center gap-1">
+                  {{ $t("complaints_page.col_opened_at") }}
+                  <ColumnFilterPopover v-model="openedAtFilter" type="date" @click.stop />
+                </span>
+              </th>
               <th class="py-2.5 px-2 font-bold text-start">{{ $t("complaints_page.sla_label") }}</th>
               <th class="py-2.5 px-2 font-bold text-start">{{ $t("dashboard.status_col") }}</th>
-              <th class="py-2.5 px-2 font-bold text-end">{{ $t("subscribers_page.actions_col") }}</th>
+              <th class="py-2.5 px-2 font-bold text-center">{{ $t("subscribers_page.actions_col") }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#f0ece0] dark:divide-white/5">
@@ -618,7 +627,7 @@ onMounted(() => fetchComplaints(1));
                 <span class="status-chip" :class="STATUS_META[c.status]?.chip">{{ statusLabel(c.status) }}</span>
               </td>
               <td class="py-3 px-2">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-center gap-1">
                   <button
                     type="button" @click="openDetail(c)"
                     class="w-7 h-7 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#17A2B8] hover:bg-[#17A2B8]/10 transition"
@@ -706,7 +715,7 @@ onMounted(() => fetchComplaints(1));
           </div>
           <div class="p-5 space-y-4 overflow-y-auto">
             <div class="flex flex-wrap items-center gap-2 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
-              <span><User aria-hidden="true" /> {{ activeComplaint.submitted_by?.name }}</span>
+              <span class="inline-flex items-center gap-1.5"><User aria-hidden="true" /> {{ activeComplaint.submitted_by?.name }}</span>
               <span>·</span>
               <span>{{ complainableLabel(activeComplaint) }}</span>
               <span v-if="activeComplaint.priority" class="status-chip" :class="PRIORITY_META[activeComplaint.priority]?.chip">{{ priorityLabel(activeComplaint.priority) }}</span>

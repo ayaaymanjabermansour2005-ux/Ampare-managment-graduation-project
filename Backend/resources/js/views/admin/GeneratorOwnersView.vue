@@ -14,11 +14,14 @@ import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import { vCountUp } from "@/directives/countUp";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
+import ColumnFilterPopover from "@/components/ui/ColumnFilterPopover.vue";
+import { printTable } from "@/utils/printTable";
 import AdminGeneratorFormModal from "@/components/generators/AdminGeneratorFormModal.vue";
 import { useAdminOwnerApplications } from "@/composables/useAdminOwnerApplications";
 import { useOwnerApplicationsUI } from "@/composables/useOwnerApplicationsUI";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock, Copy, Crown, Download, Eye, FileSpreadsheet, FileText, GripVertical, Inbox, Info, Key, LoaderCircle, LockOpen, Mail, Paperclip, Pencil, Percent, Phone, PlugZap, Plus, Printer, RotateCcwClock, Save, Search, StickyNote, Table2, Trash2, TriangleAlert, User, UserCheck, UserPlus, UserRound, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 import LightningCanvas from "@/components/ui/LightningCanvas.vue";
 
 
@@ -35,6 +38,8 @@ const {
   error,
   searchTerm,
   statusFilter,
+  generatorsCountFilter,
+  commissionRateFilter,
   stats,
   isLoadingStats,
   fetchOwners,
@@ -155,7 +160,21 @@ const exportUrl = computed(() =>
   buildOwnersExportUrl({ search: searchTerm.value || undefined, status: statusFilter.value || undefined }),
 );
 function printPage() {
-  window.print();
+  printTable({
+    title: t("owners_page.list_title"),
+    locale: locale.value,
+    columns: [
+      { label: t("dashboard.owner"), value: (o) => o.name },
+      { label: t("owners_page.phone_col"), value: (o) => o.phone ?? "-" },
+      { label: t("owners_page.generators_count_col"), value: (o) => o.generators_count ?? 0 },
+      { label: t("owners_page.total_subscribers_col"), value: (o) => o.active_subscriptions_count ?? 0 },
+      { label: t("dashboard.monthly_revenue_col"), value: (o) => fmtMoney(o.monthly_revenue_ils) },
+      { label: t("owners_page.commission_col"), value: (o) => commissionLabel(o.commission_settings?.rate, o.commission_settings?.mode) },
+      { label: t("owners_page.plan_col"), value: (o) => o.plan?.name ?? t("owners_page.no_plan") },
+      { label: t("dashboard.status_col"), value: (o) => (o.is_locked ? t("owners_page.locked") : statusLabel(o.status)) },
+    ],
+    rows: sortedOwners.value,
+  });
 }
 
 const commissionModal = ref(null);
@@ -644,12 +663,11 @@ onMounted(() => fetchApplications());
         <div v-for="i in 5" :key="i" class="h-24 rounded-2xl thumb-loading"></div>
       </div>
       <div v-else class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
-        <div v-for="c in KPI_CARDS" :key="c.label" class="kpi-card glass-card hoverable" :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }">
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold"><span v-if="c.prefix">{{ c.prefix }}</span><span v-count-up="{ value: c.raw, decimals: c.decimals }">0</span></div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a] mt-1.5">{{ c.sub }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.raw" :icon="c.icon" :tone="c.tone"
+          :prefix="c.prefix ?? ''" :suffix="c.suffix ?? ''" :decimals="c.decimals ?? 0"
+        />
       </div>
     </section>
 
@@ -807,9 +825,12 @@ onMounted(() => fetchApplications());
                 <AppIcon :name="sortIconClass('name')" class="text-[9px] ms-1 transition-all" />
               </th>
               <th class="py-2.5 px-3">{{ t("owners_page.phone_col") }}</th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('generators')">
-                {{ t("owners_page.generators_count_col") }}
-                <AppIcon :name="sortIconClass('generators')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('generators')">
+                  {{ t("owners_page.generators_count_col") }}
+                  <AppIcon :name="sortIconClass('generators')" class="text-[9px] transition-all" />
+                </span>
+                <ColumnFilterPopover v-model="generatorsCountFilter" type="number" @update:modelValue="onFilterChange" @click.stop class="ms-1" />
               </th>
               <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('subs')">
                 {{ t("owners_page.total_subscribers_col") }}
@@ -819,7 +840,12 @@ onMounted(() => fetchApplications());
                 {{ t("dashboard.monthly_revenue_col") }}
                 <AppIcon :name="sortIconClass('rev')" class="text-[9px] ms-1 transition-all" />
               </th>
-              <th class="py-2.5 px-3">{{ t("owners_page.commission_col") }}</th>
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1">
+                  {{ t("owners_page.commission_col") }}
+                  <ColumnFilterPopover v-model="commissionRateFilter" type="number" @update:modelValue="onFilterChange" @click.stop />
+                </span>
+              </th>
               <th class="py-2.5 px-3">{{ t("owners_page.plan_col") }}</th>
               <th class="py-2.5 px-3">{{ t("dashboard.status_col") }}</th>
               <th class="py-2.5 px-3 rounded-e-lg">{{ t("dashboard.actions_col") }}</th>
@@ -846,7 +872,7 @@ onMounted(() => fetchApplications());
               <td class="py-2.5 px-3">{{ owner.generators_count ?? 0 }}</td>
               <td class="py-2.5 px-3">{{ owner.active_subscriptions_count ?? 0 }}</td>
               <td class="py-2.5 px-3 font-bold">{{ fmtMoney(owner.monthly_revenue_ils) }}</td>
-              <td class="py-2.5 px-3">{{ commissionLabel(owner.commission_rate) }}</td>
+              <td class="py-2.5 px-3">{{ commissionLabel(owner.commission_settings?.rate, owner.commission_settings?.mode) }}</td>
               <td class="py-2.5 px-3">
                 <span v-if="owner.plan" class="status-chip chip-info">{{ owner.plan.name }}</span>
                 <span v-else class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.no_plan") }}</span>
@@ -904,7 +930,7 @@ onMounted(() => fetchApplications());
           <div class="grid grid-cols-3 gap-2 text-[11px] mb-3">
             <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.generators_word_short") }}:</span> <b>{{ owner.generators_count ?? 0 }}</b></div>
             <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.subs_word") }}:</span> <b>{{ owner.active_subscriptions_count ?? 0 }}</b></div>
-            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.commission_col") }}:</span> <b>{{ commissionLabel(owner.commission_rate) }}</b></div>
+            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.commission_col") }}:</span> <b>{{ commissionLabel(owner.commission_settings?.rate, owner.commission_settings?.mode) }}</b></div>
           </div>
           <div class="flex items-center justify-end">
             <div class="row-actions">
@@ -998,12 +1024,10 @@ onMounted(() => fetchApplications());
         <div v-for="i in 4" :key="i" class="h-24 rounded-2xl thumb-loading"></div>
       </div>
       <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div v-for="c in APPLICATION_KPI_CARDS" :key="c.label" class="kpi-card glass-card hoverable" :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }">
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a] mt-1.5">{{ c.sub }}</div>
-        </div>
+        <StatCard
+          v-for="c in APPLICATION_KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone" :suffix="c.suffix ?? ''"
+        />
       </div>
     </section>
 
@@ -1486,7 +1510,7 @@ onMounted(() => fetchApplications());
               <div class="glass-card p-4 space-y-2.5 text-[12px]">
                 <div class="flex justify-between"><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.email_label") }}</span><b class="truncate max-w-[10rem]">{{ viewingOwner.email }}</b></div>
                 <div class="flex justify-between"><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.phone_col") }}</span><b dir="ltr">{{ viewingOwner.phone ?? "-" }}</b></div>
-                <div class="flex justify-between"><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.commission_col") }}</span><b>{{ commissionLabel(viewingOwner.commission_rate) }}</b></div>
+                <div class="flex justify-between"><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.commission_col") }}</span><b>{{ commissionLabel(viewingOwner.commission_settings?.rate, viewingOwner.commission_settings?.mode) }}</b></div>
                 <div class="flex justify-between"><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.joined_label") }}</span><b>{{ viewingOwner.created_at?.slice(0, 10) ?? "-" }}</b></div>
               </div>
             </div>
@@ -1522,7 +1546,7 @@ onMounted(() => fetchApplications());
                   </div>
                   <div v-if="viewingOwner.commission_rate !== null" class="timeline-item" style="--dot-color:#17A2B8">
                     <p class="text-[11.5px] font-semibold">
-                      {{ t("owners_page.current_commission_summary", { rate: commissionLabel(viewingOwner.commission_rate) }) }}
+                      {{ t("owners_page.current_commission_summary", { rate: commissionLabel(viewingOwner.commission_settings?.rate, viewingOwner.commission_settings?.mode) }) }}
                     </p>
                   </div>
                 </div>

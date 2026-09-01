@@ -75,7 +75,7 @@ class DemoAccountsSeeder extends Seeder
         }
 
         // ==================== الحي والموقع ====================
-        $neighborhood = Neighborhood::firstOrCreate(['name' => 'حي تجريبي']);
+        $neighborhood = Neighborhood::firstOrCreate(['name' => 'حي تجريبي'], ['name_en' => 'Demo Neighborhood']);
         $location = Location::firstOrCreate(
             ['city' => 'غزة', 'neighborhood_id' => $neighborhood->id, 'address' => 'موقع تجريبي للعرض'],
             ['latitude' => 31.5017, 'longitude' => 34.4668]
@@ -85,6 +85,7 @@ class DemoAccountsSeeder extends Seeder
         $demoGenerator = Generator::firstOrCreate(
             ['owner_id' => $demoOwner->id, 'name' => 'المولد التجريبي'],
             [
+                'name_en' => 'Demo Generator',
                 'price_per_kw' => 1.25,
                 'currency' => 'ILS',
                 'capacity_kw' => 75,

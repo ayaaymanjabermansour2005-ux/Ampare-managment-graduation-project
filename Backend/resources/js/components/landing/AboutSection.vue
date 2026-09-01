@@ -15,7 +15,7 @@ const PILLARS = [
 </script>
 
 <template>
-  <section id="story" class="py-14 sm:py-20 relative overflow-hidden">
+  <section id="story" class="py-14 sm:py-20 relative overflow-hidden section-tint-sage">
     <span class="story-watermark" aria-hidden="true"><Quote aria-hidden="true" /></span>
 
     <div class="max-w-3xl mx-auto px-5 sm:px-8 text-center relative" v-reveal>

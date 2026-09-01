@@ -2,9 +2,10 @@
 import { useToastStore } from "@/stores/toast";
 import { X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
-
+import { useI18n } from "vue-i18n";
 
 const toastStore = useToastStore();
+const { locale } = useI18n();
 
 const TYPE_META = {
   info: { icon: "fa-bell", accent: "#8A6D1F", gradient: "linear-gradient(135deg, #8A6D1F, #D4AF37)" },
@@ -16,10 +17,13 @@ const TYPE_META = {
 
 <template>
   <Teleport to="body">
-    <div class="fixed top-4 start-4 z-[200] flex flex-col gap-2.5 w-full max-w-xs">
+    <div
+      class="fixed top-4 z-[200] flex flex-col gap-2.5 w-full max-w-xs"
+      :class="locale === 'en' ? 'right-4' : 'left-4'"
+    >
       <TransitionGroup
         enter-active-class="transition duration-250 ease-out"
-        enter-from-class="opacity-0 -translate-x-4"
+        :enter-from-class="locale === 'en' ? 'opacity-0 translate-x-4' : 'opacity-0 -translate-x-4'"
         enter-to-class="opacity-100 translate-x-0"
         leave-active-class="transition duration-200 ease-in absolute"
         leave-from-class="opacity-100"

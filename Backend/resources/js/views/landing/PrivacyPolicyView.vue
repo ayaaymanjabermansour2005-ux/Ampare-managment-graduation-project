@@ -24,7 +24,7 @@ const sections = computed(() =>
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto px-5 sm:px-8 py-16">
+  <div class="max-w-2xl mx-auto px-5 sm:px-8 pt-28 sm:pt-32 pb-16">
     <RouterLink
       :to="{ name: 'landing.home' }"
       class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#6B6B6B] dark:text-[#a8aaa5] hover:text-[#8A6D1F] dark:hover:text-[#F4E0A5] mb-6"

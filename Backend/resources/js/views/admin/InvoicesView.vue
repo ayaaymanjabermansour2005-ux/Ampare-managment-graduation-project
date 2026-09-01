@@ -9,6 +9,7 @@ import InvoiceCorrectionModal from "@/components/admin/InvoiceCorrectionModal.vu
 import { useToastStore } from "@/stores/toast";
 import { Ban, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Circle, Eye, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -102,10 +103,10 @@ const sortedInvoices = computed(() => {
 /* ---------------- KPI Cards ---------------- */
 const countOnPage = (status) => invoices.value.filter((i) => i.status === status).length;
 const KPI_CARDS = computed(() => [
-  { icon: "fa-file-invoice-dollar", label: t("invoices_page.total_invoices"), value: pagination.value.total, c1: "#8A6D1F", c2: "#D4AF37" },
-  { icon: "fa-circle-check", label: statusLabel("paid") + t("common.this_page_suffix"), value: countOnPage("paid"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-hourglass-half", label: statusLabel("pending") + t("common.this_page_suffix"), value: countOnPage("pending"), c1: "#FFC107", c2: "#a3760a" },
-  { icon: "fa-triangle-exclamation", label: statusLabel("overdue") + t("common.this_page_suffix"), value: countOnPage("overdue"), c1: "#D9534F", c2: "#8A6D1F" },
+  { icon: "fa-file-invoice-dollar", label: t("invoices_page.total_invoices"), value: pagination.value.total, tone: "secondary" },
+  { icon: "fa-circle-check", label: statusLabel("paid") + t("common.this_page_suffix"), value: countOnPage("paid"), tone: "success" },
+  { icon: "fa-hourglass-half", label: statusLabel("pending") + t("common.this_page_suffix"), value: countOnPage("pending"), tone: "warning" },
+  { icon: "fa-triangle-exclamation", label: statusLabel("overdue") + t("common.this_page_suffix"), value: countOnPage("overdue"), tone: "danger" },
 ]);
 
 /* ---------------- مؤشر حالة النظام بالهيدر (نفس أسلوب صفحة قراءات العدادات) ----------------
@@ -298,16 +299,10 @@ onMounted(() => {
     <!-- ===== KPI CARDS ===== -->
     <section v-reveal>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+        />
       </div>
     </section>
 

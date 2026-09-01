@@ -5,10 +5,15 @@ import { useAdminFaults } from "@/composables/useAdminFaults";
 import faultService from "@/services/faultService";
 import { useFaultPredictions } from "@/composables/useFaultPredictions";
 import { useConfirm } from "@/composables/useConfirm";
+import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ChevronLeft, ChevronRight, CircleCheck, Eye, FileSpreadsheet, LoaderCircle, PlugZap, Printer, Search, ShieldCheck, Trash2, TriangleAlert, User, WandSparkles, X, Zap } from "@lucide/vue";
+import { printTable } from "@/utils/printTable";
+import generatorService from "@/services/generatorService";
+import { normalizeApiError } from "@/utils/normalizeApiError";
+import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Eye, FileSpreadsheet, LoaderCircle, Plus, PlugZap, Printer, Search, ShieldCheck, Trash2, TriangleAlert, User, WandSparkles, X, Zap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -85,6 +90,56 @@ function priorityLabel(p) {
   return m ? t(m.key) : p;
 }
 
+const priorityOptions = computed(() =>
+  Object.keys(PRIORITY_META).map((key) => ({ value: key, label: priorityLabel(key) })),
+);
+
+const toast = useToastStore();
+const isAddModalOpen = ref(false);
+const isCreating = ref(false);
+const createError = ref(null);
+const generatorOptions = ref([]);
+const addForm = ref({ generator_id: "", title: "", description: "", priority: "medium" });
+
+async function openAddModal() {
+  isAddModalOpen.value = true;
+  createError.value = null;
+  addForm.value = { generator_id: "", title: "", description: "", priority: "medium" };
+  if (generatorOptions.value.length === 0) {
+    try {
+      const { data } = await generatorService.list({ per_page: 500 });
+      const list = data.data?.data ?? data.data ?? [];
+      generatorOptions.value = list.map((g) => ({ value: g.id, label: g.name }));
+    } catch {
+      generatorOptions.value = [];
+    }
+  }
+}
+
+function closeAddModal() {
+  isAddModalOpen.value = false;
+}
+
+async function handleCreateFault() {
+  isCreating.value = true;
+  createError.value = null;
+  try {
+    await faultService.create({
+      generator_id: addForm.value.generator_id,
+      title: addForm.value.title,
+      description: addForm.value.description,
+      priority: addForm.value.priority,
+    });
+    isAddModalOpen.value = false;
+    toast.show({ type: "success", message: t("faults_page.add_fault_button") });
+    await fetchFaults(1);
+  } catch (err) {
+    createError.value = normalizeApiError(err, t("faults_page.create_error")).message;
+  } finally {
+    isCreating.value = false;
+  }
+}
+
 function timeAgo(str) {
   if (!str) return "—";
   const diffMs = Date.now() - new Date(str.replace(" ", "T")).getTime();
@@ -105,10 +160,10 @@ function percentSign() {
 /* ---------------- KPI Cards ----------------*/
 const countOnPage = (status) => faults.value.filter((f) => f.status === status).length;
 const KPI_CARDS = computed(() => [
-  { icon: "fa-triangle-exclamation", label: t("faults_page.total_faults"), value: pagination.value.total, c1: "#D9534F", c2: "#8A6D1F" },
-  { icon: "fa-hourglass-half", label: statusLabel("pending_verification") + t("common.this_page_suffix"), value: countOnPage("pending_verification"), c1: "#17A2B8", c2: "#0f6c7d" },
-  { icon: "fa-screwdriver-wrench", label: statusLabel("in_repair") + t("common.this_page_suffix"), value: countOnPage("in_repair"), c1: "#FFC107", c2: "#a3760a" },
-  { icon: "fa-circle-check", label: statusLabel("resolved") + t("common.this_page_suffix"), value: countOnPage("resolved"), c1: "#28A745", c2: "#1f7a37" },
+  { icon: "fa-triangle-exclamation", label: t("faults_page.total_faults"), value: pagination.value.total, tone: "danger" },
+  { icon: "fa-hourglass-half", label: statusLabel("pending_verification") + t("common.this_page_suffix"), value: countOnPage("pending_verification"), tone: "info" },
+  { icon: "fa-screwdriver-wrench", label: statusLabel("in_repair") + t("common.this_page_suffix"), value: countOnPage("in_repair"), tone: "warning" },
+  { icon: "fa-circle-check", label: statusLabel("resolved") + t("common.this_page_suffix"), value: countOnPage("resolved"), tone: "success" },
 ]);
 
 /* ---------------- Pagination بأزرار محدودة (نفس منهجية صفحتي الفنيين والشكاوى) ---------------- */
@@ -177,7 +232,19 @@ const exportUrl = computed(() =>
 );
 
 function handlePrint() {
-  window.print();
+  printTable({
+    title: t("faults_page.faults_list_title"),
+    locale: locale.value,
+    columns: [
+      { label: t("faults_page.col_title"), value: (f) => f.title },
+      { label: t("dashboard.generator_col"), value: (f) => f.generator_name ?? "—" },
+      { label: t("subscribers_page.subscriber_col"), value: (f) => f.reported_by_name ?? "—" },
+      { label: t("complaints_page.col_priority"), value: (f) => priorityLabel(f.priority) },
+      { label: t("dashboard.status_col"), value: (f) => statusLabel(f.status) },
+      { label: t("faults_page.col_reported_at"), value: (f) => timeAgo(f.reported_at) },
+    ],
+    rows: faults.value,
+  });
 }
 
 onMounted(() => {
@@ -198,32 +265,36 @@ onMounted(() => {
         <ChevronRight class="ltr:block rtl:hidden text-[9px]" aria-hidden="true" />
         <span class="text-[#52733D] dark:text-[#8cc35a] font-bold">{{ $t("faults_page.title") }}</span>
       </nav>
-      <div class="relative">
-        <h1 class="text-xl lg:text-2xl font-extrabold mb-1.5 flex items-center gap-2.5">
-          <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D9534F] to-[#8A6D1F] text-white flex items-center justify-center text-base">
-            <TriangleAlert aria-hidden="true" />
-          </span>
-          {{ $t("faults_page.title") }}
-        </h1>
-        <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#aeb1ab] max-w-lg">
-          {{ $t("faults_page.subtitle") }}
-        </p>
+      <div class="relative flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 class="text-xl lg:text-2xl font-extrabold mb-1.5 flex items-center gap-2.5">
+            <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D9534F] to-[#8A6D1F] text-white flex items-center justify-center text-base">
+              <TriangleAlert aria-hidden="true" />
+            </span>
+            {{ $t("faults_page.title") }}
+          </h1>
+          <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#aeb1ab] max-w-lg">
+            {{ $t("faults_page.subtitle") }}
+          </p>
+        </div>
+        <button
+          type="button"
+          @click="openAddModal"
+          class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2 shrink-0"
+        >
+          <Plus class="text-[11px]" aria-hidden="true" />
+          {{ $t("faults_page.add_fault_button") }}
+        </button>
       </div>
     </section>
 
     <!-- ===== KPI CARDS ===== -->
     <section v-reveal class="print-hidden">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+        />
       </div>
     </section>
 
@@ -458,9 +529,9 @@ onMounted(() => {
           </div>
           <div class="p-5 space-y-4 overflow-y-auto">
             <div class="flex flex-wrap items-center gap-2 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
-              <span><PlugZap aria-hidden="true" /> {{ activeFault.generator_name }}</span>
+              <span class="inline-flex items-center gap-1.5"><PlugZap aria-hidden="true" /> {{ activeFault.generator_name }}</span>
               <span>·</span>
-              <span><User aria-hidden="true" /> {{ activeFault.reported_by_name }}</span>
+              <span class="inline-flex items-center gap-1.5"><User aria-hidden="true" /> {{ activeFault.reported_by_name }}</span>
               <span class="status-chip" :class="PRIORITY_META[activeFault.priority]?.chip">{{ priorityLabel(activeFault.priority) }}</span>
               <span class="status-chip" :class="STATUS_META[activeFault.status]?.chip">{{ statusLabel(activeFault.status) }}</span>
             </div>
@@ -491,6 +562,63 @@ onMounted(() => {
             <button type="button" @click="handleOverrideSubmit" :disabled="isOverriding || !overrideReason.trim()" class="btn-fill-brand">
               <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isOverriding" /><ShieldCheck aria-hidden="true" v-else />
               {{ $t("faults_page.override_status_button") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ===== نافذة إضافة عطل جديد ===== -->
+    <Teleport to="body">
+      <div v-if="isAddModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="closeAddModal">
+        <div class="glass-card modal-panel-pop !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl overflow-hidden rounded-2xl">
+          <div class="modal-head-brand modal-head-brand--danger shrink-0">
+            <div class="modal-head-brand__inner">
+              <span class="modal-head-brand__icon"><TriangleAlert aria-hidden="true" /></span>
+              <div class="min-w-0">
+                <h3 class="modal-head-brand__title">{{ $t("faults_page.add_fault_title") }}</h3>
+                <p class="modal-head-brand__subtitle">{{ $t("faults_page.add_fault_subtitle") }}</p>
+              </div>
+            </div>
+            <button :aria-label="$t('common.close')" type="button" @click="closeAddModal" class="modal-head-brand__close">
+              <X aria-hidden="true" />
+            </button>
+          </div>
+          <form @submit.prevent="handleCreateFault" class="p-5 space-y-3.5 overflow-y-auto">
+            <div v-if="createError" class="alert-box">
+              <CircleAlert class="shrink-0" aria-hidden="true" /> {{ createError }}
+            </div>
+            <div>
+              <label class="field-label">{{ $t("faults_page.field_generator") }}</label>
+              <AppDropdownSelect
+                v-model="addForm.generator_id"
+                :options="generatorOptions"
+                :placeholder="$t('faults_page.select_generator_placeholder')"
+                variant="field" width-class="w-full" match-trigger-width
+              />
+            </div>
+            <div>
+              <label class="field-label">{{ $t("faults_page.field_title") }}</label>
+              <input v-model="addForm.title" type="text" required maxlength="150" class="field-input" />
+            </div>
+            <div>
+              <label class="field-label">{{ $t("faults_page.field_description") }}</label>
+              <textarea v-model="addForm.description" rows="4" required maxlength="2000" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] resize-none"></textarea>
+            </div>
+            <div>
+              <label class="field-label">{{ $t("faults_page.field_priority") }}</label>
+              <AppDropdownSelect
+                v-model="addForm.priority"
+                :options="priorityOptions"
+                variant="field" width-class="w-full" match-trigger-width
+              />
+            </div>
+          </form>
+          <div class="modal-footer-brand shrink-0">
+            <button type="button" @click="closeAddModal" class="btn-outline-brand">{{ $t("dashboard.cancel") }}</button>
+            <button type="button" @click="handleCreateFault" :disabled="isCreating || !addForm.generator_id || !addForm.title || !addForm.description" class="btn-fill-brand">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isCreating" /><Plus aria-hidden="true" v-else />
+              {{ $t("faults_page.add_fault_button") }}
             </button>
           </div>
         </div>

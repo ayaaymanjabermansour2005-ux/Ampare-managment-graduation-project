@@ -16,6 +16,8 @@ export function useAdminGeneratorOwners() {
   const error = ref(null);
   const searchTerm = ref("");
   const statusFilter = ref("");
+  const generatorsCountFilter = ref({ min: "", max: "" });
+  const commissionRateFilter = ref({ min: "", max: "" });
 
   const stats = ref(null);
   const isLoadingStats = ref(true);
@@ -30,6 +32,10 @@ export function useAdminGeneratorOwners() {
         page,
         search: searchTerm.value || undefined,
         status: statusFilter.value || undefined,
+        generators_count_min: generatorsCountFilter.value.min || undefined,
+        generators_count_max: generatorsCountFilter.value.max || undefined,
+        commission_rate_min: commissionRateFilter.value.min || undefined,
+        commission_rate_max: commissionRateFilter.value.max || undefined,
       });
       const payload = data.data;
 
@@ -145,6 +151,8 @@ export function useAdminGeneratorOwners() {
     error,
     searchTerm,
     statusFilter,
+    generatorsCountFilter,
+    commissionRateFilter,
     stats,
     isLoadingStats,
     fetchOwners,

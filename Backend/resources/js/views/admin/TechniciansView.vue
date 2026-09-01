@@ -14,6 +14,7 @@ import generatorService from "@/services/generatorService";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { Ban, Check, ChevronLeft, ChevronRight, ClipboardCheck, FileSpreadsheet, LoaderCircle, LockOpen, Pencil, Plus, Search, Trash2, UserCog, UserPlus, UserRound, Wrench } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -107,11 +108,11 @@ const avgRating = computed(() => {
   return (rated.reduce((sum, t) => sum + t.rating, 0) / rated.length).toFixed(1);
 });
 const KPI_CARDS = computed(() => [
-  { icon: "fa-user-gear", label: t("admin_technicians_page.kpi_total"), value: pagination.value.total, c1: "#8A6D1F", c2: "#D4AF37" },
-  { icon: "fa-circle-check", label: t("admin_technicians_page.kpi_available_now"), value: countByAvailability("available"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-briefcase", label: t("admin_technicians_page.kpi_busy"), value: countByAvailability("busy"), c1: "#17A2B8", c2: "#0f6c7d" },
-  { icon: "fa-circle-xmark", label: t("admin_technicians_page.kpi_unavailable"), value: countByAvailability("unavailable"), c1: "#D9534F", c2: "#8A2E2E" },
-  { icon: "fa-star", label: t("admin_technicians_page.kpi_avg_rating"), value: avgRating.value, c1: "#D4AF37", c2: "#8A6D1F" },
+  { icon: "fa-user-gear", label: t("admin_technicians_page.kpi_total"), value: pagination.value.total, tone: "secondary" },
+  { icon: "fa-circle-check", label: t("admin_technicians_page.kpi_available_now"), value: countByAvailability("available"), tone: "success" },
+  { icon: "fa-briefcase", label: t("admin_technicians_page.kpi_busy"), value: countByAvailability("busy"), tone: "info" },
+  { icon: "fa-circle-xmark", label: t("admin_technicians_page.kpi_unavailable"), value: countByAvailability("unavailable"), tone: "danger" },
+  { icon: "fa-star", label: t("admin_technicians_page.kpi_avg_rating"), value: avgRating.value, decimals: 1, tone: "secondary" },
 ]);
 
 /* ---------------- Pagination بأزرار محدودة (فنيون) ---------------- */
@@ -274,10 +275,10 @@ const ACTIVE_TASK_STATUSES = ["pending", "assigned", "on_the_way", "in_progress"
 
 /* ---------------- KPI Cards (طلبات الصيانة — إجماليات حقيقية من الباك، وليست الصفحة الحالية فقط) ---------------- */
 const MAINTENANCE_KPI_CARDS = computed(() => [
-  { icon: "fa-clipboard-list", label: t("admin_technicians_page.kpi_maintenance_total"), value: maintenanceStats.value.total, c1: "#8A6D1F", c2: "#D4AF37" },
-  { icon: "fa-gears", label: t("admin_technicians_page.kpi_maintenance_active"), value: maintenanceStats.value.active, c1: "#17A2B8", c2: "#0f6c7d" },
-  { icon: "fa-clipboard-check", label: t("admin_technicians_page.kpi_maintenance_pending_review"), value: maintenanceStats.value.pending_review, c1: "#D4AF37", c2: "#8A6D1F" },
-  { icon: "fa-circle-check", label: t("admin_technicians_page.kpi_maintenance_approved"), value: maintenanceStats.value.approved, c1: "#28A745", c2: "#1f7a37" },
+  { icon: "fa-clipboard-list", label: t("admin_technicians_page.kpi_maintenance_total"), value: maintenanceStats.value.total, tone: "secondary" },
+  { icon: "fa-gears", label: t("admin_technicians_page.kpi_maintenance_active"), value: maintenanceStats.value.active, tone: "info" },
+  { icon: "fa-clipboard-check", label: t("admin_technicians_page.kpi_maintenance_pending_review"), value: maintenanceStats.value.pending_review, tone: "warning" },
+  { icon: "fa-circle-check", label: t("admin_technicians_page.kpi_maintenance_approved"), value: maintenanceStats.value.approved, tone: "success" },
 ]);
 
 /* ---------------- Pagination (طلبات الصيانة — Server-side حقيقي) ---------------- */
@@ -502,16 +503,10 @@ onMounted(() => {
       <!-- ===== KPI CARDS ===== -->
       <section v-reveal>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5">
-          <div
-            v-for="c in KPI_CARDS"
-            :key="c.label"
-            class="kpi-card glass-card hoverable"
-            :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-          >
-            <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-            <div class="text-lg font-extrabold">{{ c.value }}</div>
-            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          </div>
+          <StatCard
+            v-for="c in KPI_CARDS" :key="c.label"
+            :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone" :decimals="c.decimals ?? 0"
+          />
         </div>
       </section>
 
@@ -694,16 +689,10 @@ onMounted(() => {
       <!-- ===== KPI CARDS ===== -->
       <section v-reveal>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          <div
-            v-for="c in MAINTENANCE_KPI_CARDS"
-            :key="c.label"
-            class="kpi-card glass-card hoverable"
-            :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-          >
-            <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-            <div class="text-lg font-extrabold">{{ c.value }}</div>
-            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          </div>
+          <StatCard
+            v-for="c in MAINTENANCE_KPI_CARDS" :key="c.label"
+            :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+          />
         </div>
       </section>
 

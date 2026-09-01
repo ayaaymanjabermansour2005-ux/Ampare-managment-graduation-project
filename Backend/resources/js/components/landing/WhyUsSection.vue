@@ -37,6 +37,15 @@ function onKeydown(e) {
 </script>
 
 <template>
+  <!-- SVG turbulence/displacement filter giving .why-card's ::before outline its
+       hand-drawn, uneven-thickness look — see .why-card::before in landing-glass.css. -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <filter id="why-card-sketch-filter" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="7" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+
   <section id="why" :ref="onSectionMounted" class="py-14 sm:py-24 overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-8">
       <div class="text-center max-w-xl mx-auto mb-8 sm:mb-14" v-reveal>
@@ -55,7 +64,7 @@ function onKeydown(e) {
         @focusout="isPaused = false"
         @keydown="onKeydown"
       >
-        <button type="button" class="why-nav why-nav--prev" :aria-label="t('common.previous')" @click="prev">
+        <button type="button" class="why-nav why-nav--prev hidden sm:flex" :aria-label="t('common.previous')" @click="prev">
           <ChevronRight aria-hidden="true" v-if="isRtl" /><ChevronLeft aria-hidden="true" v-else />
         </button>
 
@@ -86,7 +95,7 @@ function onKeydown(e) {
           </div>
         </div>
 
-        <button type="button" class="why-nav why-nav--next" :aria-label="t('common.next')" @click="next">
+        <button type="button" class="why-nav why-nav--next hidden sm:flex" :aria-label="t('common.next')" @click="next">
           <ChevronLeft aria-hidden="true" v-if="isRtl" /><ChevronRight aria-hidden="true" v-else />
         </button>
       </div>

@@ -42,7 +42,7 @@ final class ApprovePaymentAction
 
             $this->invoiceService->recalculateStatus($payment->invoice);
 
-            return $payment->fresh(['invoice', 'processedBy']);
+            return $payment->fresh(['invoice', 'processedBy', 'paymentMethod']);
         });
     }
 }

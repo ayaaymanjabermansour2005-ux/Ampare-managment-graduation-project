@@ -211,6 +211,44 @@ class UserTest extends TestCase
         $this->assertCount(2, $response->json('data.data'));
     }
 
+    public function test_admin_can_filter_owners_by_commission_rate_range(): void
+    {
+        $admin = $this->makeAdmin();
+        $lowRate = $this->makeOwner();
+        $highRate = $this->makeOwner();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/users/{$lowRate->id}/commission-settings", ['commission_mode' => 'fixed', 'commission_rate' => 2])
+            ->assertOk();
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/users/{$highRate->id}/commission-settings", ['commission_mode' => 'fixed', 'commission_rate' => 9])
+            ->assertOk();
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/v1/users?role='.RoleEnum::GENERATOR_OWNER->value.'&commission_rate_min=5&commission_rate_max=10');
+
+        $response->assertOk();
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertTrue($ids->contains($highRate->id));
+        $this->assertFalse($ids->contains($lowRate->id));
+    }
+
+    public function test_admin_can_filter_owners_by_generators_count_range(): void
+    {
+        $admin = $this->makeAdmin();
+        $ownerWithGenerators = $this->makeOwner();
+        \App\Models\Generator::factory()->count(3)->create(['owner_id' => $ownerWithGenerators->id]);
+        $ownerWithoutGenerators = $this->makeOwner();
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/v1/users?role='.RoleEnum::GENERATOR_OWNER->value.'&generators_count_min=1');
+
+        $response->assertOk();
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertTrue($ids->contains($ownerWithGenerators->id));
+        $this->assertFalse($ids->contains($ownerWithoutGenerators->id));
+    }
+
     public function test_admin_can_search_users_by_name(): void
     {
         $admin = $this->makeAdmin();

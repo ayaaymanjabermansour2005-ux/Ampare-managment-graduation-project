@@ -19,8 +19,17 @@ use Illuminate\Validation\ValidationException;
 
 class UserService
 {
-    public function list(?string $roleFilter = null, ?string $search = null, int $perPage = 15, ?string $statusFilter = null, ?string $subscriptionStatus = null): LengthAwarePaginator
-    {
+    public function list(
+        ?string $roleFilter = null,
+        ?string $search = null,
+        int $perPage = 15,
+        ?string $statusFilter = null,
+        ?string $subscriptionStatus = null,
+        ?int $generatorsCountMin = null,
+        ?int $generatorsCountMax = null,
+        ?float $commissionRateMin = null,
+        ?float $commissionRateMax = null,
+    ): LengthAwarePaginator {
         $query = User::query()->with('roles', 'permissions', 'plan');
 
         if ($roleFilter === 'generator_owner') {
@@ -34,6 +43,19 @@ class UserService
                         }], 'final_amount_ils');
                 }])
                 ->with('latestCommissionRate');
+
+            if ($generatorsCountMin !== null) {
+                $query->having('generators_count', '>=', $generatorsCountMin);
+            }
+            if ($generatorsCountMax !== null) {
+                $query->having('generators_count', '<=', $generatorsCountMax);
+            }
+            if ($commissionRateMin !== null) {
+                $query->where('commission_rate', '>=', $commissionRateMin);
+            }
+            if ($commissionRateMax !== null) {
+                $query->where('commission_rate', '<=', $commissionRateMax);
+            }
         }
 
         if ($roleFilter === 'subscriber') {

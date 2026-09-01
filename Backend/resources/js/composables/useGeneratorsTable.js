@@ -34,6 +34,11 @@ export function useGeneratorsTable(options = {}) {
   const ownerFilter = ref("");
   const cities = ref([]);
 
+  const capacityFilter = ref({ min: "", max: "" });
+  const fuelFilter = ref({ min: "", max: "" });
+  const subscribersFilter = ref({ min: "", max: "" });
+  const revenueFilter = ref({ min: "", max: "" });
+
   const isSaving = ref(false);
   const saveError = ref(null);
 
@@ -56,6 +61,14 @@ export function useGeneratorsTable(options = {}) {
         status: statusFilter.value || undefined,
         city: areaFilter.value || undefined,
         owner_id: ownerFilter.value || undefined,
+        capacity_min: capacityFilter.value.min || undefined,
+        capacity_max: capacityFilter.value.max || undefined,
+        fuel_min: fuelFilter.value.min || undefined,
+        fuel_max: fuelFilter.value.max || undefined,
+        subscribers_min: subscribersFilter.value.min || undefined,
+        subscribers_max: subscribersFilter.value.max || undefined,
+        revenue_min: revenueFilter.value.min || undefined,
+        revenue_max: revenueFilter.value.max || undefined,
       });
       const payload = data.data;
       let list = payload.data ?? payload;
@@ -165,6 +178,10 @@ export function useGeneratorsTable(options = {}) {
     areaFilter,
     ownerFilter,
     cities,
+    capacityFilter,
+    fuelFilter,
+    subscribersFilter,
+    revenueFilter,
     isSaving,
     saveError,
     deletingId,

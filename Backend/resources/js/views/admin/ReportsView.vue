@@ -7,6 +7,7 @@ import platformCommissionService from "@/services/platformCommissionService";
 import { vReveal } from "@/directives/reveal";
 import { ChevronLeft, ChevronRight, CircleAlert, FileDown, HandCoins, PlugZap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t } = useI18n();
@@ -40,10 +41,10 @@ const paidAmountOnPage = computed(() =>
   commissions.value.filter((c) => c.status === "paid").reduce((sum, c) => sum + c.commission_amount, 0)
 );
 const KPI_CARDS = computed(() => [
-  { icon: "fa-sack-dollar", label: t("reports_page.total_currently_earned"), value: `${totalEarned.value.toFixed(2)} ₪`, c1: "#8A6D1F", c2: "#5c4a15" },
-  { icon: "fa-hourglass-half", label: statusLabel("earned") + t("common.this_page_suffix"), value: countOnPage("earned"), c1: "#FFC107", c2: "#a3760a" },
-  { icon: "fa-circle-check", label: statusLabel("paid") + t("common.this_page_suffix"), value: countOnPage("paid"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-coins", label: t("reports_page.paid_amount_this_page"), value: `${paidAmountOnPage.value.toFixed(2)} ₪`, c1: "#3E582E", c2: "#52733D" },
+  { icon: "fa-sack-dollar", label: t("reports_page.total_currently_earned"), value: totalEarned.value, decimals: 2, suffix: "₪", tone: "secondary" },
+  { icon: "fa-hourglass-half", label: statusLabel("earned") + t("common.this_page_suffix"), value: countOnPage("earned"), tone: "warning" },
+  { icon: "fa-circle-check", label: statusLabel("paid") + t("common.this_page_suffix"), value: countOnPage("paid"), tone: "success" },
+  { icon: "fa-coins", label: t("reports_page.paid_amount_this_page"), value: paidAmountOnPage.value, decimals: 2, suffix: "₪", tone: "primary" },
 ]);
 
 /* ---------------- Pagination بأزرار محدودة (نفس منهجية صفحة الأعطال) ---------------- */
@@ -126,16 +127,10 @@ onMounted(() => {
     <!-- ===== KPI CARDS ===== -->
     <section v-reveal>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone" :suffix="c.suffix ?? ''" :decimals="c.decimals ?? 0"
+        />
       </div>
     </section>
 

@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Events\ComplaintResolved;
+use App\Events\ComplaintSubmitted;
 use App\Events\ContactMessageReceived;
 use App\Events\FaultReported;
 use App\Events\FuelStockLow;
 use App\Events\GeneratorHealthReportGenerated;
 use App\Events\GeneratorScheduleAnnounced;
 use App\Events\InvoiceDueSoon;
+use App\Events\InvoiceOverdue;
 use App\Events\InvoicePaid;
 use App\Events\MessageSent;
 use App\Events\PaymentSubmitted;
@@ -19,13 +21,16 @@ use App\Events\TechnicianTaskRejected;
 use App\Events\TechnicianTaskSubmitted;
 use App\Listeners\CheckApplicationDependenciesHealth;
 use App\Listeners\SendComplaintResolvedNotification;
+use App\Listeners\SendFaultReportedAdminNotification;
 use App\Listeners\SendFaultReportedNotification;
 use App\Listeners\SendFuelStockLowNotification;
 use App\Listeners\SendGeneratorHealthReportNotification;
 use App\Listeners\SendGeneratorScheduleAnnouncedNotification;
 use App\Listeners\SendInvoiceDueSoonNotification;
+use App\Listeners\SendInvoiceOverdueNotification;
 use App\Listeners\SendInvoicePaidNotification;
 use App\Listeners\SendMessageNotification;
+use App\Listeners\SendNewComplaintNotification;
 use App\Listeners\SendNewContactMessageNotification;
 use App\Listeners\SendPaymentSubmittedNotification;
 use App\Listeners\SendSubscriptionApprovedNotification;
@@ -52,10 +57,19 @@ class EventServiceProvider extends ServiceProvider
 
         FaultReported::class => [
             SendFaultReportedNotification::class,
+            SendFaultReportedAdminNotification::class,
         ],
 
         ComplaintResolved::class => [
             SendComplaintResolvedNotification::class,
+        ],
+
+        ComplaintSubmitted::class => [
+            SendNewComplaintNotification::class,
+        ],
+
+        InvoiceOverdue::class => [
+            SendInvoiceOverdueNotification::class,
         ],
 
         MessageSent::class => [

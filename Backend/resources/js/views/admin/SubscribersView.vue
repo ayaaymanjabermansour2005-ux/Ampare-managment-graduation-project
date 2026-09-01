@@ -20,6 +20,7 @@ import TransferSubscriptionModal from "@/components/admin/TransferSubscriptionMo
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, StickyNote, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 import LightningCanvas from "@/components/ui/LightningCanvas.vue";
 
 
@@ -720,11 +721,11 @@ const KPI_CARDS = computed(() => {
   if (!stats.value) return [];
   const s = stats.value;
   return [
-    { icon: "fa-users", label: t("subscribers_page.total_subscribers"), raw: s.total, decimals: 0, c1: "#52733D", c2: "#3E582E" },
-    { icon: "fa-circle-check", label: t("users_page.status_active"), raw: s.active, decimals: 0, c1: "#28A745", c2: "#1f7a37" },
-    { icon: "fa-clock", label: t("subscribers_page.status_overdue"), raw: s.overdue_count, decimals: 0, c1: "#D4AF37", c2: "#8A6D1F" },
-    { icon: "fa-ban", label: t("users_page.status_suspended"), raw: s.suspended_count, decimals: 0, c1: "#D9534F", c2: "#8A6D1F" },
-    { icon: "fa-user-plus", label: t("subscribers_page.new_this_month"), raw: s.new_this_month_count, decimals: 0, c1: "#8A6D1F", c2: "#6b551b" },
+    { icon: "fa-users", label: t("subscribers_page.total_subscribers"), raw: s.total, decimals: 0, tone: "primary" },
+    { icon: "fa-circle-check", label: t("users_page.status_active"), raw: s.active, decimals: 0, tone: "success" },
+    { icon: "fa-clock", label: t("subscribers_page.status_overdue"), raw: s.overdue_count, decimals: 0, tone: "warning" },
+    { icon: "fa-ban", label: t("users_page.status_suspended"), raw: s.suspended_count, decimals: 0, tone: "danger" },
+    { icon: "fa-user-plus", label: t("subscribers_page.new_this_month"), raw: s.new_this_month_count, decimals: 0, tone: "secondary" },
   ];
 });
 
@@ -1140,16 +1141,10 @@ onMounted(() => {
         <div v-for="i in 5" :key="i" class="h-24 rounded-2xl thumb-loading"></div>
       </div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold"><span v-count-up="{ value: c.raw, decimals: c.decimals }">0</span></div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.raw" :icon="c.icon" :tone="c.tone" :decimals="c.decimals ?? 0"
+        />
       </div>
     </section>
 
@@ -1835,16 +1830,10 @@ onMounted(() => {
     <!-- ===== KPI CARDS ===== -->
     <section v-reveal>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div
-          v-for="c in SUBSCRIPTION_KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in SUBSCRIPTION_KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+        />
       </div>
     </section>
 

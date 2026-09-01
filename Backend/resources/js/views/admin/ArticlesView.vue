@@ -10,6 +10,7 @@ import articleService from "@/services/articleService";
 import { vReveal } from "@/directives/reveal";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, FileText, Languages, LoaderCircle, MessageSquareOff, MessagesSquare, Newspaper, Pencil, Plus, Reply, Save, Trash2, TriangleAlert, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -55,9 +56,9 @@ const form = ref({
 });
 
 const KPI_CARDS = computed(() => [
-  { icon: "fa-newspaper", label: t("articles_page.total_articles"), value: pagination.value.total, c1: "#3E582E", c2: "#52733D" },
-  { icon: "fa-circle-check", label: t("articles_page.published_label"), value: articles.value.filter((a) => a.is_published).length, c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-pen", label: t("articles_page.draft_label"), value: articles.value.filter((a) => !a.is_published).length, c1: "#8A6D1F", c2: "#5c4a15" },
+  { icon: "fa-newspaper", label: t("articles_page.total_articles"), value: pagination.value.total, tone: "primary" },
+  { icon: "fa-circle-check", label: t("articles_page.published_label"), value: articles.value.filter((a) => a.is_published).length, tone: "success" },
+  { icon: "fa-pen", label: t("articles_page.draft_label"), value: articles.value.filter((a) => !a.is_published).length, tone: "secondary" },
 ]);
 
 function openCreate() {
@@ -261,16 +262,10 @@ onMounted(() => {
       <!-- ===== KPI CARDS ===== -->
       <section v-reveal>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          <div
-            v-for="c in KPI_CARDS"
-            :key="c.label"
-            class="kpi-card glass-card hoverable"
-            :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-          >
-            <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-            <div class="text-lg font-extrabold">{{ c.value }}</div>
-            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          </div>
+          <StatCard
+            v-for="c in KPI_CARDS" :key="c.label"
+            :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+          />
         </div>
       </section>
 

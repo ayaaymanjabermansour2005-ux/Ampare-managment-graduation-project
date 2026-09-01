@@ -38,6 +38,10 @@ const NOTIF_ICONS = {
   TechnicianTaskApprovedNotification: { icon: "fa-circle-check", color: "#28A745" },
   TechnicianTaskRejectedNotification: { icon: "fa-circle-xmark", color: "#D9534F" },
   GeneratorScheduleAnnouncedNotification: { icon: "fa-calendar-day", color: "#8A6D1F" },
+  NewComplaintNotification: { icon: "fa-comment-dots", color: "#D9534F" },
+  FaultReportedAdminNotification: { icon: "fa-triangle-exclamation", color: "#D9534F" },
+  InvoiceOverdueNotification: { icon: "fa-file-invoice-dollar", color: "#D9534F" },
+  NewContactMessageNotification: { icon: "fa-envelope", color: "#17A2B8" },
 };
 const notifMeta = computed(() => NOTIF_ICONS[props.notification.type] || { icon: "fa-bell", color: "#52733D" });
 
@@ -51,15 +55,23 @@ const LINK_ROUTE_MAP = {
   invoice: {
     subscriber: { name: "subscriber.invoices" },
     generator_owner: { name: "owner.invoices" },
+    admin: { name: "admin.invoices" },
   },
   payment: {
     generator_owner: { name: "owner.invoices", query: { tab: "payments" } },
   },
   complaint: {
     subscriber: { name: "subscriber.support", query: { tab: "complaints" } },
+    admin: { name: "admin.complaints" },
   },
-  fault: { generator_owner: { name: "owner.generators" } },
+  fault: {
+    generator_owner: { name: "owner.generators" },
+    admin: { name: "admin.faults" },
+  },
   subscription: { subscriber: { name: "subscriber.subscription" } },
+  contact_message: {
+    admin: { name: "admin.contact-messages" },
+  },
   conversation: null,
 };
 

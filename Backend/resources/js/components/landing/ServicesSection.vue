@@ -21,7 +21,7 @@ const ICONS = {
 </script>
 
 <template>
-  <section id="services" ref="servicesStage" class="py-14 sm:py-24 scroll-glow-stage">
+  <section id="services" ref="servicesStage" class="py-14 sm:py-24 scroll-glow-stage section-tint-gold">
     <!-- خلفية parallax مرتبطة بسكرول الصفحة العادي — زخرفية بس، ما بتأثر على المحتوى -->
     <div class="scroll-glow-bg" aria-hidden="true">
       <span class="scroll-glow-blob scroll-glow-blob--1"></span>

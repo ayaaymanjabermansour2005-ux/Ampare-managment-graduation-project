@@ -16,6 +16,7 @@ import adminDashboardService from "@/services/adminDashboardService";
 import { useToastStore } from "@/stores/toast";
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Circle, CirclePlus, CreditCard, Eye, FileDown, FileSpreadsheet, Info, LoaderCircle, Paperclip, Printer, Search, Trash2, UserCog, UserRound, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -187,10 +188,10 @@ const exportUrl = computed(() =>
 /* ---------------- KPI Cards (نفس منهجية صفحة الفواتير: هذه الصفحة فقط) ---------------- */
 const countOnPage = (status) => payments.value.filter((p) => p.status === status).length;
 const KPI_CARDS = computed(() => [
-  { icon: "fa-wallet", label: t("admin_payments_page.kpi_total"), value: pagination.value.total, c1: "#8A6D1F", c2: "#D4AF37" },
-  { icon: "fa-circle-check", label: t("admin_payments_page.kpi_accepted_page"), value: countOnPage("paid"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-hourglass-half", label: t("admin_payments_page.kpi_pending_page"), value: countOnPage("pending"), c1: "#FFC107", c2: "#a3760a" },
-  { icon: "fa-triangle-exclamation", label: t("admin_payments_page.kpi_needs_correction_page"), value: countOnPage("needs_correction"), c1: "#17A2B8", c2: "#0f6e7c" },
+  { icon: "fa-wallet", label: t("admin_payments_page.kpi_total"), value: pagination.value.total, tone: "secondary" },
+  { icon: "fa-circle-check", label: t("admin_payments_page.kpi_accepted_page"), value: countOnPage("paid"), tone: "success" },
+  { icon: "fa-hourglass-half", label: t("admin_payments_page.kpi_pending_page"), value: countOnPage("pending"), tone: "warning" },
+  { icon: "fa-triangle-exclamation", label: t("admin_payments_page.kpi_needs_correction_page"), value: countOnPage("needs_correction"), tone: "info" },
 ]);
 
 const systemStatusInfo = computed(() => {
@@ -231,10 +232,6 @@ const financialSummary = ref(null);
 const isLoadingFinancialSummary = ref(true);
 const financialSummaryError = ref(null);
 
-function formatIls(value) {
-  return `${Number(value ?? 0).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US")} ₪`;
-}
-
 async function fetchFinancialSummary() {
   isLoadingFinancialSummary.value = true;
   financialSummaryError.value = null;
@@ -252,10 +249,10 @@ const FINANCIAL_SUMMARY = computed(() => {
   const s = financialSummary.value;
   if (!s) return [];
   return [
-    { icon: "fa-money-bill-wave", label: t("admin_payments_page.financial_today"), value: formatIls(s.today_total_ils), c1: "#28A745", c2: "#1f7a37" },
-    { icon: "fa-calendar-days", label: t("admin_payments_page.financial_month_total"), value: formatIls(s.month_total_ils), c1: "#8A6D1F", c2: "#D4AF37" },
-    { icon: "fa-receipt", label: t("admin_payments_page.financial_month_tx_count"), value: Number(s.month_transactions_count ?? 0).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US"), c1: "#17A2B8", c2: "#0f6e7c" },
-    { icon: "fa-hourglass-half", label: t("admin_payments_page.financial_pending_tx"), value: Number(s.pending_transactions_count ?? 0).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US"), c1: "#FFC107", c2: "#a3760a" },
+    { icon: "fa-money-bill-wave", label: t("admin_payments_page.financial_today"), value: Number(s.today_total_ils ?? 0), suffix: "₪", tone: "success" },
+    { icon: "fa-calendar-days", label: t("admin_payments_page.financial_month_total"), value: Number(s.month_total_ils ?? 0), suffix: "₪", tone: "secondary" },
+    { icon: "fa-receipt", label: t("admin_payments_page.financial_month_tx_count"), value: Number(s.month_transactions_count ?? 0), tone: "info" },
+    { icon: "fa-hourglass-half", label: t("admin_payments_page.financial_pending_tx"), value: Number(s.pending_transactions_count ?? 0), tone: "warning" },
   ];
 });
 
@@ -521,10 +518,10 @@ const filteredMethods = computed(() => {
  */
 const countMethodsByType = (type) => methods.value.filter((m) => m.type === type).length;
 const METHOD_KPI_CARDS = computed(() => [
-  { icon: "fa-credit-card", label: t("admin_payments_page.methods_kpi_total"), value: methodsPagination.value.total, c1: "#8A6D1F", c2: "#D4AF37" },
-  { icon: TYPE_META.bank.icon, label: typeLabel("bank") + " " + t("admin_payments_page.methods_active_page"), value: countMethodsByType("bank"), c1: TYPE_META.bank.c1, c2: TYPE_META.bank.c2 },
-  { icon: TYPE_META.wallet.icon, label: typeLabel("wallet") + " " + t("admin_payments_page.methods_active_page"), value: countMethodsByType("wallet"), c1: TYPE_META.wallet.c1, c2: TYPE_META.wallet.c2 },
-  { icon: TYPE_META.cash.icon, label: typeLabel("cash") + " " + t("admin_payments_page.methods_active_page"), value: countMethodsByType("cash"), c1: TYPE_META.cash.c1, c2: TYPE_META.cash.c2 },
+  { icon: "fa-credit-card", label: t("admin_payments_page.methods_kpi_total"), value: methodsPagination.value.total, tone: "secondary" },
+  { icon: TYPE_META.bank.icon, label: typeLabel("bank") + " " + t("admin_payments_page.methods_active_page"), value: countMethodsByType("bank"), tone: "info" },
+  { icon: TYPE_META.wallet.icon, label: typeLabel("wallet") + " " + t("admin_payments_page.methods_active_page"), value: countMethodsByType("wallet"), tone: "secondary" },
+  { icon: TYPE_META.cash.icon, label: typeLabel("cash") + " " + t("admin_payments_page.methods_active_page"), value: countMethodsByType("cash"), tone: "primary" },
 ]);
 
 async function handleDeleteMethod(m) {
@@ -630,11 +627,6 @@ onMounted(() => {
               <Circle class="text-[7px]" aria-hidden="true" /> {{ systemStatusInfo.label }}
             </span>
           </template>
-          <template v-else-if="activeTab === 'technician_payments'">
-            <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#aeb1ab] max-w-lg">
-              {{ $t("admin_payments_page.technician_payments_readonly_notice") }}
-            </p>
-          </template>
           <template v-else-if="activeTab === 'methods'">
             <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#aeb1ab] max-w-lg">
               {{ $t("payment_methods_page.subtitle") }}
@@ -670,16 +662,10 @@ onMounted(() => {
       <!-- ===== KPI CARDS ===== -->
       <section v-reveal>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          <div
-            v-for="c in KPI_CARDS"
-            :key="c.label"
-            class="kpi-card glass-card hoverable"
-            :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-          >
-            <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-            <div class="text-lg font-extrabold">{{ c.value }}</div>
-            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          </div>
+          <StatCard
+            v-for="c in KPI_CARDS" :key="c.label"
+            :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+          />
         </div>
       </section>
 
@@ -692,16 +678,10 @@ onMounted(() => {
           <div v-for="i in 4" :key="i" class="h-20 rounded-xl thumb-loading"></div>
         </div>
         <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          <div
-            v-for="c in FINANCIAL_SUMMARY"
-            :key="c.label"
-            class="kpi-card glass-card hoverable"
-            :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-          >
-            <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-            <div class="text-lg font-extrabold">{{ c.value }}</div>
-            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          </div>
+          <StatCard
+            v-for="c in FINANCIAL_SUMMARY" :key="c.label"
+            :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone" :suffix="c.suffix ?? ''"
+          />
         </div>
       </section>
 
@@ -1078,16 +1058,10 @@ onMounted(() => {
       <!-- ===== KPI CARDS ===== -->
       <section v-reveal>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          <div
-            v-for="c in METHOD_KPI_CARDS"
-            :key="c.label"
-            class="kpi-card glass-card hoverable"
-            :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-          >
-            <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-            <div class="text-lg font-extrabold">{{ c.value }}</div>
-            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-          </div>
+          <StatCard
+            v-for="c in METHOD_KPI_CARDS" :key="c.label"
+            :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+          />
         </div>
       </section>
 

@@ -18,6 +18,7 @@ const i18n = createI18n({
                 alert_tag_critical: 'حرج', alert_tag_warning: 'تحذير', alert_tag_info: 'معلومة',
                 distributed_revenue: 'إيرادات موزعة', pending_dues: 'مستحقات معلقة',
                 new_owners_label: 'ملاك جدد',
+                commission_tiered_label: 'شرائح تلقائية',
             },
         },
     },
@@ -81,17 +82,33 @@ describe('useOwnersAnalytics', () => {
         });
     });
 
+    describe('commissionLabel', () => {
+        it('shows the percentage when a fixed rate is set', () => {
+            const { commissionLabel } = useOwnersAnalytics(makeInputs());
+            expect(commissionLabel(5, 'fixed')).toBe('5%');
+        });
+
+        it('shows the auto-tiers label when mode is tiered and no fixed rate is set', () => {
+            const { commissionLabel } = useOwnersAnalytics(makeInputs());
+            expect(commissionLabel(null, 'tiered')).toBe('شرائح تلقائية');
+        });
+
+        it('falls back to a dash when neither rate nor mode is set', () => {
+            const { commissionLabel } = useOwnersAnalytics(makeInputs());
+            expect(commissionLabel(null, undefined)).toBe('-');
+        });
+    });
+
     describe('KPI_CARDS', () => {
         it('returns an empty array before stats load', () => {
             const { KPI_CARDS } = useOwnersAnalytics(makeInputs());
             expect(KPI_CARDS.value).toEqual([]);
         });
 
-        it('computes the active-percentage sub-label from real stats', () => {
+        it('computes the active-percentage suffix from real stats', () => {
             const stats = ref({ total: 4, active: 3, locked: 1, total_generators: 8, avg_generators_per_owner: 2, total_revenue_ils: 5000 });
             const { KPI_CARDS } = useOwnersAnalytics(makeInputs({ stats }));
-            expect(KPI_CARDS.value[0].sub).toBe('1 حساب موقوف');
-            expect(KPI_CARDS.value[1].sub).toBe('75%');
+            expect(KPI_CARDS.value[1].suffix).toBe('(75%)');
         });
     });
 

@@ -6,6 +6,7 @@ import loginLogService from "@/services/loginLogService";
 import { vReveal } from "@/directives/reveal";
 import { ChevronLeft, ChevronRight, FileSpreadsheet, Printer, Search, ShieldUser, TriangleAlert } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t } = useI18n();
@@ -75,10 +76,10 @@ function isSuspicious(log) {
 /* ---------------- KPI Cards ---------------- */
 const countOnPage = (event) => logs.value.filter((l) => l.event === event).length;
 const KPI_CARDS = computed(() => [
-  { icon: "fa-list-check", label: t("login_logs_page.total_logs"), value: pagination.value.total, c1: "#3E582E", c2: "#52733D" },
-  { icon: "fa-circle-check", label: eventLabel("login_succeeded") + t("common.this_page_suffix"), value: countOnPage("login_succeeded"), c1: "#28A745", c2: "#1f7a37" },
-  { icon: "fa-triangle-exclamation", label: eventLabel("login_failed") + t("common.this_page_suffix"), value: countOnPage("login_failed"), c1: "#D9534F", c2: "#8A2E2A" },
-  { icon: "fa-shield-halved", label: t("login_logs_page.suspicious_ips"), value: suspiciousIps.value.size, c1: "#8A6D1F", c2: "#5c4a15" },
+  { icon: "fa-list-check", label: t("login_logs_page.total_logs"), value: pagination.value.total, tone: "primary" },
+  { icon: "fa-circle-check", label: eventLabel("login_succeeded") + t("common.this_page_suffix"), value: countOnPage("login_succeeded"), tone: "success" },
+  { icon: "fa-triangle-exclamation", label: eventLabel("login_failed") + t("common.this_page_suffix"), value: countOnPage("login_failed"), tone: "danger" },
+  { icon: "fa-shield-halved", label: t("login_logs_page.suspicious_ips"), value: suspiciousIps.value.size, tone: "secondary" },
 ]);
 
 /* ---------------- Pagination بأزرار محدودة ---------------- */
@@ -149,16 +150,10 @@ onMounted(() => reload());
     <!-- ===== KPI CARDS ===== -->
     <section v-reveal>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+        />
       </div>
     </section>
 

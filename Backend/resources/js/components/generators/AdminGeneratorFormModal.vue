@@ -28,7 +28,7 @@ const isEditMode = computed(() => !!props.generator);
 function emptyForm() {
   return {
     name: "", name_en: "", price_per_kw: "", currency: "ILS", capacity_kw: "", lines_count: 1,
-    fuel_type: "diesel", notes: "", operating_schedule: "24h", operating_start_time: "", operating_end_time: "",
+    fuel_type: "diesel", tank_capacity_liters: "", notes: "", operating_schedule: "24h", operating_start_time: "", operating_end_time: "",
     latitude: "", longitude: "", owner_id: "", status: "active",
     manufacturer: "", model: "", serial_number: "",
     rated_voltage: "", rated_frequency_hz: "", phase_count: "",
@@ -48,6 +48,7 @@ function syncFormFromProps() {
     name: g.name, name_en: g.name_en ?? "", price_per_kw: g.price_per_kw, currency: g.currency,
     capacity_kw: g.capacity_kw ?? "", lines_count: g.lines_count ?? 1,
     fuel_type: g.fuel_type ?? "diesel",
+    tank_capacity_liters: g.tank_capacity_liters ?? "",
     notes: g.notes ?? "",
     operating_schedule: g.operating_schedule, operating_start_time: g.operating_start_time ?? "",
     operating_end_time: g.operating_end_time ?? "",
@@ -134,6 +135,7 @@ function handleSubmit() {
     capacity_kw: form.value.capacity_kw ? Number(form.value.capacity_kw) : null,
     lines_count: Number(form.value.lines_count) || 1,
     fuel_type: form.value.fuel_type,
+    tank_capacity_liters: form.value.tank_capacity_liters ? Number(form.value.tank_capacity_liters) : null,
     notes: form.value.notes || null,
     operating_schedule: form.value.operating_schedule,
     manufacturer: form.value.manufacturer || null,
@@ -233,6 +235,10 @@ function handleSubmit() {
               <div>
                 <label class="field-label">{{ $t("dashboard.fuel_type_label") }}</label>
                 <AppDropdownSelect v-model="form.fuel_type" :options="fuelTypeOptions" variant="field" width-class="w-full" match-trigger-width />
+              </div>
+              <div>
+                <label class="field-label">{{ $t("dashboard.tank_capacity_liters_label") }}</label>
+                <input v-model="form.tank_capacity_liters" type="number" min="0" step="any" :placeholder="$t('dashboard.tank_capacity_liters_placeholder')" class="field-input" />
               </div>
               <div>
                 <label class="field-label">{{ $t("owner_generators.form.schedule_label") }}</label>

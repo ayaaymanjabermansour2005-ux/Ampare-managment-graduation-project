@@ -41,17 +41,17 @@ onMounted(loadArticles);
         <h2 class="text-2xl sm:text-4xl font-extrabold mt-2">{{ t("landing.blog.title") }}</h2>
       </div>
 
-      <div v-if="status === 'loading'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+      <div v-if="status === 'loading'" class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-5">
         <div v-for="i in 3" :key="i" class="glass-card h-40 sm:h-48 animate-pulse"></div>
       </div>
 
-      <div v-else-if="status === 'ready'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+      <div v-else-if="status === 'ready'" class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-5">
         <RouterLink
           v-for="article in articles"
           :key="article.id"
           :to="{ name: 'landing.articles.show', params: { slug: article.slug } }"
           v-reveal
-          class="glass-card block p-4 sm:p-6 hover:-translate-y-1 transition-transform duration-300"
+          class="glass-card block p-2.5 sm:p-6 hover:-translate-y-1 transition-transform duration-300"
         >
           <div v-if="article.cover_image_url" class="w-full h-28 sm:h-32 rounded-lg mb-2.5 sm:mb-3 overflow-hidden">
             <img :src="article.cover_image_url" :alt="localizedTitle(article)" class="w-full h-full object-cover" loading="lazy" />

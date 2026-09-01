@@ -52,7 +52,15 @@ class GeneratorController extends Controller
             $request->input('search'),
             $request->input('status'),
             $request->input('city'),
-            $request->integer('owner_id') ?: null
+            $request->integer('owner_id') ?: null,
+            $request->filled('capacity_min') ? (float) $request->input('capacity_min') : null,
+            $request->filled('capacity_max') ? (float) $request->input('capacity_max') : null,
+            $request->filled('fuel_min') ? (float) $request->input('fuel_min') : null,
+            $request->filled('fuel_max') ? (float) $request->input('fuel_max') : null,
+            $request->filled('subscribers_min') ? (int) $request->input('subscribers_min') : null,
+            $request->filled('subscribers_max') ? (int) $request->input('subscribers_max') : null,
+            $request->filled('revenue_min') ? (float) $request->input('revenue_min') : null,
+            $request->filled('revenue_max') ? (float) $request->input('revenue_max') : null,
         );
 
         return $this->success(
@@ -106,7 +114,12 @@ class GeneratorController extends Controller
         // whenCounted، بس show() ما كانت عم تعمل withCount/loadCount أبداً
         // (بعكس GeneratorService::list())، فكانت القيمة دايمًا مفقودة وصفحة
         // GeneratorDetailView ما كانت تعرض بطاقة "المشتركين النشطين" أبداً.
-        $generator->load(['owner', 'location.neighborhood']);
+        // نفس القصة مع latestFuelReading/latestMaintenanceTask: fuelPercentage()
+        // و last_maintenance_at بالـ Resource يتحققان صراحة من relationLoaded()
+        // قبل القراءة (حماية من lazy loading)، فبدونهما هون كانت نسبة الوقود
+        // وتاريخ آخر صيانة يرجعان null دائمًا عبر GET /generators/{id} — حتى
+        // لو كانت البيانات موجودة فعليًا (القائمة index() فقط كانت تحمّلهما).
+        $generator->load(['owner', 'location.neighborhood', 'latestFuelReading', 'latestMaintenanceTask']);
         $generator->loadCount([
             'subscriptions' => fn ($q) => $q->where('status', SubscriptionStatus::Active),
         ]);

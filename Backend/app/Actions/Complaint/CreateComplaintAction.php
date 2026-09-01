@@ -4,6 +4,7 @@ namespace App\Actions\Complaint;
 
 use App\DTOs\Complaint\CreateComplaintData;
 use App\Enums\ComplaintStatus;
+use App\Events\ComplaintSubmitted;
 use App\Models\Complaint;
 use App\Models\User;
 
@@ -22,6 +23,10 @@ final class CreateComplaintAction
             'status' => ComplaintStatus::Pending,
         ]);
 
-        return $complaint->fresh(['submitter', 'complainable']);
+        $complaint = $complaint->fresh(['submitter', 'complainable']);
+
+        ComplaintSubmitted::dispatch($complaint);
+
+        return $complaint;
     }
 }

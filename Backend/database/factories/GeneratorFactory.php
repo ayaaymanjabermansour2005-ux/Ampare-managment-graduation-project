@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\FuelType;
 use App\Models\Generator;
 use App\Models\Location;
 use App\Models\User;
@@ -23,6 +24,7 @@ class GeneratorFactory extends Factory
             'price_per_kw' => fake()->randomFloat(2, 0.3, 1.5),
             'currency' => 'ILS',
             'capacity_kw' => fake()->numberBetween(20, 150),
+            'fuel_type' => fake()->randomElement(FuelType::cases())->value,
             'operating_schedule' => '24h',
             'status' => 'active',
         ];

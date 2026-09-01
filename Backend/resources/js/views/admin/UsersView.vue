@@ -14,6 +14,7 @@ import { useRolePermissions } from "@/composables/useRolePermissions";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, Eye, EyeOff, FileSpreadsheet, Info, Key, LoaderCircle, Lock, LockOpen, Pencil, Save, Search, Shuffle, Trash2, UserPlus, UserX, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -167,10 +168,10 @@ const displayedUsers = computed(() =>
 const countOnPage = (role) => userStore.users.filter((u) => u.roles?.[0]?.name === role).length;
 const lockedOnPage = computed(() => userStore.users.filter((u) => u.is_locked).length);
 const KPI_CARDS = computed(() => [
-  { icon: "fa-users", label: t("users_page.total_users"), value: userStore.pagination.total, c1: "#3E582E", c2: "#52733D" },
-  { icon: "fa-user-shield", label: roleLabel("admin") + t("common.this_page_suffix"), value: countOnPage("admin"), c1: "#17A2B8", c2: "#0f6c7d" },
-  { icon: "fa-user-gear", label: roleLabel("technician") + t("common.this_page_suffix"), value: countOnPage("technician"), c1: "#8A6D1F", c2: "#5c4a15" },
-  { icon: "fa-lock", label: t("users_page.locked_this_page"), value: lockedOnPage.value, c1: "#D9534F", c2: "#8A2E2A" },
+  { icon: "fa-users", label: t("users_page.total_users"), value: userStore.pagination.total, tone: "primary" },
+  { icon: "fa-user-shield", label: roleLabel("admin") + t("common.this_page_suffix"), value: countOnPage("admin"), tone: "info" },
+  { icon: "fa-user-gear", label: roleLabel("technician") + t("common.this_page_suffix"), value: countOnPage("technician"), tone: "secondary" },
+  { icon: "fa-lock", label: t("users_page.locked_this_page"), value: lockedOnPage.value, tone: "danger" },
 ]);
 
 /* ---------------- Pagination بأزرار محدودة (نفس منهجية صفحة الأعطال) ---------------- */
@@ -655,16 +656,10 @@ onMounted(() => {
     <!-- ===== KPI CARDS ===== -->
     <section v-if="activeTab === 'users'" v-reveal>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS"
-          :key="c.label"
-          class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone"
+        />
       </div>
     </section>
 

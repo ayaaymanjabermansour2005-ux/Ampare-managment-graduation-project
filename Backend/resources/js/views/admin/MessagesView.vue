@@ -7,7 +7,7 @@ import { vReveal } from "@/directives/reveal";
 import AiChatWorkspace from "@/components/ai/AiChatWorkspace.vue";
 import aiChatService from "@/services/aiChatService";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleCheck, Headset, LoaderCircle, MessageSquareOff, MessagesSquare, Send, TriangleAlert } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleCheck, LoaderCircle, MessageSquareOff, MessagesSquare, Search, Send, TriangleAlert, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -28,9 +28,6 @@ const {
   isStarting,
   startError,
   startConversation,
-  isStartingSupport,
-  startSupportError,
-  startSupportConversation,
   isConverting,
   convertError,
   convertToIssue,
@@ -48,6 +45,13 @@ const TABS = computed(() => [
 const activeTab = ref("messages");
 
 const totalUnread = computed(() => conversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0));
+
+const conversationSearch = ref("");
+const filteredConversations = computed(() => {
+  const q = conversationSearch.value.trim().toLowerCase();
+  if (!q) return conversations.value;
+  return conversations.value.filter((c) => (c.other_participant?.name ?? "").toLowerCase().includes(q));
+});
 
 const messageText = ref("");
 const messagesContainer = ref(null);
@@ -116,12 +120,6 @@ async function handleSend() {
   if (ok) scrollToBottom();
 }
 
-async function handleContactSupport() {
-  activeTab.value = "messages";
-  const ok = await startSupportConversation();
-  if (ok) scrollToBottom();
-}
-
 onMounted(async () => {
   // يسمح بفتح الصفحة مباشرة على تاب "المساعد الذكي" (مثلاً من الداشبورد): ?tab=assistant
   if (route.query.tab === "assistant") activeTab.value = "assistant";
@@ -174,17 +172,6 @@ onMounted(async () => {
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-          <!-- ===== تواصل مباشر مع الدعم الفني ===== -->
-          <button
-            type="button"
-            @click="handleContactSupport"
-            :disabled="isStartingSupport"
-            class="inline-flex items-center gap-2 text-[12px] font-bold text-[#8A6D1F] border border-[#8A6D1F]/30 rounded-full px-4 py-2 hover:bg-[#8A6D1F]/10 transition disabled:opacity-60"
-          >
-            <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isStartingSupport" /><Headset aria-hidden="true" v-else />
-            {{ t("messages_page.contact_support_button") }}
-          </button>
-
           <!-- ===== تبديل التابات ===== -->
           <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 w-fit">
             <button
@@ -207,8 +194,6 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-
-      <p v-if="startSupportError" class="relative text-[11px] text-[#D9534F] mt-3">{{ startSupportError }}</p>
     </section>
 
     <!-- ==========================================================
@@ -226,8 +211,17 @@ onMounted(async () => {
           class="w-full sm:w-72 border-e border-[#eee8da] dark:border-white/10 flex flex-col shrink-0"
           :class="{ 'hidden sm:flex': activeConversation }"
         >
-          <header class="px-4 py-3.5 border-b border-[#eee8da] dark:border-white/10">
+          <header class="px-4 py-3.5 border-b border-[#eee8da] dark:border-white/10 space-y-2.5">
             <h2 class="font-bold text-[13px]">{{ t("messages_page.conversations_list_title") }}</h2>
+            <div class="relative">
+              <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[11px] text-[#9a9d97] dark:text-[#8f938a]" aria-hidden="true" />
+              <input
+                v-model="conversationSearch"
+                type="text"
+                :placeholder="t('common.search_placeholder')"
+                class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full ps-8 pe-3 py-1.5 text-[11.5px] outline-none focus:border-[#8A6D1F] transition"
+              />
+            </div>
           </header>
 
           <div class="flex-1 overflow-y-auto">
@@ -239,20 +233,16 @@ onMounted(async () => {
 
             <div v-else-if="conversations.length === 0" class="text-center py-10 px-4">
               <MessageSquareOff class="text-2xl text-[#9a9d97] dark:text-[#8f938a] mb-2" aria-hidden="true" />
-              <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a] mb-3">{{ t("messages_page.no_conversations_yet") }}</p>
-              <button
-                type="button"
-                @click="handleContactSupport"
-                :disabled="isStartingSupport"
-                class="inline-flex items-center gap-2 text-[11.5px] font-bold text-[#8A6D1F] border border-[#8A6D1F]/30 rounded-full px-3.5 py-1.5 hover:bg-[#8A6D1F]/10 transition disabled:opacity-60"
-              >
-                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isStartingSupport" /><Headset aria-hidden="true" v-else />
-                {{ t("messages_page.contact_support_button") }}
-              </button>
+              <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("messages_page.no_conversations_yet") }}</p>
+            </div>
+
+            <div v-else-if="filteredConversations.length === 0" class="text-center py-10 px-4">
+              <ZoomOut class="text-2xl text-[#9a9d97] dark:text-[#8f938a] mb-2" aria-hidden="true" />
+              <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("common.no_results_for", { query: conversationSearch }) }}</p>
             </div>
 
             <button
-              v-for="conv in conversations"
+              v-for="conv in filteredConversations"
               :key="conv.id"
               type="button"
               @click="handleOpen(conv)"
@@ -406,7 +396,7 @@ onMounted(async () => {
             </footer>
           </template>
 
-          <div v-else-if="isStarting || isStartingSupport" class="flex-1 flex items-center justify-center text-[12px] text-[#9a9d97] dark:text-[#8f938a]">
+          <div v-else-if="isStarting" class="flex-1 flex items-center justify-center text-[12px] text-[#9a9d97] dark:text-[#8f938a]">
             <LoaderCircle class="me-2 animate-spin" aria-hidden="true" />{{ t("messages_page.opening_conversation") }}
           </div>
           <div v-else class="flex-1 flex flex-col items-center justify-center text-center px-6">

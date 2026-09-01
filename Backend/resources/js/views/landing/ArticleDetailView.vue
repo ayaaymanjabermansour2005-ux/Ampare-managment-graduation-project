@@ -52,11 +52,11 @@ onMounted(() => fetchArticle());
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto px-5 sm:px-8 py-16">
+  <div class="max-w-2xl mx-auto px-5 sm:px-8 pt-28 sm:pt-32 pb-16">
     <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
       <RouterLink
         :to="{ name: 'landing.articles' }"
-        class="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[#8A6D1F] dark:text-[#F4E0A5] hover:opacity-80"
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-bold text-white bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] shadow-md hover:opacity-90 transition-opacity"
       >
         <AppIcon :name="backArrowIcon" />
         {{ t("landing.articles_page.back_to_list") }}
@@ -64,7 +64,7 @@ onMounted(() => fetchArticle());
 
       <RouterLink
         :to="{ name: 'landing.home' }"
-        class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#6B6B6B] dark:text-[#a8aaa5] hover:text-[#8A6D1F] dark:hover:text-[#F4E0A5]"
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold text-[#8A6D1F] dark:text-[#F4E0A5] bg-[#f4efe5] dark:bg-white/5 border border-[#8A6D1F]/30 dark:border-[#F4E0A5]/25 hover:bg-[#eee5cf] dark:hover:bg-white/10 transition-colors"
       >
         <House aria-hidden="true" />
         {{ t("landing.articles_page.back_to_home") }}

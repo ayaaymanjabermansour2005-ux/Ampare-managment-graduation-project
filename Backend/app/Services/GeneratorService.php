@@ -27,8 +27,22 @@ class GeneratorService
         protected GeneratorCapacityService $capacityService
     ) {}
 
-    public function list(User $user, int $perPage = 15, ?string $search = null, ?string $status = null, ?string $city = null, ?int $ownerId = null): LengthAwarePaginator
-    {
+    public function list(
+        User $user,
+        int $perPage = 15,
+        ?string $search = null,
+        ?string $status = null,
+        ?string $city = null,
+        ?int $ownerId = null,
+        ?float $capacityMin = null,
+        ?float $capacityMax = null,
+        ?float $fuelMin = null,
+        ?float $fuelMax = null,
+        ?int $subscribersMin = null,
+        ?int $subscribersMax = null,
+        ?float $revenueMin = null,
+        ?float $revenueMax = null,
+    ): LengthAwarePaginator {
         $query = Generator::query()
             ->withCount([
                 'subscriptions' => fn ($q) => $q->where('status', SubscriptionStatus::Active),
@@ -65,7 +79,8 @@ class GeneratorService
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhereHas('location', fn ($locQ) => $locQ->where('city', 'like', "%{$search}%"));
+                    ->orWhereHas('location', fn ($locQ) => $locQ->where('city', 'like', "%{$search}%"))
+                    ->orWhereHas('owner', fn ($ownerQ) => $ownerQ->where('name', 'like', "%{$search}%"));
             });
         }
         if ($status) {
@@ -74,6 +89,40 @@ class GeneratorService
 
         if ($city) {
             $query->whereHas('location', fn ($q) => $q->where('city', $city));
+        }
+
+        if ($capacityMin !== null) {
+            $query->where('capacity_kw', '>=', $capacityMin);
+        }
+        if ($capacityMax !== null) {
+            $query->where('capacity_kw', '<=', $capacityMax);
+        }
+
+        if ($fuelMin !== null || $fuelMax !== null) {
+            $percentExpr = '(SELECT (fr.tank_level_liters / NULLIF(generators.tank_capacity_liters, 0)) * 100
+                FROM fuel_readings fr
+                WHERE fr.generator_id = generators.id AND fr.deleted_at IS NULL
+                ORDER BY fr.reading_date DESC LIMIT 1)';
+            if ($fuelMin !== null) {
+                $query->whereRaw("{$percentExpr} >= ?", [$fuelMin]);
+            }
+            if ($fuelMax !== null) {
+                $query->whereRaw("{$percentExpr} <= ?", [$fuelMax]);
+            }
+        }
+
+        if ($subscribersMin !== null) {
+            $query->having('subscriptions_count', '>=', $subscribersMin);
+        }
+        if ($subscribersMax !== null) {
+            $query->having('subscriptions_count', '<=', $subscribersMax);
+        }
+
+        if ($revenueMin !== null) {
+            $query->having('monthly_revenue_ils', '>=', $revenueMin);
+        }
+        if ($revenueMax !== null) {
+            $query->having('monthly_revenue_ils', '<=', $revenueMax);
         }
 
         return $query->latest()->paginate($perPage);

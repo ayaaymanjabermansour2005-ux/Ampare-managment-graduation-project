@@ -611,4 +611,64 @@ class GeneratorTest extends TestCase
         $response->assertStatus(200);
         $this->assertSame($location->id, $generator->fresh()->location_id);
     }
+
+    public function test_admin_index_search_matches_owner_name_as_well_as_generator_name(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        $owner->update(['name' => 'محمود أبو شمالة']);
+        $matchingGenerator = Generator::factory()->create(['owner_id' => $owner->id, 'name' => 'مولد لا علاقة له بالاسم']);
+        $otherGenerator = Generator::factory()->create(['name' => 'مولد آخر تمامًا']);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/generators?search=أبو شمالة');
+
+        $response->assertOk();
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertTrue($ids->contains($matchingGenerator->id));
+        $this->assertFalse($ids->contains($otherGenerator->id));
+    }
+
+    public function test_admin_can_set_tank_capacity_liters_and_fuel_percentage_then_computes_from_it(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/v1/generators', $this->validPayload([
+                'owner_id' => $owner->id,
+                'tank_capacity_liters' => 200,
+            ]));
+
+        $response->assertStatus(201);
+        $this->assertEquals(200, $response->json('data.tank_capacity_liters'));
+        // بدون أي قراءة خزان مسجّلة بعد، النسبة تبقى null رغم وجود السعة.
+        $this->assertNull($response->json('data.fuel_percentage'));
+
+        $generatorId = $response->json('data.id');
+        \App\Models\FuelReading::factory()->create([
+            'generator_id' => $generatorId,
+            'tank_level_liters' => 100,
+            'reading_date' => now()->toDateString(),
+        ]);
+
+        $show = $this->actingAs($admin)->getJson("/api/v1/generators/{$generatorId}");
+        $show->assertOk();
+        $this->assertEquals(50.0, $show->json('data.fuel_percentage'));
+    }
+
+    public function test_admin_index_filters_by_capacity_range(): void
+    {
+        $admin = $this->makeAdmin();
+        $small = Generator::factory()->create(['capacity_kw' => 10]);
+        $mid = Generator::factory()->create(['capacity_kw' => 50]);
+        $large = Generator::factory()->create(['capacity_kw' => 200]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/generators?capacity_min=20&capacity_max=100');
+
+        $response->assertOk();
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertTrue($ids->contains($mid->id));
+        $this->assertFalse($ids->contains($small->id));
+        $this->assertFalse($ids->contains($large->id));
+    }
 }

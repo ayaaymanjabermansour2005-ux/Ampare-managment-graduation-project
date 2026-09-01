@@ -23,7 +23,7 @@ function toggle(role) {
 </script>
 
 <template>
-  <section id="roles" class="py-14 sm:py-24 grid-texture">
+  <section id="roles" class="py-14 sm:py-24 grid-texture section-tint-sage">
     <div class="max-w-7xl mx-auto px-4 sm:px-8">
       <div class="text-center max-w-xl mx-auto mb-8 sm:mb-14" v-reveal>
         <span class="text-[10px] sm:text-[11px] font-bold text-[#8A6D1F] tracking-wide">{{ t("landing.roles.eyebrow") }}</span>

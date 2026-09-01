@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\FuelType;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethodType;
 use App\Enums\Role as RoleEnum;
@@ -84,6 +85,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Owner One',
                 'password' => Hash::make($this->demoPassword('owner1@ampare.test')),
                 'email_verified_at' => now(),
+                'commission_mode' => 'fixed',
+                'commission_rate' => 5.00,
             ]
         );
         if (! $owner1->hasRole(RoleEnum::GENERATOR_OWNER->value)) {
@@ -96,6 +99,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Owner Two',
                 'password' => Hash::make($this->demoPassword('owner2@ampare.test')),
                 'email_verified_at' => now(),
+                'commission_mode' => 'tiered',
+                'commission_rate' => null,
             ]
         );
         if (! $owner2->hasRole(RoleEnum::GENERATOR_OWNER->value)) {
@@ -175,9 +180,11 @@ class DatabaseSeeder extends Seeder
                 'name' => 'مولد الرمال الرئيسي',
             ],
             [
+                'name_en' => 'Al-Rimal Main Generator',
                 'price_per_kw' => 0.50,
                 'currency' => 'ILS',
                 'capacity_kw' => 50,
+                'fuel_type' => FuelType::Diesel->value,
                 'location_id' => $locationRimal->id,
                 'status' => 'active',
                 'operating_schedule' => '24h',
@@ -190,9 +197,11 @@ class DatabaseSeeder extends Seeder
                 'name' => 'مولد الشجاعية',
             ],
             [
+                'name_en' => 'Al-Shuja\'iyya Generator',
                 'price_per_kw' => 0.15,
                 'currency' => 'USD',
                 'capacity_kw' => 100,
+                'fuel_type' => FuelType::Gas->value,
                 'location_id' => $locationShujaiya->id,
                 'status' => 'active',
                 'operating_schedule' => '24h',
@@ -658,9 +667,16 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // SEEDER-IDEMPOTENCY: البحث بـ transaction_reference لوحده (فريد عالميًا
+        // بالفعل بقاعدة البيانات) لا بـ invoice_id معه — لأن $invoicePaid نفسها
+        // تُبحَث بمفتاح يعتمد على now()->subDays(28)، وهو تاريخ متحرّك يتغيّر كل
+        // يوم. تشغيل db:seed يومين مختلفين كان يُنشئ Invoice جديدة (id مختلف)،
+        // فما كان بحث Payment يطابق الصف القديم، فيحاول إدخال نفس
+        // transaction_reference من جديد ويصطدم بقيد unique الفعلي.
         Payment::firstOrCreate(
-            ['invoice_id' => $invoicePaid->id, 'transaction_reference' => 'DEMO-PAY-0001'],
+            ['transaction_reference' => 'DEMO-PAY-0001'],
             [
+                'invoice_id' => $invoicePaid->id,
                 'source' => 'subscriber', 'amount' => 20, 'currency' => 'ILS',
                 'amount_ils' => 20, 'status' => 'paid',
                 'processed_by' => $owner1->id, 'paid_at' => now()->subDays(27),
@@ -699,9 +715,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Same fix as DEMO-PAY-0001 above — see that comment for the full explanation.
         Payment::firstOrCreate(
-            ['invoice_id' => $invoicePartial->id, 'transaction_reference' => 'DEMO-PAY-0002'],
+            ['transaction_reference' => 'DEMO-PAY-0002'],
             [
+                'invoice_id' => $invoicePartial->id,
                 'source' => 'subscriber', 'amount' => 12, 'currency' => 'ILS',
                 'amount_ils' => 12, 'status' => 'paid',
                 'processed_by' => $owner1->id, 'paid_at' => now()->subDays(2),
@@ -737,7 +755,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'مالك متقدّم للانضمام',
                 'phone' => '0599111222',
-                'password' => Hash::make($this->demoPassword('owner-applicant-pending@example.test')),
+                'password' => Hash::make($this->demoPassword('owner-applicant-pending@example.test', OwnerApplication::class)),
                 'notes' => 'أمتلك مولدًا بسعة 40 كيلوواط بحي الزيتون.',
                 'generator_name' => 'مولد الزيتون الجديد',
                 'generator_price_per_kw' => 0.45,
@@ -755,7 +773,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'مالك تمت الموافقة عليه',
                 'phone' => '0599333444',
-                'password' => Hash::make($this->demoPassword('owner-applicant-approved@example.test')),
+                'password' => Hash::make($this->demoPassword('owner-applicant-approved@example.test', OwnerApplication::class)),
                 'notes' => 'طلب تجريبي بحالة معتمدة.',
                 'generator_name' => 'مولد تجريبي معتمد',
                 'generator_price_per_kw' => 0.4,
@@ -854,15 +872,29 @@ class DatabaseSeeder extends Seeder
 
     /**
      * SEC-006: كلمة مرور فريدة وقوية عشوائية لكل حساب/سجل تجريبي بدل الاعتماد
-     * على نفس القيمة الثابتة 'password' للجميع. تُبنى فقط عند إنشاء السجل
-     * فعليًا لأول مرة (firstOrCreate لن يستدعي القيمة إن كان السجل موجودًا
-     * مسبقًا، فلا داعي أصلًا لتوليدها بذاك السيناريو، لكن استدعاء الدالة نفسه
-     * غير مكلف)، وتُخزَّن مؤقتًا لطباعتها مرة واحدة بنهاية التشغيل فقط.
+     * على نفس القيمة الثابتة 'password' للجميع.
+     *
+     * BUG (found live, 2026-08-31): الافتراض الأصلي هون كان خاطئ — PHP يُقيّم
+     * كل عناصر مصفوفة الوسائط (بما فيها Hash::make($this->demoPassword(...)))
+     * *قبل* استدعاء firstOrCreate نفسه، بغض النظر عمّا إذا كان السجل موجودًا
+     * مسبقًا أو لا. يعني demoPassword() كانت تتنفّذ وتُسجّل كلمة مرور عشوائية
+     * *جديدة* بكل تشغيل، حتى لو كان الحساب موجودًا فعليًا من تشغيل سابق (وما
+     * كانت هاي القيمة الجديدة تُطبَّق فعليًا على القاعدة — firstOrCreate كانت
+     * تتجاهلها بصمت لأن السجل موجود) — فتُطبَع للمستخدم كلمة مرور خاطئة/غير
+     * مستخدمة أصلًا، تبدو صحيحة الشكل بس فعليًا مرفوضة عند تسجيل الدخول.
+     *
+     * الإصلاح: نتحقق إحنا بأنفسنا هون إذا كان السجل موجودًا فعلًا قبل التسجيل
+     * بمصفوفة الطباعة — بنفس مفتاح البريد وبنفس الـ Model المستخدم بكل نداء
+     * (User لسبعة حسابات، OwnerApplication لطلبَي الانضمام)، وما نسجّل بمصفوفة
+     * الطباعة إلا لو كان السجل هيُنشأ فعليًا لأول مرة بهذا التشغيل.
      */
-    private function demoPassword(string $identifier): string
+    private function demoPassword(string $identifier, string $model = User::class): string
     {
         $password = Str::password(16);
-        $this->generatedCredentials[$identifier] = $password;
+
+        if (! $model::where('email', $identifier)->exists()) {
+            $this->generatedCredentials[$identifier] = $password;
+        }
 
         return $password;
     }

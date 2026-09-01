@@ -15,18 +15,17 @@ import { useAdminQuickCreate } from "@/composables/useAdminQuickCreate";
 import { useAdminDashboardExtras } from "@/composables/useAdminDashboardExtras";
 import AdminGeneratorsMap from "@/components/admin/AdminGeneratorsMap.vue";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import AdminGeneratorFormModal from "@/components/generators/AdminGeneratorFormModal.vue";
-import GeneratorViewModal from "@/components/generators/GeneratorViewModal.vue";
+import GeneratorsTablePanel from "@/components/generators/GeneratorsTablePanel.vue";
 import GazaWeatherCard from "@/components/dashboard/GazaWeatherCard.vue";
-import userService from "@/services/userService";
 import { downloadCsv } from "@/utils/csv";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, Database, Eye, FileDown, FileSpreadsheet, GripVertical, ListChecks, LoaderCircle, Megaphone, Pencil, Plus, Printer, Search, Settings, Table2, Trash2, TriangleAlert, UserPlus, UserRound, UsersRound, WandSparkles, Wrench, X, ZoomOut } from "@lucide/vue";
+import { CalendarDays, Check, CircleAlert, Database, FileDown, ListChecks, LoaderCircle, Megaphone, Plus, UserPlus, UserRound, UsersRound, WandSparkles, Wrench, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
 ChartJS.register(...registerables);
 
 const authStore = useAuthStore();
+const generatorsPanelRef = ref(null);
 const toast = useToastStore();
 const { t, locale } = useI18n();
 
@@ -34,12 +33,7 @@ const {
   stats, isLoadingStats,
   invoicePercentages, isLoadingBreakdown,
   alerts, isLoadingAlerts,
-  generators, pagination, isLoading, error,
-  search, statusFilter, sortBy, areaFilter, cities,
-  isSaving, saveError, deletingId, deleteError,
-  fetchCities, fetchGenerators,
-  onSearchInput, onFilterChange, onSortChange,
-  createGenerator, updateGenerator, deleteGenerator,
+  generators,
   loadAll,
 } = useAdminDashboardFull();
 
@@ -52,13 +46,7 @@ const {
   isSavingMaintenance,
   maintenanceError,
   scheduleMaintenance,
-  generatorsExportUrl: buildGeneratorsExportUrl,
 } = useAdminDashboardExtras();
-
-const areaOptions = computed(() => [
-  { value: "", label: t("dashboard.all_areas") },
-  ...cities.value.map((c) => ({ value: c, label: c })),
-]);
 
 const maintenanceGeneratorOptions = computed(() =>
   allGeneratorsForSelect.value.map((g) => ({ value: g.id, label: `${g.name} - ${g.location?.city ?? ""}` })),
@@ -122,53 +110,6 @@ const TODAY_PRIORITIES = computed(() => {
     .sort((a, b) => b.count - a.count);
 });
 
-/* ---------------- حالة المولد ---------------- */
-const STATUS_META = {
-  active: { chip: "chip-success", color: "#28A745" },
-  maintenance: { chip: "chip-warning", color: "#FFC107" },
-  inactive: { chip: "chip-danger", color: "#D9534F" },
-  pending_verification: { chip: "chip-info", color: "#17A2B8" },
-  rejected: { chip: "chip-danger", color: "#8A6D1F" },
-};
-function statusLabel(status) {
-  return t(`status.${status}`, status);
-}
-
-/* ---------------- فرز جدول المولدات عبر رؤوس الأعمدة (مطابق لصفحة إدارة المولدات) ---------------- */
-function sortIconClass(key) {
-  const [curKey, curDir] = sortBy.value.split("-");
-  if (curKey !== key) return "opacity-40";
-  return curDir === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
-}
-function toggleSort(key) {
-  const [curKey, curDir] = sortBy.value.split("-");
-  const newDir = curKey === key && curDir === "desc" ? "asc" : "desc";
-  sortBy.value = `${key}-${newDir}`;
-  onSortChange();
-}
-
-function fuelColor(pct) {
-  if (pct === null || pct === undefined) return "#9a9d97";
-  return pct <= 20 ? "#D9534F" : pct <= 45 ? "#FFC107" : "#28A745";
-}
-
-/**
- * أيقونة تحذيرية بجانب شريط الوقود (مطابقة لهوية أمبير في نسخة العرض الأصلية):
- * تحذير حرج تحت 25%، تنبيه بسيط تحت 50%، بدون أيقونة فوق ذلك.
- */
-function fuelIcon(pct) {
-  if (pct === null || pct === undefined) return null;
-  if (pct < 25) return "fa-triangle-exclamation";
-  if (pct < 50) return "fa-gas-pump";
-  return null;
-}
-function fuelIconTitle(pct) {
-  if (pct === null || pct === undefined) return "";
-  return pct < 25
-    ? t("dashboard.low_fuel_level")
-    : t("dashboard.medium_fuel_level");
-}
-
 /**
  * تنسيق موحّد لعرض المبالغ المالية (₪).
  * تم استخراجها كدالة واحدة بدل تكرارها 3 مرات داخل القالب (DRY).
@@ -177,113 +118,6 @@ function fmtMoney(amount) {
   return "₪ " + Number(amount ?? 0).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US");
 }
 
-/* ---------------- عرض جدول/شبكة (منقول من صفحة إدارة المولدات) ---------------- */
-const viewMode = ref("table");
-
-/* ---------------- حذف مولد (نافذة تأكيد بنفس هوية الموقع بدل confirm() العام) ---------------- */
-const isDeleteModalOpen = ref(false);
-const deletingGenerator = ref(null);
-
-function openDeleteModal(generator) {
-  deletingGenerator.value = generator;
-  deleteError.value = null;
-  isDeleteModalOpen.value = true;
-}
-
-function closeDeleteModal() {
-  if (deletingId.value) return;
-  isDeleteModalOpen.value = false;
-  deletingGenerator.value = null;
-}
-
-async function confirmDeleteGenerator() {
-  if (!deletingGenerator.value) return;
-  const ok = await deleteGenerator(deletingGenerator.value.id);
-  if (ok) {
-    isDeleteModalOpen.value = false;
-    deletingGenerator.value = null;
-  }
-}
-
-/* ---------------- نموذج إضافة/تعديل مولد — مكوّن مشترك AdminGeneratorFormModal.vue
-   (نفس المكوّن المستخدَم بصفحتي "إدارة المولدات" و"أصحاب المولدات"، تفاديًا لتكرار
-   نفس الفورم بأكثر من مكان وضمان هوية بصرية وسلوك موحّد عبر الموقع) ---------------- */
-const isFormOpen = ref(false);
-const editingGenerator = ref(null); // null = وضع الإضافة، كائن المولد = وضع التعديل
-
-const owners = ref([]);
-async function fetchOwners() {
-  const { data } = await userService.list({ role: "generator_owner", per_page: 100 });
-  const list = data.data.data ?? data.data;
-  owners.value = [...list].sort((a, b) => a.name.localeCompare(b.name, locale.value === "ar" ? "ar" : "en"));
-}
-
-async function openAddGeneratorModal() {
-  editingGenerator.value = null;
-  saveError.value = null;
-  if (owners.value.length === 0) await fetchOwners();
-  isFormOpen.value = true;
-}
-
-function openEditModal(g) {
-  editingGenerator.value = g;
-  saveError.value = null;
-  isFormOpen.value = true;
-}
-
-function closeForm() {
-  if (isSaving.value) return;
-  isFormOpen.value = false;
-  saveError.value = null;
-}
-
-async function handleGeneratorFormSubmit(payload) {
-  const ok = editingGenerator.value
-    ? await updateGenerator(editingGenerator.value.id, payload)
-    : await createGenerator(payload);
-  if (ok) isFormOpen.value = false;
-}
-
-/* ---------------- نافذة العرض — مكوّن مشترك GeneratorViewModal.vue
-   (نفس المكوّن المستخدَم بصفحة "إدارة المولدات"، يتولّى جلب سجل الصيانة/
-   المرفقات/الفنيين المرتبطين داخليًا عند فتحه) ---------------- */
-const isViewOpen = ref(false);
-const viewingGenerator = ref(null);
-function openViewModal(g) {
-  viewingGenerator.value = g;
-  isViewOpen.value = true;
-}
-function switchToEditFromView() {
-  isViewOpen.value = false;
-  openEditModal(viewingGenerator.value);
-}
-
-/* ---------------- شريط أدوات الجدول: تصدير Excel / طباعة (أيقونة الفلترة أُزيلت لأن فلاتر الحالة متوفرة عبر الـ Pills) ---------------- */
-const generatorsExportUrl = computed(() =>
-  buildGeneratorsExportUrl({
-    search: search.value || undefined,
-    status: statusFilter.value || undefined,
-    city: areaFilter.value || undefined,
-  }),
-);
-
-function printGeneratorsTable() {
-  window.print();
-}
-
-/* ---------------- حالات الفلترة بشكل Pills (منقولة من صفحة إدارة المولدات) ---------------- */
-const STATUS_PILLS = computed(() => [
-  { value: "", label: t("common.all") },
-  { value: "active", label: t("status.active") },
-  { value: "maintenance", label: t("status.maintenance") },
-  { value: "inactive", label: t("status.inactive") },
-  { value: "pending_verification", label: t("status.pending_verification") },
-  { value: "rejected", label: t("status.rejected") },
-]);
-function selectStatusPill(value) {
-  statusFilter.value = value;
-  onFilterChange();
-}
 
 const ALERT_ICONS = {
   fuel_low: { icon: "fa-gas-pump", color: "#D9534F" },
@@ -452,26 +286,6 @@ const {
   handleRunBackup,
 } = useAdminQuickCreate({ onSubscriberCreated: loadAll });
 
-const isSettingsModalOpen = ref(false);
-const SETTINGS_SHORTCUTS = [
-  { to: { name: "admin.settings", hash: "#general" }, icon: "fa-sliders", key: "general" },
-  { to: { name: "admin.settings", hash: "#notifications" }, icon: "fa-bell", key: "notifications" },
-  { to: { name: "admin.settings", hash: "#security" }, icon: "fa-shield-halved", key: "security" },
-  { to: { name: "admin.settings", hash: "#billing" }, icon: "fa-file-invoice-dollar", key: "billing" },
-];
-function settingsShortcutLabel(key) {
-  const labels = {
-    general: t("menu_groups.general"),
-    notifications: t("common.notifications"),
-    security: t("dashboard.settings_shortcut_security"),
-    billing: t("dashboard.settings_shortcut_billing"),
-  };
-  return labels[key];
-}
-function openSettingsModal() {
-  isSettingsModalOpen.value = true;
-}
-
 /* ---------------- إضافة: تصدير تقرير اليوم (زر الهيرو) — يعتمد على بيانات KPI الحقيقية المحمّلة أصلًا ---------------- */
 function exportTodayReport() {
   if (!stats.value) return;
@@ -582,7 +396,7 @@ onMounted(async () => {
           <div class="flex flex-wrap gap-2.5">
             <button
               type="button"
-              @click="openAddGeneratorModal"
+              @click="generatorsPanelRef?.openAddModal()"
               class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2"
             >
               <Plus aria-hidden="true" />
@@ -727,197 +541,8 @@ onMounted(async () => {
       </div>
     </section>
 
-    <!-- ===== TOOLBAR ===== -->
-    <section v-reveal class="glass-card p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[220px]">
-          <div class="relative flex-1 min-w-[160px] max-w-xs">
-            <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[#9a9d97] dark:text-[#8f938a] text-[10px]" aria-hidden="true" />
-            <input
-              v-model="search" type="text" @input="onSearchInput"
-              :placeholder="t('dashboard.search_generators_placeholder')"
-              class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2 ps-8 pe-3 text-[11.5px] outline-none focus:border-[#8A6D1F]"
-            />
-          </div>
-          <AppDropdownSelect
-            :model-value="areaFilter"
-            @update:model-value="(val) => { areaFilter = val; onFilterChange(); }"
-            :options="areaOptions"
-            width-class="w-36"
-            :panel-width="144"
-          />
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
-            <button
-              v-for="pill in STATUS_PILLS" :key="pill.value" type="button"
-              @click="selectStatusPill(pill.value)"
-              class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
-              :class="statusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
-            >{{ pill.label }}</button>
-          </div>
-          <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
-          <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1">
-            <button :aria-label="$t('common.view_as_table')" type="button" @click="viewMode = 'table'" class="icon-btn !w-8 !h-8" :class="{ '!bg-white dark:!bg-white/10': viewMode === 'table' }"><Table2 class="text-[11px]" aria-hidden="true" /></button>
-            <button :aria-label="$t('common.view_as_grid')" type="button" @click="viewMode = 'grid'" class="icon-btn !w-8 !h-8" :class="{ '!bg-white dark:!bg-white/10': viewMode === 'grid' }"><GripVertical class="text-[11px]" aria-hidden="true" /></button>
-          </div>
-          <a
-            :href="generatorsExportUrl"
-            target="_blank"
-            rel="noopener"
-            class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
-            :title="t('dashboard.export_excel_title')"
-          >
-            <FileSpreadsheet class="text-[11px]" aria-hidden="true" />
-          </a>
-          <button
-            type="button"
-            @click="printGeneratorsTable"
-            class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
-            :title="t('dashboard.print_title')"
-          >
-            <Printer class="text-[11px]" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== TABLE (عرض كامل) ===== -->
-    <section v-reveal class="glass-card p-4 overflow-hidden">
-      <div v-if="isLoading" class="space-y-2">
-        <div v-for="i in 6" :key="i" class="h-12 rounded-lg thumb-loading"></div>
-      </div>
-      <div v-else-if="error" class="text-center py-8 text-[12px] text-[#D9534F]">{{ error }}</div>
-      <div v-else-if="generators.length === 0" class="text-center py-10">
-        <ZoomOut class="text-2xl text-[#c9cdc2] dark:text-[#565952] mb-2" aria-hidden="true" />
-        <p class="text-[12px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("dashboard.no_matching_generators") }}</p>
-      </div>
-
-      <template v-else>
-      <div v-if="viewMode === 'table'" class="overflow-x-auto -mx-1">
-        <table class="data-table w-full text-[12px] min-w-[1020px]">
-          <thead>
-            <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
-              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('name')">
-                {{ t("dashboard.generator_col") }}
-                <AppIcon :name="sortIconClass('name')" class="text-[9px] ms-1 transition-all" />
-              </th>
-              <th class="py-2.5 px-3">{{ t("dashboard.city_col") }}</th>
-              <th class="py-2.5 px-3">{{ t("dashboard.owner") }}</th>
-              <th class="py-2.5 px-3">{{ t("dashboard.capacity_col") }}</th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('fuel')">
-                {{ t("dashboard.fuel_col") }}
-                <AppIcon :name="sortIconClass('fuel')" class="text-[9px] ms-1 transition-all" />
-              </th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('subs')">
-                {{ t("dashboard.subscribers_col") }}
-                <AppIcon :name="sortIconClass('subs')" class="text-[9px] ms-1 transition-all" />
-              </th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('rev')">
-                {{ t("dashboard.monthly_revenue_col") }}
-                <AppIcon :name="sortIconClass('rev')" class="text-[9px] ms-1 transition-all" />
-              </th>
-              <th class="py-2.5 px-3">{{ t("dashboard.status_col") }}</th>
-              <th class="py-2.5 px-3 rounded-e-lg">{{ t("dashboard.actions_col") }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="g in generators" :key="g.id" class="border-b border-[#f0ece0] dark:border-white/5 last:border-0 text-center">
-              <td class="py-2.5 px-3">
-                <div class="text-center">
-                  <div class="font-bold truncate max-w-[9rem] mx-auto">{{ g.name }}</div>
-                  <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ g.code }}</div>
-                </div>
-              </td>
-              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ g.location?.city ?? "-" }}</td>
-              <td class="py-2.5 px-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ g.owner?.name ?? "-" }}</td>
-              <td class="py-2.5 px-3">{{ g.capacity_kw ?? "-" }} {{ t("dashboard.kw_label") }}</td>
-              <!-- ===== عمود الوقود: شريط + نسبة + أيقونة تحذيرية (مطابق للتصميم الأصلي) ===== -->
-              <td class="py-2.5 px-3 w-28">
-                <div v-if="g.fuel_percentage !== null" class="flex items-center justify-center gap-2">
-                  <AppIcon :name="fuelIcon(g.fuel_percentage)" class="text-[10px]" v-if="fuelIcon(g.fuel_percentage)"
-                    
-                    
-                    :style="{ color: fuelColor(g.fuel_percentage) }"
-                    :title="fuelIconTitle(g.fuel_percentage)" />
-                  <div class="bar-track w-14"><div class="bar-fill" :style="{ width: g.fuel_percentage + '%', background: fuelColor(g.fuel_percentage) }"></div></div>
-                  <span class="text-[10.5px] font-bold w-8" :style="{ color: fuelColor(g.fuel_percentage) }">{{ g.fuel_percentage }}%</span>
-                </div>
-                <span v-else class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">-</span>
-              </td>
-              <td class="py-2.5 px-3">{{ g.active_subscriptions_count ?? 0 }}</td>
-              <td class="py-2.5 px-3 font-bold">{{ fmtMoney(g.monthly_revenue_ils) }}</td>
-              <td class="py-2.5 px-3"><span class="status-chip" :class="STATUS_META[g.status]?.chip ?? 'chip-info'">{{ statusLabel(g.status) }}</span></td>
-              <td class="py-2.5 px-3">
-                <div class="row-actions">
-                  <button type="button" @click="openViewModal(g)" class="action-btn action-btn--view" :title="t('common.view')"><Eye aria-hidden="true" /></button>
-                  <button type="button" @click="openEditModal(g)" class="action-btn action-btn--edit" :title="t('common.edit')"><Pencil aria-hidden="true" /></button>
-                  <span class="row-actions-divider"></span>
-                  <button type="button" @click="openDeleteModal(g)" :disabled="deletingId === g.id" class="action-btn action-btn--delete" :title="t('common.delete')">
-                    <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === g.id" /><Trash2 aria-hidden="true" v-else />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div v-else class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        <div v-for="g in generators" :key="g.id" class="glass-card p-3.5">
-          <div class="flex items-start justify-between mb-2.5">
-            <div class="min-w-0">
-              <div class="font-bold text-[12.5px] truncate">{{ g.name }}</div>
-              <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ g.code }} · {{ g.location?.city ?? "-" }}</div>
-            </div>
-            <span class="status-chip shrink-0" :class="STATUS_META[g.status]?.chip ?? 'chip-info'">{{ statusLabel(g.status) }}</span>
-          </div>
-          <div class="grid grid-cols-2 gap-2 text-[11px] mb-2.5">
-            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("dashboard.owner") }}:</span> <b>{{ g.owner?.name ?? "-" }}</b></div>
-            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("dashboard.capacity_col") }}:</span> <b>{{ g.capacity_kw ?? "-" }} {{ t("dashboard.kw_label") }}</b></div>
-            <div><span class="text-[#9a9d97] dark:text-[#8f938a]">{{ t("dashboard.subscribers_col") }}:</span> <b>{{ g.active_subscriptions_count ?? 0 }}</b></div>
-          </div>
-          <div v-if="g.fuel_percentage !== null" class="flex items-center gap-2 mb-3">
-            <AppIcon :name="fuelIcon(g.fuel_percentage)" class="text-[10px]" v-if="fuelIcon(g.fuel_percentage)"
-              
-              
-              :style="{ color: fuelColor(g.fuel_percentage) }"
-              :title="fuelIconTitle(g.fuel_percentage)" />
-            <div class="bar-track flex-1"><div class="bar-fill" :style="{ width: g.fuel_percentage + '%', background: fuelColor(g.fuel_percentage) }"></div></div>
-            <span class="text-[10.5px] font-bold" :style="{ color: fuelColor(g.fuel_percentage) }">{{ g.fuel_percentage }}%</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="font-extrabold text-[12.5px]">{{ fmtMoney(g.monthly_revenue_ils) }}</span>
-            <div class="row-actions">
-              <button type="button" @click="openViewModal(g)" class="action-btn action-btn--view" :title="t('common.view')"><Eye aria-hidden="true" /></button>
-              <button type="button" @click="openEditModal(g)" class="action-btn action-btn--edit" :title="t('common.edit')"><Pencil aria-hidden="true" /></button>
-              <span class="row-actions-divider"></span>
-              <button type="button" @click="openDeleteModal(g)" :disabled="deletingId === g.id" class="action-btn action-btn--delete" :title="t('common.delete')">
-                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === g.id" /><Trash2 aria-hidden="true" v-else />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      </template>
-
-      <div v-if="pagination.last_page > 1" class="flex flex-wrap items-center justify-between gap-2 mt-3 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
-        <span>{{ t("dashboard.page_of", { current: pagination.current_page, last: pagination.last_page, total: pagination.total }) }}</span>
-        <div class="flex items-center gap-1">
-          <!-- زر الصفحة السابقة: يشير للخلف (يمين بالعربي / يسار بالإنجليزي) -->
-          <button :aria-label="$t('common.previous_page')" type="button" :disabled="pagination.current_page <= 1" @click="fetchGenerators(pagination.current_page - 1)" class="w-7 h-7 rounded-lg hover:bg-[#EBF1E7] dark:hover:bg-white/5 disabled:opacity-40">
-            <ChevronRight class="rtl:block ltr:hidden text-[10px]" aria-hidden="true" />
-            <ChevronLeft class="ltr:block rtl:hidden text-[10px]" aria-hidden="true" />
-          </button>
-
-          <!-- زر الصفحة التالية: يشير للأمام (يسار بالعربي / يمين بالإنجليزي) -->
-          <button :aria-label="$t('common.next_page')" type="button" :disabled="pagination.current_page >= pagination.last_page" @click="fetchGenerators(pagination.current_page + 1)" class="w-7 h-7 rounded-lg hover:bg-[#EBF1E7] dark:hover:bg-white/5 disabled:opacity-40">
-            <ChevronLeft class="rtl:block ltr:hidden text-[10px]" aria-hidden="true" />
-            <ChevronRight class="ltr:block rtl:hidden text-[10px]" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-    </section>
+    <!-- ===== جدول المولدات الكامل (كاردات KPI + شريط الأدوات + الجدول) — مكوّن مشترك، نفس الموجود بصفحة "إدارة المولدات" ===== -->
+    <GeneratorsTablePanel ref="generatorsPanelRef" :show-kpis="false" />
 
       <div class="glass-card p-4">
         <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -1058,10 +683,6 @@ onMounted(async () => {
         <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openTechnicianModal">
           <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#FFC107,#a3760a)"><Wrench aria-hidden="true" /></span>
           <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("menu.technicians") }}</span>
-        </button>
-        <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openSettingsModal">
-          <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#59555D,#2F2B33)"><Settings aria-hidden="true" /></span>
-          <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("menu.settings") }}</span>
         </button>
         <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openAnnouncementModal">
           <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#D4AF37,#8A6D1F)"><Megaphone aria-hidden="true" /></span>
@@ -1340,104 +961,5 @@ onMounted(async () => {
       </Transition>
     </Teleport>
 
-    <!-- ===== إضافة: نافذة اختصارات الإعدادات السريعة ===== -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition duration-250 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="isSettingsModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="isSettingsModalOpen = false">
-        <div class="glass-card modal-panel-pop !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-sm shadow-2xl overflow-hidden rounded-2xl">
-          <div class="modal-head-brand modal-head-brand--purple shrink-0">
-            <div class="modal-head-brand__inner">
-              <span class="modal-head-brand__icon"><Settings aria-hidden="true" /></span>
-              <div class="min-w-0">
-                <h3 class="modal-head-brand__title">{{ t("dashboard.settings_shortcuts_title") }}</h3>
-                <p class="modal-head-brand__subtitle">{{ t("dashboard.settings_shortcuts_subtitle") }}</p>
-              </div>
-            </div>
-            <button :aria-label="$t('common.close')" type="button" @click="isSettingsModalOpen = false" class="modal-head-brand__close"><X aria-hidden="true" /></button>
-          </div>
-
-          <div class="p-4 space-y-1.5">
-            <RouterLink
-              v-for="shortcut in SETTINGS_SHORTCUTS" :key="shortcut.key"
-              :to="shortcut.to"
-              @click="isSettingsModalOpen = false"
-              class="flex items-center gap-2.5 w-full text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 rounded-lg p-2.5 transition-colors"
-            >
-              <span class="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#7c4fa3,#3d2a5c)">
-                <AppIcon :name="shortcut.icon" class="text-[11px]" />
-              </span>
-              <span class="text-[12px] font-semibold">{{ settingsShortcutLabel(shortcut.key) }}</span>
-              <!-- سهم "انتقال للأمام": يسار بالعربي / يمين بالإنجليزي -->
-              <ChevronLeft class="rtl:block ltr:hidden text-[10px] text-[#9a9d97] dark:text-[#8f938a] ms-auto" aria-hidden="true" />
-              <ChevronRight class="ltr:block rtl:hidden text-[10px] text-[#9a9d97] dark:text-[#8f938a] ms-auto" aria-hidden="true" />
-
-            </RouterLink>
-          </div>
-        </div>
-      </div>
-      </Transition>
-    </Teleport>
-
-    <!-- ===================== ADD / EDIT MODAL (بنفس هوية باقي صفحات المولدات) — مكوّن مشترك ===================== -->
-    <AdminGeneratorFormModal
-      :open="isFormOpen"
-      :generator="editingGenerator"
-      :owners="owners"
-      :is-saving="isSaving"
-      :save-error="saveError"
-      @close="closeForm"
-      @submit="handleGeneratorFormSubmit"
-    />
-
-    <!-- ===================== VIEW MODAL (بنفس هوية إدارة المولدات) — مكوّن مشترك ===================== -->
-    <GeneratorViewModal
-      :open="isViewOpen"
-      :generator="viewingGenerator"
-      @close="isViewOpen = false"
-      @edit="switchToEditFromView"
-    />
-
-    <!-- ===================== DELETE CONFIRM MODAL (بنفس هوية الموقع) ===================== -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition duration-250 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="isDeleteModalOpen && deletingGenerator" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="closeDeleteModal">
-        <div class="glass-card modal-panel-pop !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-sm shadow-2xl overflow-hidden rounded-2xl">
-          <!-- Header -->
-          <div class="modal-head-brand modal-head-brand--danger">
-            <div class="modal-head-brand__inner">
-              <span class="modal-head-brand__icon"><Trash2 aria-hidden="true" /></span>
-              <div class="min-w-0">
-                <h3 class="modal-head-brand__title">{{ t("dashboard.delete_generator_title") }}</h3>
-                <p class="modal-head-brand__subtitle">{{ t("dashboard.delete_generator_subtitle") }}</p>
-              </div>
-            </div>
-            <button :aria-label="$t('common.close')" type="button" @click="closeDeleteModal" class="modal-head-brand__close"><X aria-hidden="true" /></button>
-          </div>
-
-          <!-- Body -->
-          <div class="p-5 space-y-3.5 text-center">
-            <div class="w-14 h-14 rounded-full bg-[#D9534F]/10 flex items-center justify-center mx-auto">
-              <TriangleAlert class="text-[#D9534F] text-xl" aria-hidden="true" />
-            </div>
-            <p class="text-[12.5px] leading-relaxed text-[#4b4b4b] dark:text-[#d7d9d3]">
-              {{ t("dashboard.delete_generator_confirm_message", { name: deletingGenerator.name }) }}
-            </p>
-            <div v-if="deleteError" class="alert-box text-start">
-              <CircleAlert class="shrink-0" aria-hidden="true" /> {{ deleteError }}
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="modal-footer-brand">
-            <button type="button" @click="closeDeleteModal" class="btn-outline-brand">{{ t("dashboard.cancel") }}</button>
-            <button type="button" @click="confirmDeleteGenerator" :disabled="deletingId === deletingGenerator.id" class="btn-fill-brand btn-fill-brand--danger">
-              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === deletingGenerator.id" /><Trash2 aria-hidden="true" v-else />
-              {{ t("dashboard.confirm_delete") }}
-            </button>
-          </div>
-        </div>
-      </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>

@@ -1,6 +1,11 @@
 export default {
   common: {
     unexpected_error_retry: "An unexpected error occurred, please try again.",
+    filter: "Filter",
+    min: "Min",
+    max: "Max",
+    clear: "Clear",
+    apply: "Apply",
     reauth_banner_message: "Your session has expired and you have {count} saved operation(s) waiting to be sent. Log in again to complete them.",
     reauth_banner_login_button: "Log in",
     offline_banner_message: "No internet connection — operations will be saved and sent automatically once the connection is restored.",
@@ -79,6 +84,20 @@ export default {
       active: "Running now",
       maintenance: "Under maintenance",
       inactive: "Inactive",
+    },
+    /* Known Gaza Strip city names, so public-facing English-locale views
+       (e.g. the landing page's generators map) don't show a raw Arabic city
+       string. Free-text city values outside this list correctly fall back
+       to their original text — see localizedCity() in GeneratorsMapSection.vue. */
+    city_names: {
+      "غزة": "Gaza",
+      "خان يونس": "Khan Younis",
+      "رفح": "Rafah",
+      "دير البلح": "Deir al-Balah",
+      "جباليا": "Jabalia",
+      "بيت لاهيا": "Beit Lahia",
+      "بيت حانون": "Beit Hanoun",
+      "النصيرات": "An Nuseirat",
     },
   },
   menu: {
@@ -411,6 +430,8 @@ export default {
     new_generator_subtitle: "New generator",
     capacity_kw_label: "Capacity (kW)",
     fuel_type_label: "Fuel Type",
+    tank_capacity_liters_label: "Fuel Tank Capacity (L)",
+    tank_capacity_liters_placeholder: "e.g. 200",
     fuel_diesel: "Diesel",
     fuel_gas: "Gas",
     fuel_petrol: "Petrol",
@@ -572,6 +593,11 @@ export default {
       resend_loading: "Sending...",
       resend_sent: "If your email is registered and not yet verified, a new verification link has been sent.",
       status_owner_application_approved: "Your generator owner application has been approved 🎉 You can log in now.",
+      quick_login_label: "Quick Login (demo)",
+      quick_login_admin: "Admin",
+      quick_login_owner: "Owner",
+      quick_login_subscriber: "Subscriber",
+      quick_login_technician: "Technician",
     },
 
     register: {
@@ -757,6 +783,7 @@ export default {
     generators_count_col: "Generators",
     total_subscribers_col: "Subscribers",
     commission_col: "Commission",
+    commission_tiered_label: "Auto tiers",
     plan_col: "Plan",
     no_plan: "No plan",
     locked: "Locked",
@@ -1728,6 +1755,17 @@ export default {
     deleting_ellipsis: "Deleting...",
   },
   faults_page: {
+    col_title: "Title",
+    col_reported_at: "Reported At",
+    add_fault_button: "Add Fault",
+    add_fault_title: "Add New Fault",
+    add_fault_subtitle: "Log a new fault report for a generator.",
+    field_generator: "Generator",
+    field_title: "Fault Title",
+    field_description: "Fault Description",
+    field_priority: "Priority",
+    select_generator_placeholder: "Select generator",
+    create_error: "Failed to add the fault.",
     status_pending_verification: "Pending Verification",
     status_verified: "Verified",
     status_rejected: "Rejected",
@@ -2677,6 +2715,8 @@ export default {
         reports_title: "Reports & Analytics",
         reports_desc: "A clear view of business performance through detailed reports.",
       },
+      showMore: "Show {count} more features",
+      showLess: "Show less",
     },
     analytics: {
       eyebrow: "Analytics",
@@ -2806,6 +2846,10 @@ export default {
       popup_generators_count: "{count} active generators",
       stat_generators: "active generators",
       stat_cities: "cities covered",
+      live_widget_title: "Live Right Now",
+      live_widget_count: "{count} generator(s) currently running",
+      live_widget_empty: "No generators currently reporting as running",
+      live_widget_link: "View full live schedule",
     },
     human: {
       eyebrow: "Our Humanitarian Side",

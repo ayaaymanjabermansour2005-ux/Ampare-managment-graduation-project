@@ -10,6 +10,7 @@ import meterReadingService from "@/services/meterReadingService";
 import { useToastStore } from "@/stores/toast";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Eye, FileDown, FileSpreadsheet, Gauge, LoaderCircle, Pencil, PlugZap, Plus, Printer, Search, SquarePen, Trash2, TriangleAlert, User, UserCheck, X, Zap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
+import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
@@ -138,22 +139,22 @@ const avgConsumptionOnPage = computed(() =>
 );
 const KPI_CARDS = computed(() => [
   {
-    icon: "fa-gauge-high", c1: "#52733D", c2: "#3E582E",
+    icon: "fa-gauge-high", tone: "primary",
     value: pagination.value.total,
     label: t("meter_readings_page.total_readings"),
   },
   {
-    icon: "fa-bolt", c1: "#8A6D1F", c2: "#D4AF37",
-    value: `${totalConsumptionOnPage.value} ${t("dashboard.kw_label")}`,
+    icon: "fa-bolt", tone: "secondary",
+    value: totalConsumptionOnPage.value, suffix: t("dashboard.kw_label"),
     label: t("meter_readings_page.consumption_this_page"),
   },
   {
-    icon: "fa-chart-simple", c1: "#17A2B8", c2: "#0f6c7d",
-    value: `${avgConsumptionOnPage.value} ${t("dashboard.kw_label")}`,
+    icon: "fa-chart-simple", tone: "info",
+    value: avgConsumptionOnPage.value, suffix: t("dashboard.kw_label"),
     label: t("meter_readings_page.avg_consumption_per_reading"),
   },
   {
-    icon: "fa-hourglass-half", c1: "#FFC107", c2: "#a3760a",
+    icon: "fa-hourglass-half", tone: "warning",
     value: countOnPage("pending_approval"),
     label: statusLabel("pending_approval") + t("common.this_page_suffix"),
   },
@@ -506,11 +507,10 @@ onMounted(async () => {
         <span class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("meter_readings_page.updated_per_visible_page") }}</span>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div v-for="c in KPI_CARDS" :key="c.label" class="kpi-card glass-card hoverable" :style="{ '--kpi-color': c.c1, '--kpi-color2': c.c2 }">
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5">{{ c.label }}</div>
-        </div>
+        <StatCard
+          v-for="c in KPI_CARDS" :key="c.label"
+          :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone" :suffix="c.suffix ?? ''"
+        />
       </div>
     </section>
 

@@ -1,6 +1,5 @@
 <script setup>
-import { Check } from "@lucide/vue";
-import AppIcon from "@/components/ui/AppIcon.vue";
+import { Check, ChevronDown } from "@lucide/vue";
 
 
 import { ref, computed, nextTick, onBeforeUnmount } from "vue";
@@ -119,8 +118,8 @@ onBeforeUnmount(close);
       :class="isOpen ? '!border-[#8A6D1F]' : 'hover:!border-[#c9c0a6] dark:hover:!border-white/20'"
     >
       <span class="truncate" :class="selectedOption ? '' : 'text-[#9a9d97] dark:text-[#8f938a]'">{{ selectedLabel }}</span>
-      <AppIcon
-        name="chevron-down"
+      <ChevronDown
+        aria-hidden="true"
         class="text-[9px] text-[#8A6D1F] dark:text-[#D4AF37] transition-transform duration-150 shrink-0"
         :class="{ 'rotate-180': isOpen }"
       />
@@ -135,8 +134,8 @@ onBeforeUnmount(close);
       :class="isOpen ? '!border-[#8A6D1F]' : 'hover:border-[#c9c0a6] dark:hover:border-white/20'"
     >
       <span class="truncate" :class="selectedOption ? '' : 'text-[#9a9d97] dark:text-[#8f938a] font-normal'">{{ selectedLabel }}</span>
-      <AppIcon
-        name="chevron-down"
+      <ChevronDown
+        aria-hidden="true"
         class="text-[9px] text-[#8A6D1F] dark:text-[#D4AF37] transition-transform duration-150 shrink-0"
         :class="{ 'rotate-180': isOpen }"
       />

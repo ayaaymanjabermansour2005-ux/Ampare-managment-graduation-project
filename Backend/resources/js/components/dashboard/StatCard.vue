@@ -12,9 +12,11 @@ const props = defineProps({
     type: String,
     default: "primary",
     validator: (v) =>
-      ["primary", "secondary", "success", "warning", "danger"].includes(v),
+      ["primary", "secondary", "success", "warning", "danger", "info"].includes(v),
   },
   suffix: { type: String, default: "" },
+  prefix: { type: String, default: "" },
+  decimals: { type: Number, default: 0 },
 });
 
 const { locale } = useI18n();
@@ -25,6 +27,7 @@ const TONE_COLORS = {
   success: ["#28A745", "#1f7a37"],
   warning: ["#FFC107", "#a3760a"],
   danger: ["#D9534F", "#b8352f"],
+  info: ["#17A2B8", "#0f6c7d"],
 };
 
 const cssVars = computed(() => {
@@ -42,7 +45,8 @@ const isNumeric = computed(() => typeof props.value === "number" || /^-?\d+(\.\d
       <div class="kpi-icon"><AppIcon :name="icon" /></div>
     </div>
     <div class="text-xl font-extrabold" :dir="locale === 'ar' ? 'rtl' : 'ltr'">
-      <span v-if="isNumeric" v-count-up="Number(value)">0</span>
+      <span v-if="prefix">{{ prefix }}</span>
+      <span v-if="isNumeric" v-count-up="{ value: Number(value), decimals }">0</span>
       <span v-else>{{ value }}</span>
       <span v-if="suffix" class="text-[13px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] ms-1">{{ suffix }}</span>
     </div>

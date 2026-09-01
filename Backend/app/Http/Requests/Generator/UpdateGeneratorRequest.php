@@ -36,6 +36,7 @@ class UpdateGeneratorRequest extends FormRequest
             'currency' => ['sometimes', 'required', Rule::enum(Currency::class)],
             'capacity_kw' => ['nullable', 'integer', 'min:1'],
             'fuel_type' => ['sometimes', Rule::enum(FuelType::class)],
+            'tank_capacity_liters' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'lines_count' => ['sometimes', 'integer', 'min:1', 'max:20'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],

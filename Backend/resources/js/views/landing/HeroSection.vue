@@ -83,10 +83,9 @@ const showDemoModal = ref(false);
     - يتفضى بنفس الحركة معكوسة لو انشال الكومبوننت من الشجرة مستقبلاً.
     - محايد لـ prefers-reduced-motion: بنفصل اسم الـ Transition بالكامل فهالحالة
       (name يصير undefined) فما بتنطبق أي كلاسات CSS ويظهر المحتوى فورًا بدون حركة.
-    - التزامن مع Curtain الصفحة العام (.landing-entrance-overlay بـ landing-glass.css،
-      مدته 1.5s): معطين delay (--hero-fill-delay بـ landing-glass.css) أطول شوي من
-      مدة الـ Curtain عشان التأثير يضل مرئي لما ينكشف الـ Curtain، مش يخلص وهو
-      مخفي وراه. لو غيّرتي مدة الـ Curtain بـ LandingLayout.vue، عدّلي نفس المتغير هناك.
+    - --hero-fill-delay (بـ landing-glass.css) تأخير بسيط بس (0.15s) لإحساس دخول
+      لطيف — كان أطول (1.5s) لما كانت ستارة .landing-entrance-overlay العامة
+      موجودة بـ LandingLayout.vue (اتشالت بالكامل، طلب صريح).
   -->
   <Transition :name="prefersReducedMotion ? undefined : 'hero-fill'" appear>
       <section id="home" class="relative pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-20 lg:pb-24 overflow-hidden">

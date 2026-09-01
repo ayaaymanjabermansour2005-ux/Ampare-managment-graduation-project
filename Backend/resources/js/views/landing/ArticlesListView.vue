@@ -45,7 +45,7 @@ onMounted(() => fetchArticles());
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-5 sm:px-8 py-16 space-y-10">
+  <div class="max-w-4xl mx-auto px-5 sm:px-8 pt-28 sm:pt-32 pb-16 space-y-10">
     <RouterLink
       :to="{ name: 'landing.home' }"
       class="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[#8A6D1F] dark:text-[#F4E0A5] hover:opacity-80"

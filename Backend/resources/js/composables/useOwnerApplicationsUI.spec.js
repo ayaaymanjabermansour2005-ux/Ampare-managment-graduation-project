@@ -103,7 +103,8 @@ describe('useOwnerApplicationsUI', () => {
         it('computes a real approval rate once there is a reviewed total', () => {
             const statusCounts = ref({ all: 10, pending: 2, approved: 6, rejected: 2 });
             const { APPLICATION_KPI_CARDS } = useOwnerApplicationsUI(makeInputs({ statusCounts }));
-            expect(APPLICATION_KPI_CARDS.value[3].value).toBe('75%');
+            expect(APPLICATION_KPI_CARDS.value[3].value).toBe(75);
+            expect(APPLICATION_KPI_CARDS.value[3].suffix).toBe('%');
         });
     });
 

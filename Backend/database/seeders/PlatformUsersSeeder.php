@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Enums\BeneficiaryType;
+use App\Enums\CommissionMode;
 use App\Enums\ComplaintStatus;
 use App\Enums\FaultStatus;
+use App\Enums\FuelType;
 use App\Enums\GeneratorStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\OfferStatus;
@@ -26,6 +28,7 @@ use App\Models\Complaint;
 use App\Models\Conversation;
 use App\Models\Fault;
 use App\Models\Generator;
+use App\Models\GeneratorSchedule;
 use App\Models\Invoice;
 use App\Models\Location;
 use App\Models\Message;
@@ -102,31 +105,31 @@ class PlatformUsersSeeder extends Seeder
     private function seedOwners($neighborhoods, $plans): array
     {
         $ownersData = [
-            ['name' => 'محمود أبو شمالة', 'email' => 'mahmoud.abushamala@example.test', 'phone' => '0599100101', 'plan' => 'pro', 'generators' => [
-                ['name' => 'مولد أبو شمالة الرئيسي', 'status' => GeneratorStatus::Active, 'price' => 0.55, 'currency' => 'ILS', 'capacity' => 60],
+            ['name' => 'محمود أبو شمالة', 'email' => 'mahmoud.abushamala@example.test', 'phone' => '0599100101', 'plan' => 'pro', 'commission_mode' => CommissionMode::Fixed, 'commission_rate' => 5.00, 'generators' => [
+                ['name' => 'مولد أبو شمالة الرئيسي', 'name_en' => 'Abu Shamala Main Generator', 'status' => GeneratorStatus::Active, 'price' => 0.55, 'currency' => 'ILS', 'capacity' => 60, 'fuel_type' => FuelType::Diesel],
             ]],
-            ['name' => 'سناء الأغا', 'email' => 'sanaa.alagha@example.test', 'phone' => '0599100102', 'plan' => 'pro', 'generators' => [
-                ['name' => 'مولد الأغا - النصر', 'status' => GeneratorStatus::Active, 'price' => 0.45, 'currency' => 'ILS', 'capacity' => 40],
-                ['name' => 'مولد الأغا - الاحتياطي', 'status' => GeneratorStatus::Maintenance, 'price' => 0.45, 'currency' => 'ILS', 'capacity' => 25],
+            ['name' => 'سناء الأغا', 'email' => 'sanaa.alagha@example.test', 'phone' => '0599100102', 'plan' => 'pro', 'commission_mode' => CommissionMode::Tiered, 'commission_rate' => null, 'generators' => [
+                ['name' => 'مولد الأغا - النصر', 'name_en' => 'Al-Agha Generator - Al-Nasr', 'status' => GeneratorStatus::Active, 'price' => 0.45, 'currency' => 'ILS', 'capacity' => 40, 'fuel_type' => FuelType::Gas],
+                ['name' => 'مولد الأغا - الاحتياطي', 'name_en' => 'Al-Agha Generator - Backup', 'status' => GeneratorStatus::Maintenance, 'price' => 0.45, 'currency' => 'ILS', 'capacity' => 25, 'fuel_type' => FuelType::Dual],
             ]],
-            ['name' => 'خالد النجار', 'email' => 'khaled.alnajjar@example.test', 'phone' => '0569100103', 'plan' => 'enterprise', 'generators' => [
-                ['name' => 'مولد النجار للصناعات', 'status' => GeneratorStatus::Active, 'price' => 0.18, 'currency' => 'USD', 'capacity' => 120],
+            ['name' => 'خالد النجار', 'email' => 'khaled.alnajjar@example.test', 'phone' => '0569100103', 'plan' => 'enterprise', 'commission_mode' => CommissionMode::Fixed, 'commission_rate' => 4.00, 'generators' => [
+                ['name' => 'مولد النجار للصناعات', 'name_en' => 'Al-Najjar Industrial Generator', 'status' => GeneratorStatus::Active, 'price' => 0.18, 'currency' => 'USD', 'capacity' => 120, 'fuel_type' => FuelType::Diesel],
             ]],
-            ['name' => 'رنا أبو دقة', 'email' => 'rana.abudaqa@example.test', 'phone' => '0599100104', 'plan' => 'basic', 'generators' => [
-                ['name' => 'مولد أبو دقة - تل الهوى', 'status' => GeneratorStatus::PendingVerification, 'price' => 0.5, 'currency' => 'ILS', 'capacity' => 30],
+            ['name' => 'رنا أبو دقة', 'email' => 'rana.abudaqa@example.test', 'phone' => '0599100104', 'plan' => 'basic', 'commission_mode' => CommissionMode::Fixed, 'commission_rate' => 6.00, 'generators' => [
+                ['name' => 'مولد أبو دقة - تل الهوى', 'name_en' => 'Abu Daqqa Generator - Tel Al-Hawa', 'status' => GeneratorStatus::PendingVerification, 'price' => 0.5, 'currency' => 'ILS', 'capacity' => 30, 'fuel_type' => FuelType::Petrol],
             ]],
-            ['name' => 'إبراهيم شاهين', 'email' => 'ibrahim.shaheen@example.test', 'phone' => '0569100105', 'plan' => 'basic', 'generators' => [
-                ['name' => 'مولد شاهين - الدرج', 'status' => GeneratorStatus::Active, 'price' => 0.48, 'currency' => 'ILS', 'capacity' => 35],
+            ['name' => 'إبراهيم شاهين', 'email' => 'ibrahim.shaheen@example.test', 'phone' => '0569100105', 'plan' => 'basic', 'commission_mode' => CommissionMode::Tiered, 'commission_rate' => null, 'generators' => [
+                ['name' => 'مولد شاهين - الدرج', 'name_en' => 'Shaheen Generator - Al-Daraj', 'status' => GeneratorStatus::Active, 'price' => 0.48, 'currency' => 'ILS', 'capacity' => 35, 'fuel_type' => FuelType::Diesel],
             ]],
-            ['name' => 'هبة الكحلوت', 'email' => 'heba.alkahlout@example.test', 'phone' => '0599100106', 'plan' => 'basic', 'generators' => [
-                ['name' => 'مولد الكحلوت - التفاح', 'status' => GeneratorStatus::Inactive, 'price' => 0.5, 'currency' => 'ILS', 'capacity' => 20],
+            ['name' => 'هبة الكحلوت', 'email' => 'heba.alkahlout@example.test', 'phone' => '0599100106', 'plan' => 'basic', 'commission_mode' => CommissionMode::Fixed, 'commission_rate' => 5.00, 'generators' => [
+                ['name' => 'مولد الكحلوت - التفاح', 'name_en' => 'Al-Kahlout Generator - Al-Tuffah', 'status' => GeneratorStatus::Inactive, 'price' => 0.5, 'currency' => 'ILS', 'capacity' => 20, 'fuel_type' => FuelType::Gas],
             ]],
-            ['name' => 'عمر ياسين', 'email' => 'omar.yassin@example.test', 'phone' => '0569100107', 'plan' => 'enterprise', 'generators' => [
-                ['name' => 'مولد ياسين الكبير - الصبرة', 'status' => GeneratorStatus::Active, 'price' => 0.16, 'currency' => 'USD', 'capacity' => 150],
-                ['name' => 'مولد ياسين الفرعي', 'status' => GeneratorStatus::Active, 'price' => 0.5, 'currency' => 'ILS', 'capacity' => 45],
+            ['name' => 'عمر ياسين', 'email' => 'omar.yassin@example.test', 'phone' => '0569100107', 'plan' => 'enterprise', 'commission_mode' => CommissionMode::Fixed, 'commission_rate' => 3.50, 'generators' => [
+                ['name' => 'مولد ياسين الكبير - الصبرة', 'name_en' => 'Yassin Main Generator - Al-Sabra', 'status' => GeneratorStatus::Active, 'price' => 0.16, 'currency' => 'USD', 'capacity' => 150, 'fuel_type' => FuelType::Dual],
+                ['name' => 'مولد ياسين الفرعي', 'name_en' => 'Yassin Secondary Generator', 'status' => GeneratorStatus::Active, 'price' => 0.5, 'currency' => 'ILS', 'capacity' => 45, 'fuel_type' => FuelType::Diesel],
             ]],
             // بدون أي مولد إطلاقًا — لاختبار Empty State بشاشات المالك (مولداتي/الفواتير/المشتركين...).
-            ['name' => 'لينا زقّوت', 'email' => 'lina.zaqqout@example.test', 'phone' => '0599100108', 'plan' => 'basic', 'generators' => []],
+            ['name' => 'لينا زقّوت', 'email' => 'lina.zaqqout@example.test', 'phone' => '0599100108', 'plan' => 'basic', 'commission_mode' => CommissionMode::Tiered, 'commission_rate' => null, 'generators' => []],
         ];
 
         $ownersData = array_slice($ownersData, 0, self::OWNERS_COUNT);
@@ -143,6 +146,8 @@ class PlatformUsersSeeder extends Seeder
                     'email_verified_at' => now(),
                     'status' => 'active',
                     'plan_id' => $plans[$data['plan']]->id ?? null,
+                    'commission_mode' => $data['commission_mode'],
+                    'commission_rate' => $data['commission_rate'],
                 ]
             );
 
@@ -158,17 +163,38 @@ class PlatformUsersSeeder extends Seeder
 
             $generators = collect();
             foreach ($data['generators'] as $genData) {
-                $generators->push(Generator::firstOrCreate(
+                $generator = Generator::firstOrCreate(
                     ['owner_id' => $user->id, 'name' => $genData['name']],
                     [
+                        'name_en' => $genData['name_en'],
                         'price_per_kw' => $genData['price'],
                         'currency' => $genData['currency'],
                         'capacity_kw' => $genData['capacity'],
+                        'fuel_type' => $genData['fuel_type']->value,
                         'location_id' => $location->id,
                         'status' => $genData['status'],
                         'operating_schedule' => '24h',
                     ]
-                ));
+                );
+                $generators->push($generator);
+
+                // LIVE-SCHEDULE-demo-data: /live-schedule (public landing widget +
+                // page) had a fully-built backend and frontend but zero seeded
+                // GeneratorSchedule rows anywhere — every neighborhood filter
+                // (including "all neighborhoods") returned empty, not because of
+                // a missing filter option. updateOrCreate (not firstOrCreate) so
+                // the "active now" window stays genuinely live no matter which
+                // day this seeder is re-run on, instead of drifting stale.
+                if ($genData['status'] === GeneratorStatus::Active) {
+                    GeneratorSchedule::updateOrCreate(
+                        ['generator_id' => $generator->id, 'note' => 'عرض توضيحي - نشط الآن'],
+                        ['starts_at' => now()->subHour(), 'ends_at' => now()->addHours(3), 'created_by' => $user->id]
+                    );
+                    GeneratorSchedule::updateOrCreate(
+                        ['generator_id' => $generator->id, 'note' => 'عرض توضيحي - قادم'],
+                        ['starts_at' => now()->addHours(5), 'ends_at' => now()->addHours(8), 'created_by' => $user->id]
+                    );
+                }
             }
 
             PaymentMethod::firstOrCreate(
@@ -415,9 +441,14 @@ class PlatformUsersSeeder extends Seeder
             );
 
             if (in_array($invStatus, [InvoiceStatus::Paid, InvoiceStatus::PartiallyPaid], true)) {
+                // SEEDER-IDEMPOTENCY: نفس إصلاح DEMO-PAY-0001/0002 بـ DatabaseSeeder.php —
+                // $invoice تُبحَث بمفتاح فيه now()->addDays(...)، تاريخ متحرك يتغيّر كل يوم،
+                // فيتغيّر invoice_id بكل تشغيل بيوم مختلف. البحث هون بـ transaction_reference
+                // لوحده (فريد عالميًا بالفعل) يمنع محاولة إدخال نفس المرجع مرتين.
                 Payment::firstOrCreate(
-                    ['invoice_id' => $invoice->id, 'transaction_reference' => 'PU-PAY-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)],
+                    ['transaction_reference' => 'PU-PAY-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)],
                     [
+                        'invoice_id' => $invoice->id,
                         'source' => 'subscriber',
                         'amount' => $invStatus === InvoiceStatus::PartiallyPaid ? round($amount * 0.5, 2) : $amount,
                         'currency' => $generator->currency,

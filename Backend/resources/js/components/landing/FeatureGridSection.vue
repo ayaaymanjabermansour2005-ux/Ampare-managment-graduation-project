@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { vReveal } from "@/directives/reveal";
+import { ChevronDown, ChevronUp } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 const { t } = useI18n();
@@ -34,10 +35,15 @@ const HORIZONTAL_LINES = computed(() =>
     delay: ((i * 0.53 + 0.6) % 3.2).toFixed(2),
   })),
 );
+
+/* ---------------- قائمة الموبايل/التابلت: تبدأ مختصرة + زر "عرض المزيد" ---------------- */
+const MOBILE_INITIAL_COUNT = 4;
+const mobileExpanded = ref(false);
+const visibleFeatures = computed(() => (mobileExpanded.value ? FEATURES : FEATURES.slice(0, MOBILE_INITIAL_COUNT)));
 </script>
 
 <template>
-  <section id="features" class="py-24 relative overflow-hidden">
+  <section id="features" class="py-24 relative overflow-hidden section-tint-gold">
     <svg class="feature-grid-bg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <radialGradient id="featureGridFade" cx="50%" cy="50%" r="65%">
@@ -104,10 +110,10 @@ const HORIZONTAL_LINES = computed(() =>
         </article>
       </div>
 
-      <!-- ===== Fallback: كارد واحد يجمع كل المزايا (موبايل/تابلت) — بدون تغيير ===== -->
+      <!-- ===== Fallback: كارد واحد يجمع كل المزايا (موبايل/تابلت) — مختصر + عرض المزيد ===== -->
       <div class="glass-card feature-list-card lg:hidden divide-y divide-black/5 dark:divide-white/5" v-reveal>
         <div
-          v-for="f in FEATURES" :key="f.key"
+          v-for="f in visibleFeatures" :key="f.key"
           class="feature-list-item flex items-center gap-4 py-4 px-5 first:pt-5 last:pb-5"
         >
           <div class="feature-icon-wrap w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-white">
@@ -118,6 +124,23 @@ const HORIZONTAL_LINES = computed(() =>
             <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#a8aaa5] leading-relaxed">{{ t(`landing.features.items.${f.key}_desc`) }}</p>
           </div>
         </div>
+      </div>
+
+      <div v-if="FEATURES.length > MOBILE_INITIAL_COUNT" class="text-center mt-5 lg:hidden">
+        <button
+          type="button"
+          class="btn-outline-fill px-5 py-2.5 rounded-full text-[12.5px] font-bold"
+          @click="mobileExpanded = !mobileExpanded"
+        >
+          <span v-if="!mobileExpanded" class="inline-flex items-center gap-1.5 whitespace-nowrap">
+            {{ t("landing.features.showMore", { count: FEATURES.length - MOBILE_INITIAL_COUNT }) }}
+            <ChevronDown class="text-[10px]" aria-hidden="true" />
+          </span>
+          <span v-else class="inline-flex items-center gap-1.5 whitespace-nowrap">
+            {{ t("landing.features.showLess") }}
+            <ChevronUp class="text-[10px]" aria-hidden="true" />
+          </span>
+        </button>
       </div>
     </div>
   </section>

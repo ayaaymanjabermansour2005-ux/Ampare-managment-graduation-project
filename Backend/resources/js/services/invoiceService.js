@@ -1,5 +1,6 @@
 import http from "./http";
 import { getLocale } from "@/i18n";
+import { buildExportUrl } from "@/utils/exportUrl";
 
 export default {
   list(params = {}) {
@@ -43,7 +44,6 @@ export default {
   // بس ما كان له method هون، فالتبويب المجاور (الدفعات) كان فيه زر تصدير
   // شغّال والفواتير لأ.
   exportUrl(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return `/api/v1/invoices/export${query ? `?${query}` : ""}`;
+    return buildExportUrl("/api/v1/invoices/export", params);
   },
 };

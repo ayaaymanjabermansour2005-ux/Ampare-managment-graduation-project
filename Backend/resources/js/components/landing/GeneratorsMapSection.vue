@@ -6,12 +6,21 @@ import L from "leaflet";
 import { vReveal } from "@/directives/reveal";
 import publicGeneratorsListService from "@/services/publicGeneratorsListService";
 import { useLeafletMap } from "@/composables/useLeafletMap";
+import { useLiveSchedule } from "@/composables/useLiveSchedule";
 import { useAuthStore } from "@/stores/auth";
 import { Info, LoaderCircle, MapPin, MapPinned, Search, Users, Zap } from "@lucide/vue";
 
 const { t, n, locale } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
+
+/* ---------------- ودجت "شغّال الآن" — تلخيص لصفحة live-schedule الكاملة ----------------
+ * live-schedule كان له باك إند حقيقي وصفحة مستقلة بس بدون أي مكان يوصلها منه
+ * زائر اللاندنج بيج. بدل سكشن كامل جديد، ودجت صغير هون جوا سكشن الخريطة
+ * (نفس المكان اللي المستخدم أصلًا بيدوّر فيه عن "مين شغّال هلق")، بيربط
+ * لصفحة الجدول الكامل لمن يريد التفاصيل/الفلترة حسب الحي. */
+const { activeNow: liveActiveNow, error: liveScheduleError, fetchSchedule: fetchLiveSchedule } = useLiveSchedule();
+onMounted(() => fetchLiveSchedule());
 
 /* ---------------- رابط "اشتراك" لكل مولد ----------------
  * مسجّل دخول كمشترك → مباشرة لمركز الاشتراكات (?highlight=ID، الآلية
@@ -36,6 +45,12 @@ function formatNum(value) {
 }
 function localizedGeneratorName(g) {
   return locale.value === "en" && g.name_en ? g.name_en : g.name;
+}
+function localizedCity(city) {
+  if (locale.value !== "en") return city;
+  const key = `common.city_names.${city}`;
+  const translated = t(key);
+  return translated === key ? city : translated;
 }
 
 const status = ref("loading"); // loading | ready | empty | error
@@ -78,7 +93,7 @@ function popupHtml(g) {
   return `
     <div style="font-family:inherit;min-width:170px;text-align:center;padding:2px 4px">
       <strong style="font-size:13px">${localizedGeneratorName(g)}</strong><br/>
-      <span style="font-size:11px;color:#6B6B6B">${g.city}</span><br/>
+      <span style="font-size:11px;color:#6B6B6B">${localizedCity(g.city)}</span><br/>
       <span style="font-size:11.5px;font-weight:700;color:#52733D">${g.subscribers_count} ${t("landing.map.subscribers_unit")}</span><br/>
       <span style="font-size:12px;font-weight:800;color:#8A6D1F">₪${g.price_per_kw} / ${t("landing.map.kwh_unit")}</span><br/>
       <a href="${subscribeHrefFor(g)}" style="display:inline-block;margin-top:8px;padding:6px 14px;border-radius:999px;background:linear-gradient(to left,#3E582E,#52733D,#8A6D1F);color:#fff;font-size:11.5px;font-weight:700;text-decoration:none">
@@ -154,6 +169,30 @@ onMounted(loadGenerators);
         </div>
       </div>
 
+      <!-- ودجت "شغّال الآن" — تلخيص من live-schedule، يربط لصفحته الكاملة -->
+      <RouterLink
+        v-if="!liveScheduleError"
+        :to="{ name: 'landing.live-schedule' }"
+        class="glass-card max-w-sm mx-auto mt-5 sm:mt-6 flex items-center justify-between gap-3 p-3.5 sm:p-4 hover:!border-[#10B981]/50 transition-colors"
+        v-reveal
+      >
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="relative flex h-2.5 w-2.5 shrink-0">
+            <span class="absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75 status-dot-live"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#10B981]"></span>
+          </span>
+          <div class="min-w-0">
+            <p class="text-[11.5px] sm:text-[12.5px] font-bold truncate">{{ t("landing.map.live_widget_title") }}</p>
+            <p class="text-[10px] sm:text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] truncate">
+              {{ liveActiveNow.length > 0 ? t("landing.map.live_widget_count", { count: liveActiveNow.length }) : t("landing.map.live_widget_empty") }}
+            </p>
+          </div>
+        </div>
+        <span class="shrink-0 text-[10px] sm:text-[11px] font-bold text-[#8A6D1F] dark:text-[#F4E0A5] whitespace-nowrap">
+          {{ t("landing.map.live_widget_link") }}
+        </span>
+      </RouterLink>
+
       <!-- شريط بحث -->
       <div v-if="status === 'ready'" class="max-w-sm mx-auto mt-6 sm:mt-8 mb-5 sm:mb-6 relative px-2 sm:px-0" v-reveal>
         <Search class="absolute top-1/2 -translate-y-1/2 start-6 sm:start-4 text-[#9a9d97] text-[12px]" aria-hidden="true" />
@@ -178,10 +217,11 @@ onMounted(loadGenerators);
           <div ref="mapContainer" class="w-full h-[280px] sm:h-[360px] lg:h-[520px] rounded-xl z-0"></div>
         </div>
 
-        <div class="lg:col-span-2 space-y-3 max-h-[420px] sm:max-h-[520px] overflow-y-auto ps-1 order-2" v-reveal>
+        <div class="lg:col-span-2 max-h-[420px] sm:max-h-[520px] overflow-y-auto ps-1 order-2" v-reveal>
           <p v-if="filteredGenerators.length === 0" class="text-center text-[12px] text-[#9a9d97] py-8">
             {{ t("landing.map.no_results") }}
           </p>
+          <div v-else class="grid grid-cols-2 gap-3">
           <div
             v-for="g in filteredGenerators"
             :key="g.id"
@@ -196,7 +236,7 @@ onMounted(loadGenerators);
               </span>
             </div>
             <p class="text-[11px] sm:text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] flex items-center gap-1">
-              <MapPin class="text-[10px]" aria-hidden="true" /> {{ g.city }}
+              <MapPin class="text-[10px]" aria-hidden="true" /> {{ localizedCity(g.city) }}
             </p>
             <div class="flex items-center justify-between mt-2 text-[11.5px] sm:text-[12px] flex-wrap gap-1.5">
               <span class="font-semibold text-[#52733D] dark:text-[#8cc35a] flex items-center gap-1">
@@ -211,6 +251,7 @@ onMounted(loadGenerators);
             >
               <Zap aria-hidden="true" /> {{ t("landing.map.subscribe_button") }}
             </RouterLink>
+          </div>
           </div>
         </div>
       </div>

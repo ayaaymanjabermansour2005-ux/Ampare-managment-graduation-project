@@ -195,7 +195,8 @@
 .admin-shell .timeline-item:last-child::after { display: none; }
 
 /* ===== خرائط توضيحية ===== */
-.admin-shell .map-illustration { position: relative; border-radius: 1rem; overflow: hidden; background: radial-gradient(ellipse at 30% 20%, rgba(82,115,61,0.18), transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,175,55,0.16), transparent 55%), #EBF1E7; }
+.admin-shell .map-illustration { position: relative; isolation: isolate; z-index: 0; border-radius: 1rem; overflow: hidden; background: radial-gradient(ellipse at 30% 20%, rgba(82,115,61,0.18), transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,175,55,0.16), transparent 55%), #EBF1E7; }
+.admin-shell .map-illustration .leaflet-container { isolation: isolate; z-index: 0; }
 .admin-shell.dark .map-illustration { background: radial-gradient(ellipse at 30% 20%, rgba(140,195,90,0.14), transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,175,55,0.12), transparent 55%), #171a17; }
 .admin-shell.dark .map-illustration iframe { filter: grayscale(35%) brightness(0.82) contrast(1.15) saturate(1.2); }
 
@@ -458,6 +459,9 @@
 }
 .dark .leaflet-popup-close-button {
   color: #a8aaa5 !important;
+}
+.leaflet-popup-content, .generator-map-popup {
+  text-align: center;
 }
 .generator-map-popup {
   color: #2c2c2c;

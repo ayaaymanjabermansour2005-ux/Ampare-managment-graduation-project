@@ -1,13 +1,13 @@
 import http from "./http";
+import { buildExportUrl } from "@/utils/exportUrl";
 
 export default {
   list(params = {}) {
     return http.get("/generators", { params });
   },
-  
+
   exportUrl(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return `/api/v1/generators/export${query ? `?${query}` : ""}`;
+    return buildExportUrl("/api/v1/generators/export", params);
   },
 
   cities() {

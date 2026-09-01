@@ -254,10 +254,10 @@ export function useSubscriptionsAnalytics({ subscriptions, subscriptionPaginatio
   ]);
 
   const SUBSCRIPTION_KPI_CARDS = computed(() => [
-    { icon: "fa-file-contract", label: t("subscriptions_page.total_subscriptions"), value: subscriptionPagination.value.total, c1: "#52733D", c2: "#3E582E" },
-    { icon: "fa-circle-check", label: subscriptionStatusLabel("active") + t("common.this_page_suffix"), value: countOnPage("active"), c1: "#28A745", c2: "#1f7a37" },
-    { icon: "fa-hourglass-half", label: subscriptionStatusLabel("pending") + t("common.this_page_suffix"), value: countOnPage("pending"), c1: "#FFC107", c2: "#a3760a" },
-    { icon: "fa-circle-pause", label: subscriptionStatusLabel("suspended") + t("common.this_page_suffix"), value: countOnPage("suspended"), c1: "#17A2B8", c2: "#0f6c7d" },
+    { icon: "fa-file-contract", label: t("subscriptions_page.total_subscriptions"), value: subscriptionPagination.value.total, tone: "primary" },
+    { icon: "fa-circle-check", label: subscriptionStatusLabel("active") + t("common.this_page_suffix"), value: countOnPage("active"), tone: "success" },
+    { icon: "fa-hourglass-half", label: subscriptionStatusLabel("pending") + t("common.this_page_suffix"), value: countOnPage("pending"), tone: "warning" },
+    { icon: "fa-circle-pause", label: subscriptionStatusLabel("suspended") + t("common.this_page_suffix"), value: countOnPage("suspended"), tone: "info" },
   ]);
 
   /* ---------------- مؤشر حالة النظام بالهيدر (نفس أسلوب صفحة إدارة المولدات) ---------------- */

@@ -7,13 +7,38 @@ import { resolveHomeRouteName } from "@/utils/roleRedirect";
 import { consumePendingSubscribeGeneratorId } from "@/utils/pendingSubscribeGenerator";
 import authService from "@/services/authService";
 import { normalizeApiError } from "@/utils/normalizeApiError";
-import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, LoaderCircle } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, LoaderCircle, ShieldUser, Factory, House, Wrench } from "@lucide/vue";
 
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const { t } = useI18n();
+
+/* ---------------- أزرار تعبئة سريعة للمشرفين — dev فقط ----------------
+ * بيانات ثابتة (كلمة مرور PlatformUsersSeeder الموحّدة Ampare@2026، ما بتتغيّر
+ * عشوائيًا بكل db:seed بعكس حسابات DatabaseSeeder) — أربعة حسابات تجريبية
+ * حقيقية موجودة مسبقًا بالقاعدة، وحدة لكل دور. الشرط الثلاثي (مش v-if بالتمبلت
+ * لحاله) مهم أمنيًا: import.meta.env.DEV يُستبدَل بقيمة ثابتة وقت الـ build،
+ * فـ Terser فعليًا بيحذف مصفوفة بيانات الدخول بالكامل من حزمة الإنتاج (مش بس
+ * يخفيها بالـ DOM) — تأكّدت فعليًا إنه grep على public/build ما بيلاقي
+ * "Ampare@2026" ولا أي بريد تجريبي بعد هالتعديل. لو كان بس v-if على التمبلت،
+ * السلسلة كانت تضل موجودة بالحزمة القابلة للتنزيل حتى لو مخفية بصريًا.
+ */
+const isProductionBuild = import.meta.env.PROD;
+const QUICK_LOGIN_ACCOUNTS = import.meta.env.DEV
+  ? [
+      { key: "admin", icon: ShieldUser, login: "suha.almadhoun@example.test", password: "Ampare@2026" },
+      { key: "owner", icon: Factory, login: "mahmoud.abushamala@example.test", password: "Ampare@2026" },
+      { key: "subscriber", icon: House, login: "ahmad.alhilu@example.test", password: "Ampare@2026" },
+      { key: "technician", icon: Wrench, login: "majed.abuamra@example.test", password: "Ampare@2026" },
+    ]
+  : [];
+function quickLogin(account) {
+  form.value.login = account.login;
+  form.value.password = account.password;
+  handleSubmit();
+}
 
 const form = ref({ login: "", password: "", remember: false });
 const submitError = ref(null);
@@ -186,6 +211,25 @@ async function handleSubmit() {
       <div class="flex items-center gap-[5px] my-2.5">
         <input id="remember" v-model="form.remember" type="checkbox" class="w-3.5 h-3.5 accent-primary-500 cursor-pointer" />
         <label for="remember" class="auth-remember-label text-[10px] cursor-pointer">{{ t("auth.login.remember_me") }}</label>
+      </div>
+
+      <!-- تعبئة سريعة (dev فقط) -->
+      <div v-if="!isProductionBuild" class="mb-3">
+        <p class="text-[9.5px] font-bold text-[#9a9d97] mb-1.5 text-center">{{ t("auth.login.quick_login_label") }}</p>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button
+            v-for="account in QUICK_LOGIN_ACCOUNTS"
+            :key="account.key"
+            type="button"
+            :title="t(`auth.login.quick_login_${account.key}`)"
+            class="auth-quick-login-btn"
+            :disabled="submitState !== 'idle'"
+            @click="quickLogin(account)"
+          >
+            <component :is="account.icon" aria-hidden="true" />
+            <span>{{ t(`auth.login.quick_login_${account.key}`) }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- زر الدخول -->

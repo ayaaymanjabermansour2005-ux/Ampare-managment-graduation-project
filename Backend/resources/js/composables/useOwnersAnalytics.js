@@ -63,8 +63,10 @@ export function useOwnersAnalytics({
   function avatarColor(index) {
     return AVATAR_COLORS[index % AVATAR_COLORS.length];
   }
-  function commissionLabel(rate) {
-    return rate !== null && rate !== undefined ? `${rate}%` : "-";
+  function commissionLabel(rate, mode) {
+    if (rate !== null && rate !== undefined) return `${rate}%`;
+    if (mode === "tiered") return t("owners_page.commission_tiered_label");
+    return "-";
   }
 
   /* ---------------- فرز الجدول ---------------- */
@@ -105,30 +107,23 @@ export function useOwnersAnalytics({
     return [
       {
         icon: "fa-user-tie", label: t("owners_page.total_owners_kpi"),
-        raw: s.total, decimals: 0, c1: "#52733D", c2: "#3E582E",
-        sub: s.locked > 0
-          ? t("owners_page.locked_accounts_n", { n: s.locked })
-          : t("owners_page.no_locked_accounts"),
+        raw: s.total, decimals: 0, tone: "primary",
       },
       {
         icon: "fa-circle-check", label: t("owners_page.active_owners_kpi"),
-        raw: s.active, decimals: 0, c1: "#28A745", c2: "#1f7a37",
-        sub: `${activePct}%`,
+        raw: s.active, decimals: 0, tone: "success", suffix: `(${activePct}%)`,
       },
       {
         icon: "fa-plug-circle-bolt", label: t("owners_page.owned_generators_kpi"),
-        raw: s.total_generators, decimals: 0, c1: "#17A2B8", c2: "#0f6c7d",
-        sub: t("owners_page.avg_generators_per_owner", { n: s.avg_generators_per_owner }),
+        raw: s.total_generators, decimals: 0, tone: "info",
       },
       {
         icon: "fa-wallet", label: t("owners_page.total_revenue_kpi"),
-        raw: s.total_revenue_ils, decimals: 0, prefix: "₪ ", c1: "#8A6D1F", c2: "#D4AF37",
-        sub: t("owners_page.this_month_label"),
+        raw: s.total_revenue_ils, decimals: 0, prefix: "₪ ", tone: "secondary",
       },
       {
         icon: "fa-chart-simple", label: t("owners_page.avg_generators_kpi"),
-        raw: s.avg_generators_per_owner, decimals: 1, c1: "#D4AF37", c2: "#8A6D1F",
-        sub: t("owners_page.across_n_owners", { n: s.total }),
+        raw: s.avg_generators_per_owner, decimals: 1, tone: "secondary",
       },
     ];
   });

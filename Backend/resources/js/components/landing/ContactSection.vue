@@ -60,7 +60,7 @@ async function handleSubmit() {
 }
 
 const INFO_CARDS = [
-  { icon: "fa-phone", key: "phone", value: "+970 59 123 4567", dir: "ltr" },
+  { icon: "fa-phone", key: "phone", value: "+970 597939790", dir: "ltr" },
   { icon: "fa-envelope", key: "email", value: "support@ampir.ps", dir: "ltr" },
   { icon: "fa-location-dot", key: "location", value: null },
   { icon: "fa-clock", key: "hours", value: null },

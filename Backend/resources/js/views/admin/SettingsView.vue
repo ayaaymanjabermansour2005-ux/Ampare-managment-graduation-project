@@ -357,11 +357,11 @@ onMounted(() => fetchSettings());
       </div>
     </section>
 
-    <div v-if="error" v-reveal class="glass-card p-4 text-[12.5px] text-[#D9534F] border border-[#D9534F]/30">
-      <CircleAlert class="me-1.5" aria-hidden="true" />{{ error }}
+    <div v-if="error" v-reveal class="glass-card p-4 text-[12.5px] text-[#D9534F] border border-[#D9534F]/30 flex items-center gap-1.5">
+      <CircleAlert aria-hidden="true" />{{ error }}
     </div>
-    <div v-if="saveSuccess" v-reveal class="glass-card p-4 text-[12.5px] text-[#28A745] border border-[#28A745]/30">
-      <CircleCheck class="me-1.5" aria-hidden="true" />
+    <div v-if="saveSuccess" v-reveal class="glass-card p-4 text-[12.5px] text-[#28A745] border border-[#28A745]/30 flex items-center gap-1.5">
+      <CircleCheck aria-hidden="true" />
       {{ $t("settings_page.settings_saved_success") }}
     </div>
 
@@ -391,8 +391,8 @@ onMounted(() => fetchSettings());
 
       <!-- ==================== الصفحات الثابتة ==================== -->
       <form v-else-if="activeTab === 'pages'" v-reveal @submit.prevent="handleSave" class="glass-card p-6 space-y-5">
-        <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#EBF1E7] dark:bg-white/5 rounded-lg p-3">
-          <Info class="me-1.5" aria-hidden="true" />
+        <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#EBF1E7] dark:bg-white/5 rounded-lg p-3 flex items-center gap-1.5">
+          <Info class="shrink-0" aria-hidden="true" />
           {{ $t("settings_page.pages_notice") }}
         </p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -414,8 +414,8 @@ onMounted(() => fetchSettings());
 
       <!-- ==================== المفاتيح الحسّاسة ==================== -->
       <form v-else-if="activeTab === 'keys'" v-reveal @submit.prevent="handleSave" class="glass-card p-6 space-y-5">
-        <p class="text-[11.5px] text-[#8A6D1F] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg p-3">
-          <TriangleAlert class="me-1.5" aria-hidden="true" />
+        <p class="text-[11.5px] text-[#8A6D1F] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg p-3 flex items-center gap-1.5">
+          <TriangleAlert class="shrink-0" aria-hidden="true" />
           {{ $t("settings_page.keys_notice") }}
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -495,8 +495,8 @@ onMounted(() => fetchSettings());
           </button>
         </div>
 
-        <div v-if="settings.maintenance_mode_enabled" class="bg-[#D9534F]/10 rounded-lg p-3 text-[11.5px] text-[#D9534F]">
-          <TriangleAlert class="me-1.5" aria-hidden="true" />
+        <div v-if="settings.maintenance_mode_enabled" class="bg-[#D9534F]/10 rounded-lg p-3 text-[11.5px] text-[#D9534F] flex items-center gap-1.5">
+          <TriangleAlert class="shrink-0" aria-hidden="true" />
           {{ $t("settings_page.maintenance_active_notice") }}
         </div>
 
@@ -603,8 +603,8 @@ onMounted(() => fetchSettings());
 
       <!-- ==================== شرائح العمولة التلقائية ==================== -->
       <section v-else-if="activeTab === 'commission_tiers'" v-reveal class="glass-card p-6">
-        <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#EBF1E7] dark:bg-white/5 rounded-lg p-3 mb-4">
-          <Info class="me-1.5" aria-hidden="true" />
+        <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#EBF1E7] dark:bg-white/5 rounded-lg p-3 mb-4 flex items-center gap-1.5">
+          <Info class="shrink-0" aria-hidden="true" />
           {{ $t("settings_page.commission_tiers_notice") }}
         </p>
 

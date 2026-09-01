@@ -56,7 +56,12 @@ class InvoiceController extends Controller
 
         return $this->success(
             message: 'بيانات الفاتورة.',
-            data: new InvoiceResource($invoice->load('payments', 'commission'))
+            data: new InvoiceResource($invoice->load(
+                'subscription.generator',
+                'subscription.subscriberMeter.subscriber.user',
+                'payments.paymentMethod',
+                'commission'
+            ))
         );
     }
 
@@ -80,7 +85,7 @@ class InvoiceController extends Controller
 
         return $this->success(
             message: 'تم إلغاء الفاتورة بنجاح.',
-            data: new InvoiceResource($invoice)
+            data: new InvoiceResource($invoice->load('subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'payments.paymentMethod', 'commission'))
         );
     }
 
@@ -127,7 +132,12 @@ class InvoiceController extends Controller
             $request->user()
         );
 
-        return $this->success(message: 'تم تصحيح الفاتورة.', data: new InvoiceResource($invoice));
+        return $this->success(message: 'تم تصحيح الفاتورة.', data: new InvoiceResource($invoice->load(
+            'subscription.generator',
+            'subscription.subscriberMeter.subscriber.user',
+            'payments.paymentMethod',
+            'commission'
+        )));
     }
 
     public function reissue(Request $request, Invoice $invoice, ReissueInvoiceAction $action): JsonResponse
@@ -136,6 +146,6 @@ class InvoiceController extends Controller
 
         $newInvoice = $action->execute($invoice, $request->user());
 
-        return $this->success(message: 'تم إصدار فاتورة جديدة.', data: new InvoiceResource($newInvoice), code: 201);
+        return $this->success(message: 'تم إصدار فاتورة جديدة.', data: new InvoiceResource($newInvoice->load('subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'payments.paymentMethod', 'commission')), code: 201);
     }
 }
