@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
 import { useConfirm } from "@/composables/useConfirm";
-import { LogOut } from "@lucide/vue";
+import { ChevronLeft, ChevronRight, LogOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -61,7 +61,7 @@ async function handleLogout() {
     >
       <div
         v-if="props.open"
-        class="fixed inset-0 z-50 bg-gray-700/40 backdrop-blur-[2px]"
+        class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
         @click.self="emit('close')"
       >
         <Transition
@@ -74,43 +74,54 @@ async function handleLogout() {
         >
           <div
             v-if="props.open"
-            class="absolute inset-x-0 bottom-0 bg-surface dark:bg-[#1c1e20] rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] max-h-[80vh] overflow-y-auto"
+            class="glass-card !rounded-b-none !rounded-t-2xl absolute inset-x-0 bottom-0 w-full max-w-lg mx-auto !bg-white/95 dark:!bg-[#1c1e20]/97 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] max-h-[80vh] overflow-y-auto shadow-2xl"
           >
-            <div class="w-10 h-1 rounded-full bg-border mx-auto mb-4"></div>
+            <div class="w-10 h-1 rounded-full bg-[#e7e2d6] dark:bg-white/15 mx-auto mb-4"></div>
 
-            <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 px-1">{{ t("technician_portal.more_label") }}</h3>
-            <div class="grid grid-cols-3 gap-2 mb-4">
+            <h3 class="text-[11.5px] font-bold text-[#8A6D1F] dark:text-[#D4AF37] tracking-wide mb-3 px-1">
+              {{ t("technician_portal.more_label") }}
+            </h3>
+
+            <div class="grid grid-cols-3 gap-2.5 mb-4">
               <button
                 v-for="item in PRIMARY_ITEMS"
                 :key="item.routeName"
                 type="button"
                 @click="go(item.routeName)"
-                class="flex flex-col items-center justify-center gap-2 p-4 rounded-card border border-border hover:border-primary-300 hover:bg-primary-50/40 transition"
+                class="flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl border border-[#e7e2d6] dark:border-white/10 hover:border-[#8A6D1F]/40 hover:bg-[#EBF1E7]/40 dark:hover:bg-white/5 transition"
               >
-                <AppIcon :name="item.icon" class="text-xl text-primary-600" />
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 text-center">{{ item.label }}</span>
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3E582E] to-[#52733D] text-white flex items-center justify-center text-base shrink-0">
+                  <AppIcon :name="item.icon" />
+                </span>
+                <span class="text-[11.5px] font-bold text-center leading-tight">{{ item.label }}</span>
               </button>
             </div>
 
-            <div class="border-t border-border pt-2 space-y-0.5">
+            <div class="border-t border-[#f0ece0] dark:border-white/5 pt-2 space-y-0.5">
               <button
                 v-for="item in SECONDARY_ITEMS"
                 :key="item.routeName"
                 type="button"
                 @click="go(item.routeName)"
-                class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition text-start"
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[12.5px] font-bold hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 transition text-start"
               >
-                <AppIcon :name="item.icon" class="w-5 text-center text-gray-400 dark:text-gray-500" />
-                {{ item.label }}
+                <span class="w-8 h-8 rounded-lg bg-[#EBF1E7] dark:bg-white/5 flex items-center justify-center text-[#3E582E] dark:text-[#a8d19a] shrink-0">
+                  <AppIcon :name="item.icon" />
+                </span>
+                <span class="flex-1 min-w-0">{{ item.label }}</span>
+                <ChevronLeft class="rtl:block ltr:hidden text-[#c9c3b2] dark:text-white/20 text-xs" aria-hidden="true" />
+                <ChevronRight class="ltr:block rtl:hidden text-[#c9c3b2] dark:text-white/20 text-xs" aria-hidden="true" />
               </button>
 
               <button
                 type="button"
                 @click="handleLogout"
-                class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-danger hover:bg-danger-bg transition text-start"
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[12.5px] font-bold text-[#D9534F] hover:bg-[#D9534F]/10 transition text-start"
               >
-                <LogOut class="w-5 text-center" aria-hidden="true" />
-                {{ t("common.logout") }}
+                <span class="w-8 h-8 rounded-lg bg-[#D9534F]/10 flex items-center justify-center text-[#D9534F] shrink-0">
+                  <LogOut class="text-sm" aria-hidden="true" />
+                </span>
+                <span class="flex-1 min-w-0">{{ t("common.logout") }}</span>
               </button>
             </div>
           </div>

@@ -46,6 +46,10 @@ class UpdateUserRequest extends FormRequest
             'whatsapp' => ['nullable', 'string', 'regex:/^\+?[0-9]{7,15}$/'],
             'facebook_url' => ['nullable', 'url', 'max:255'],
             'instagram_url' => ['nullable', 'url', 'max:255'],
+
+            'family_members_count' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'has_sick_family_member' => ['nullable', 'boolean'],
+            'sick_family_member_illness' => ['nullable', 'string', 'max:500', 'required_if:has_sick_family_member,true'],
         ];
     }
 
@@ -58,6 +62,8 @@ class UpdateUserRequest extends FormRequest
             'phone.unique' => 'رقم الهاتف هذا مستخدم مسبقًا من قِبل حساب آخر.',
             'birth_date.before' => 'تاريخ الميلاد يجب أن يكون بالماضي.',
             'whatsapp.regex' => 'صيغة رقم واتساب غير صحيحة.',
+            'family_members_count.max' => 'عدد أفراد الأسرة كبير بشكل غير معقول.',
+            'sick_family_member_illness.required_if' => 'الرجاء توضيح نوع المرض.',
         ];
     }
 }

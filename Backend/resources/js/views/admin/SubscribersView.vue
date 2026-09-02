@@ -18,7 +18,7 @@ import activityLogService from "@/services/activityLogService";
 import { useToastStore } from "@/stores/toast";
 import TransferSubscriptionModal from "@/components/admin/TransferSubscriptionModal.vue";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, StickyNote, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, HeartPulse, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, StickyNote, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 import LightningCanvas from "@/components/ui/LightningCanvas.vue";
@@ -1711,6 +1711,19 @@ onMounted(() => {
                   <span class="info-row-icon"><CalendarPlus aria-hidden="true" /></span>
                   <span class="info-row-label">{{ $t("subscribers_page.joined_col") }}</span>
                   <b class="info-row-value">{{ formatDate(viewingSubscriber.created_at) }}</b>
+                </div>
+              </div>
+
+              <div v-if="viewingSubscriber.family_members_count != null || viewingSubscriber.has_sick_family_member" class="glass-card p-4 space-y-1">
+                <div v-if="viewingSubscriber.family_members_count != null" class="info-row">
+                  <span class="info-row-icon"><Users aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("subscribers_page.family_members_count_label") }}</span>
+                  <b class="info-row-value">{{ viewingSubscriber.family_members_count }}</b>
+                </div>
+                <div v-if="viewingSubscriber.has_sick_family_member" class="info-row">
+                  <span class="info-row-icon"><HeartPulse class="text-danger" aria-hidden="true" /></span>
+                  <span class="info-row-label">{{ $t("subscribers_page.sick_family_member_label") }}</span>
+                  <b class="info-row-value">{{ viewingSubscriber.sick_family_member_illness || $t("subscribers_page.sick_family_member_yes") }}</b>
                 </div>
               </div>
             </div>

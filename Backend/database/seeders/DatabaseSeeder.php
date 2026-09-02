@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
         ]);
 
-        Model::unguarded(fn () => $this->seedCoreData());
+        Model::unguarded(fn() => $this->seedCoreData());
         $this->call(DemoAccountsSeeder::class);
         $this->call(PlatformUsersSeeder::class);
     }
@@ -67,11 +67,7 @@ class DatabaseSeeder extends Seeder
 
     private function seedCoreData(): void
     {
-        // SEC-006: كانت هذه الدالة تُنشئ 7 حسابات (owner1/2, subscriber1/2/3,
-        // technician1/2) بكلمة مرور واحدة ثابتة ومشتركة ('password') بدون أي
-        // حارس بيئة — بيانات تجريبية بالكامل (Owner One/Two، فواتير وهمية...)
-        // لا علاقة لها بأي سيناريو إنتاج حقيقي. نفس الحارس المستخدم أصلًا في
-        // PlatformUsersSeeder.php:73-75.
+
         if (app()->environment('production')) {
             throw new \RuntimeException('DatabaseSeeder::seedCoreData ممنوع تنفيذه على بيئة الإنتاج.');
         }
@@ -289,16 +285,24 @@ class DatabaseSeeder extends Seeder
         TechnicianPayment::firstOrCreate(
             ['technician_id' => $technician1->id, 'owner_id' => $owner1->id, 'status' => 'approved'],
             [
-                'amount' => 300, 'currency' => 'ILS', 'note' => 'أجرة الأسبوع الماضي.',
-                'created_by' => $owner1->id, 'reviewed_by' => $technicianUser1->id, 'reviewed_at' => now()->subDays(5),
+                'amount' => 300,
+                'currency' => 'ILS',
+                'note' => 'أجرة الأسبوع الماضي.',
+                'created_by' => $owner1->id,
+                'reviewed_by' => $technicianUser1->id,
+                'reviewed_at' => now()->subDays(5),
             ]
         );
 
         TechnicianPayment::firstOrCreate(
             ['technician_id' => $technician1->id, 'owner_id' => $owner1->id, 'status' => 'rejected'],
             [
-                'amount' => 120, 'currency' => 'ILS', 'note' => 'قيمة غير مكتملة.',
-                'created_by' => $owner1->id, 'reviewed_by' => $technicianUser1->id, 'reviewed_at' => now()->subDays(10),
+                'amount' => 120,
+                'currency' => 'ILS',
+                'note' => 'قيمة غير مكتملة.',
+                'created_by' => $owner1->id,
+                'reviewed_by' => $technicianUser1->id,
+                'reviewed_at' => now()->subDays(10),
                 'rejection_reason' => 'المبلغ لا يطابق ساعات العمل الفعلية.',
             ]
         );
@@ -661,9 +665,14 @@ class DatabaseSeeder extends Seeder
             ['subscription_id' => $subscription1->id, 'due_date' => now()->subDays(28)->toDateString()],
             [
                 'meter_reading_id' => $readingPaid->id,
-                'amount' => 20, 'discount_amount' => 0, 'discount_id' => null,
-                'final_amount' => 20, 'currency' => 'ILS', 'exchange_rate' => null,
-                'final_amount_ils' => 20, 'status' => InvoiceStatus::Paid,
+                'amount' => 20,
+                'discount_amount' => 0,
+                'discount_id' => null,
+                'final_amount' => 20,
+                'currency' => 'ILS',
+                'exchange_rate' => null,
+                'final_amount_ils' => 20,
+                'status' => InvoiceStatus::Paid,
             ]
         );
 
@@ -677,10 +686,15 @@ class DatabaseSeeder extends Seeder
             ['transaction_reference' => 'DEMO-PAY-0001'],
             [
                 'invoice_id' => $invoicePaid->id,
-                'source' => 'subscriber', 'amount' => 20, 'currency' => 'ILS',
-                'amount_ils' => 20, 'status' => 'paid',
-                'processed_by' => $owner1->id, 'paid_at' => now()->subDays(27),
-                'reviewed_by' => $owner1->id, 'reviewed_at' => now()->subDays(27),
+                'source' => 'subscriber',
+                'amount' => 20,
+                'currency' => 'ILS',
+                'amount_ils' => 20,
+                'status' => 'paid',
+                'processed_by' => $owner1->id,
+                'paid_at' => now()->subDays(27),
+                'reviewed_by' => $owner1->id,
+                'reviewed_at' => now()->subDays(27),
             ]
         );
 
@@ -693,9 +707,14 @@ class DatabaseSeeder extends Seeder
             ['subscription_id' => $subscription1->id, 'due_date' => now()->subDays(13)->toDateString()],
             [
                 'meter_reading_id' => $readingOverdue->id,
-                'amount' => 17.5, 'discount_amount' => 0, 'discount_id' => null,
-                'final_amount' => 17.5, 'currency' => 'ILS', 'exchange_rate' => null,
-                'final_amount_ils' => 17.5, 'status' => InvoiceStatus::Overdue,
+                'amount' => 17.5,
+                'discount_amount' => 0,
+                'discount_id' => null,
+                'final_amount' => 17.5,
+                'currency' => 'ILS',
+                'exchange_rate' => null,
+                'final_amount_ils' => 17.5,
+                'status' => InvoiceStatus::Overdue,
             ]
         );
 
@@ -709,9 +728,14 @@ class DatabaseSeeder extends Seeder
             ['subscription_id' => $subscription1->id, 'due_date' => now()->addDays(3)->toDateString()],
             [
                 'meter_reading_id' => $readingPartial->id,
-                'amount' => 20, 'discount_amount' => 0, 'discount_id' => null,
-                'final_amount' => 20, 'currency' => 'ILS', 'exchange_rate' => null,
-                'final_amount_ils' => 20, 'status' => InvoiceStatus::PartiallyPaid,
+                'amount' => 20,
+                'discount_amount' => 0,
+                'discount_id' => null,
+                'final_amount' => 20,
+                'currency' => 'ILS',
+                'exchange_rate' => null,
+                'final_amount_ils' => 20,
+                'status' => InvoiceStatus::PartiallyPaid,
             ]
         );
 
@@ -720,10 +744,15 @@ class DatabaseSeeder extends Seeder
             ['transaction_reference' => 'DEMO-PAY-0002'],
             [
                 'invoice_id' => $invoicePartial->id,
-                'source' => 'subscriber', 'amount' => 12, 'currency' => 'ILS',
-                'amount_ils' => 12, 'status' => 'paid',
-                'processed_by' => $owner1->id, 'paid_at' => now()->subDays(2),
-                'reviewed_by' => $owner1->id, 'reviewed_at' => now()->subDays(2),
+                'source' => 'subscriber',
+                'amount' => 12,
+                'currency' => 'ILS',
+                'amount_ils' => 12,
+                'status' => 'paid',
+                'processed_by' => $owner1->id,
+                'paid_at' => now()->subDays(2),
+                'reviewed_by' => $owner1->id,
+                'reviewed_at' => now()->subDays(2),
             ]
         );
 
@@ -870,24 +899,7 @@ class DatabaseSeeder extends Seeder
         $this->printSeedCredentials();
     }
 
-    /**
-     * SEC-006: كلمة مرور فريدة وقوية عشوائية لكل حساب/سجل تجريبي بدل الاعتماد
-     * على نفس القيمة الثابتة 'password' للجميع.
-     *
-     * BUG (found live, 2026-08-31): الافتراض الأصلي هون كان خاطئ — PHP يُقيّم
-     * كل عناصر مصفوفة الوسائط (بما فيها Hash::make($this->demoPassword(...)))
-     * *قبل* استدعاء firstOrCreate نفسه، بغض النظر عمّا إذا كان السجل موجودًا
-     * مسبقًا أو لا. يعني demoPassword() كانت تتنفّذ وتُسجّل كلمة مرور عشوائية
-     * *جديدة* بكل تشغيل، حتى لو كان الحساب موجودًا فعليًا من تشغيل سابق (وما
-     * كانت هاي القيمة الجديدة تُطبَّق فعليًا على القاعدة — firstOrCreate كانت
-     * تتجاهلها بصمت لأن السجل موجود) — فتُطبَع للمستخدم كلمة مرور خاطئة/غير
-     * مستخدمة أصلًا، تبدو صحيحة الشكل بس فعليًا مرفوضة عند تسجيل الدخول.
-     *
-     * الإصلاح: نتحقق إحنا بأنفسنا هون إذا كان السجل موجودًا فعلًا قبل التسجيل
-     * بمصفوفة الطباعة — بنفس مفتاح البريد وبنفس الـ Model المستخدم بكل نداء
-     * (User لسبعة حسابات، OwnerApplication لطلبَي الانضمام)، وما نسجّل بمصفوفة
-     * الطباعة إلا لو كان السجل هيُنشأ فعليًا لأول مرة بهذا التشغيل.
-     */
+
     private function demoPassword(string $identifier, string $model = User::class): string
     {
         $password = Str::password(16);
@@ -899,11 +911,7 @@ class DatabaseSeeder extends Seeder
         return $password;
     }
 
-    /**
-     * يطبع كلمات المرور المولَّدة هذا التشغيل فقط، وفقط بالـ console المحلي —
-     * أبدًا بملفات الـ log. لا شيء يُطبع لو كل الحسابات كانت موجودة مسبقًا
-     * (firstOrCreate لا يستدعي demoPassword حينها، فالمصفوفة تبقى فارغة).
-     */
+
     private function printSeedCredentials(): void
     {
         if (! $this->command || empty($this->generatedCredentials)) {

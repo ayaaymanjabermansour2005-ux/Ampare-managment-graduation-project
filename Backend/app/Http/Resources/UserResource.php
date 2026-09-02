@@ -56,6 +56,20 @@ class UserResource extends JsonResource
                     'rate' => $this->commission_rate !== null ? (float) $this->commission_rate : null,
                 ]
             ),
+            // بيانات الوضع الأسري: حساسة (صحية)، فمكشوفة فقط لصاحب الحساب نفسه أو للإدارة —
+            // نفس نمط تقييد commission_settings أعلاه.
+            'family_members_count' => $this->when(
+                $request->user()?->isAdmin() || $request->user()?->id === $this->id,
+                fn () => $this->family_members_count
+            ),
+            'has_sick_family_member' => $this->when(
+                $request->user()?->isAdmin() || $request->user()?->id === $this->id,
+                fn () => (bool) $this->has_sick_family_member
+            ),
+            'sick_family_member_illness' => $this->when(
+                $request->user()?->isAdmin() || $request->user()?->id === $this->id,
+                fn () => $this->sick_family_member_illness
+            ),
             'beneficiary_type' => $this->whenLoaded('subscriber', fn () => $this->subscriber?->beneficiary_type?->value),
             'beneficiary_type_label' => $this->whenLoaded('subscriber', fn () => $this->subscriber?->beneficiary_type?->label()),
             'region' => $this->whenLoaded('subscriber', fn () => $this->subscriber?->neighborhood?->name),

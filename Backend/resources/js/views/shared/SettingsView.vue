@@ -59,7 +59,16 @@ const {
 const profileForm = reactive({
   name: "", email: "", phone: "", birth_date: "", address: "", bio: "",
   whatsapp: "", facebook_url: "", instagram_url: "",
+  family_members_count: null, has_sick_family_member: false, sick_family_member_illness: "",
 });
+
+const showFamilySection = computed(
+  () => authStore.hasRole("subscriber") || authStore.hasRole("technician")
+);
+
+function clearIllnessIfNotSick() {
+  if (!profileForm.has_sick_family_member) profileForm.sick_family_member_illness = "";
+}
 
 function loadProfileForm() {
   const u = authStore.user;
@@ -72,6 +81,9 @@ function loadProfileForm() {
   profileForm.whatsapp = u?.whatsapp ?? "";
   profileForm.facebook_url = u?.facebook_url ?? "";
   profileForm.instagram_url = u?.instagram_url ?? "";
+  profileForm.family_members_count = u?.family_members_count ?? null;
+  profileForm.has_sick_family_member = !!u?.has_sick_family_member;
+  profileForm.sick_family_member_illness = u?.sick_family_member_illness ?? "";
 }
 
 async function handleProfileSubmit() {
@@ -422,6 +434,39 @@ onMounted(() => {
           <label class="text-[11.5px] font-bold block mb-1.5">{{ t("owner_settings.profile.bio") }}</label>
           <textarea v-model="profileForm.bio" rows="3" maxlength="1000" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] resize-none outline-none focus:border-[#8A6D1F] transition"></textarea>
         </div>
+
+        <template v-if="showFamilySection">
+          <h3 class="text-[11.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] pt-3 border-t border-[#f0ece0] dark:border-white/5">{{ t("owner_settings.profile.family_section_title") }}</h3>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[11.5px] font-bold block mb-1.5">{{ t("owner_settings.profile.family_members_count") }}</label>
+              <input v-model.number="profileForm.family_members_count" type="number" min="0" max="50" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] transition" />
+              <p v-if="profileError?.errors?.family_members_count" class="text-[11px] text-[#D9534F] mt-1">{{ profileError.errors.family_members_count[0] }}</p>
+            </div>
+            <div class="flex items-end pb-1">
+              <label class="flex items-center gap-2 text-[11.5px] font-bold cursor-pointer">
+                <input
+                  v-model="profileForm.has_sick_family_member"
+                  type="checkbox"
+                  class="w-4 h-4 accent-[#52733D]"
+                  @change="clearIllnessIfNotSick"
+                />
+                {{ t("owner_settings.profile.has_sick_family_member") }}
+              </label>
+            </div>
+          </div>
+          <div v-if="profileForm.has_sick_family_member">
+            <label class="text-[11.5px] font-bold block mb-1.5">{{ t("owner_settings.profile.sick_family_member_illness") }}</label>
+            <input
+              v-model="profileForm.sick_family_member_illness"
+              type="text"
+              maxlength="500"
+              :placeholder="t('owner_settings.profile.sick_family_member_illness_placeholder')"
+              class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] transition"
+            />
+            <p v-if="profileError?.errors?.sick_family_member_illness" class="text-[11px] text-[#D9534F] mt-1">{{ profileError.errors.sick_family_member_illness[0] }}</p>
+          </div>
+        </template>
 
         <h3 class="text-[11.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] pt-3 border-t border-[#f0ece0] dark:border-white/5">{{ t("owner_settings.profile.social_links") }}</h3>
         <div class="grid sm:grid-cols-3 gap-4">

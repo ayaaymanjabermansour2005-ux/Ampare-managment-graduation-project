@@ -22,6 +22,20 @@ class TechnicianResource extends JsonResource
             'owner_id' => $this->owner_id,
             'owner_name' => $this->whenLoaded('owner', fn () => $this->owner?->name),
             'owner_email' => $this->whenLoaded('owner', fn () => $this->owner?->email),
+            // بيانات الوضع الأسري حساسة (صحية) — تظهر للإدارة فقط، حتى لو كان
+            // صاحب المولد نفسه مسموح له يشوف هاد الـ resource لفنييه.
+            'family_members_count' => $this->when(
+                $request->user()?->isAdmin(),
+                fn () => $this->user?->family_members_count
+            ),
+            'has_sick_family_member' => $this->when(
+                $request->user()?->isAdmin(),
+                fn () => (bool) $this->user?->has_sick_family_member
+            ),
+            'sick_family_member_illness' => $this->when(
+                $request->user()?->isAdmin(),
+                fn () => $this->user?->sick_family_member_illness
+            ),
         ];
     }
 }

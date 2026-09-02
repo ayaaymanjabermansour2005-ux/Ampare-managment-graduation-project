@@ -2,9 +2,9 @@
 import { ref, reactive, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTechnicianTasks } from "@/composables/useTechnicianTasks";
-import { Check, Clock, FlagTriangleRight, Star } from "@lucide/vue";
+import { vReveal } from "@/directives/reveal";
+import { Check, Clock, ClipboardList, FlagTriangleRight, LoaderCircle, Star, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
-
 
 const { t } = useI18n();
 
@@ -23,23 +23,27 @@ const {
 const statusFilter = ref("active");
 
 watch(statusFilter, (val) => {
-  // FIX: الفلترة الآن بتنعمل بالباك اند لما ينفع (راجع useTechnicianTasks)
-  // بدل ما تضل تصفّي بس الصفحة المحمّلة — لازم نرجع لصفحة 1 كل ما تتغيّر
-  // الفلترة، وإلا ممكن نطلب صفحة رقمها أعلى من last_page الجديد.
   fetchTasks(1, val === "active" || val === "all" ? null : val);
 });
 
-const STATUS_TONES = {
-  pending: "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400",
-  assigned: "bg-info-bg text-info",
-  on_the_way: "bg-info-bg text-info",
-  in_progress: "bg-warning-bg text-warning",
-  waiting_parts: "bg-warning-bg text-warning",
-  submitted: "bg-secondary-50 text-secondary-600",
-  approved: "bg-success-bg text-success",
-  rejected: "bg-danger-bg text-danger",
-  cancelled: "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400",
+const STATUS_CHIP = {
+  pending: "chip-neutral",
+  assigned: "chip-info",
+  on_the_way: "chip-info",
+  in_progress: "chip-warning",
+  waiting_parts: "chip-warning",
+  submitted: "chip-neutral",
+  approved: "chip-success",
+  rejected: "chip-danger",
+  cancelled: "chip-neutral",
 };
+
+const FILTERS = computed(() => [
+  { v: "active", l: t("technician_tasks.filter_active") },
+  { v: "submitted", l: t("technician_tasks.filter_submitted") },
+  { v: "approved", l: t("technician_tasks.filter_completed") },
+  { v: "all", l: t("common.all") },
+]);
 
 const filtered = computed(() => {
   if (statusFilter.value === "all") return tasks.value;
@@ -74,136 +78,112 @@ onMounted(() => fetchTasks(1, null));
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div>
-      <p class="text-xs font-medium text-secondary-600 tracking-wide mb-1">
-        {{ t("technician_tasks.eyebrow") }}
-      </p>
-      <h1 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">{{ t("technician_portal.nav_tasks") }}</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        <span class="font-mono font-data font-medium text-primary-600">{{
-          activeCount
-        }}</span>
-        {{ t("technician_tasks.active_tasks_suffix") }}
-      </p>
-    </div>
+  <div class="space-y-5">
+    <!-- ===== رأس الصفحة ===== -->
+    <section v-reveal class="glass-card p-5 relative overflow-hidden">
+      <div class="absolute -start-16 -top-16 w-56 h-56 bg-[#D4AF37]/20 dark:bg-[#D4AF37]/25 rounded-full blur-[90px] pointer-events-none"></div>
+      <div class="relative flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-[#3E582E] to-[#52733D] text-white flex items-center justify-center text-base shrink-0">
+            <ClipboardList aria-hidden="true" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold text-[#8A6D1F] dark:text-[#D4AF37] tracking-wide mb-0.5">
+              {{ t("technician_tasks.eyebrow") }}
+            </p>
+            <h1 class="text-lg font-extrabold truncate">{{ t("technician_portal.nav_tasks") }}</h1>
+          </div>
+        </div>
+        <span class="status-chip chip-neutral shrink-0">
+          <span class="font-mono font-extrabold">{{ activeCount }}</span>
+          {{ t("technician_tasks.active_tasks_suffix") }}
+        </span>
+      </div>
+    </section>
 
-    <div class="flex gap-2 overflow-x-auto">
+    <!-- ===== فلاتر الحالة ===== -->
+    <div class="flex gap-1.5 overflow-x-auto pb-0.5">
       <button
-        v-for="opt in [
-          { v: 'active', l: t('technician_tasks.filter_active') },
-          { v: 'submitted', l: t('technician_tasks.filter_submitted') },
-          { v: 'approved', l: t('technician_tasks.filter_completed') },
-          { v: 'all', l: t('common.all') },
-        ]"
+        v-for="opt in FILTERS"
         :key="opt.v"
         type="button"
         @click="statusFilter = opt.v"
-        class="shrink-0 px-4 py-2 rounded-lg text-xs font-medium border transition"
+        class="shrink-0 px-4 py-2 rounded-full text-[12px] font-bold transition-colors"
         :class="
           statusFilter === opt.v
-            ? 'bg-primary-500 text-white border-primary-500'
-            : 'bg-surface dark:bg-[#1c1e20] text-gray-600 dark:text-gray-300 border-border dark:border-white/10 hover:border-primary-300'
+            ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white shadow-sm'
+            : 'bg-[#f4efe5]/70 dark:bg-white/5 text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/10'
         "
       >
         {{ opt.l }}
       </button>
     </div>
 
-    <div
-      v-if="actionError"
-      class="bg-danger-bg text-danger text-sm rounded-lg p-3"
-    >
-      {{ actionError }}
-    </div>
+    <div v-if="actionError" class="alert-box"><X class="shrink-0" aria-hidden="true" /> {{ actionError }}</div>
 
+    <!-- ===== حالة التحميل ===== -->
     <div v-if="isLoading" class="space-y-3">
-      <div
-        v-for="i in 4"
-        :key="i"
-        class="h-28 rounded-card bg-gray-50 dark:bg-white/5 animate-pulse"
-      ></div>
+      <div v-for="i in 4" :key="i" class="h-28 rounded-2xl bg-[#f4efe5]/60 dark:bg-white/5 animate-pulse"></div>
     </div>
 
-    <div
-      v-else-if="error"
-      class="bg-danger-bg text-danger text-sm rounded-lg p-6 text-center"
-    >
+    <!-- ===== حالة الخطأ ===== -->
+    <div v-else-if="error" class="glass-card p-6 text-center text-[12.5px] text-[#D9534F]">
       {{ error }}
     </div>
 
-    <div
-      v-else-if="filtered.length === 0"
-      class="text-center py-16 bg-surface dark:bg-[#1c1e20] rounded-card border border-dashed border-border dark:border-white/10"
-    >
-      <div
-        class="w-14 h-14 mx-auto mb-4 rounded-full bg-success-bg flex items-center justify-center"
-      >
-        <Check class="text-2xl text-success" aria-hidden="true" />
+    <!-- ===== حالة فارغة ===== -->
+    <div v-else-if="filtered.length === 0" class="glass-card border-dashed p-12 text-center">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-[#EBF1E7] dark:bg-white/5 flex items-center justify-center text-[#52733D] dark:text-[#8cc35a]">
+        <Check class="text-2xl" aria-hidden="true" />
       </div>
-      <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
-        {{ t("technician_tasks.empty_title") }}
-      </h3>
+      <h3 class="text-[13.5px] font-bold mb-1.5">{{ t("technician_tasks.empty_title") }}</h3>
     </div>
 
+    <!-- ===== قائمة المهام ===== -->
     <div v-else class="space-y-3">
-      <div
+      <section
+        v-reveal
         v-for="task in filtered"
         :key="task.id"
-        class="bg-surface dark:bg-[#1c1e20] rounded-card border border-border dark:border-white/10 p-4"
+        class="glass-card p-4 sm:p-5 transition"
         :class="{ 'opacity-50 pointer-events-none': actingId === task.id }"
       >
         <div class="flex items-start justify-between gap-3">
-          <div>
+          <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="font-semibold text-gray-700 dark:text-gray-200">
+              <h3 class="font-bold text-[13px]">
                 {{ task.generator_name ?? t("technician_tasks.default_generator_label") }}
               </h3>
-              <span
-                class="text-[11px] rounded-full px-2 py-0.5"
-                :class="STATUS_TONES[task.status]"
-              >
-                {{ task.status_label }}
-              </span>
+              <span class="status-chip" :class="STATUS_CHIP[task.status]">{{ task.status_label }}</span>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ task.type_label }}</p>
+            <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-1">{{ task.type_label }}</p>
           </div>
         </div>
 
-        <p
-          v-if="task.instructions"
-          class="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-white/5 rounded-lg p-3 mt-3"
-        >
+        <p v-if="task.instructions" class="text-[12.5px] bg-[#EBF1E7] dark:bg-white/5 rounded-xl p-3 mt-3">
           {{ task.instructions }}
         </p>
-        <p
-          v-if="task.rejection_reason"
-          class="text-sm text-danger bg-danger-bg rounded-lg p-3 mt-3"
-        >
+        <p v-if="task.rejection_reason" class="text-[12.5px] text-[#D9534F] bg-[#D9534F]/10 border border-[#D9534F]/20 rounded-xl p-3 mt-3">
           <strong>{{ t("technician_tasks.previous_rejection_reason_label") }}</strong> {{ task.rejection_reason }}
         </p>
-
-        <!-- FIX: completion_notes و rating كانا موجودين بالـ Resource لكن غير
-             معروضين بأي واجهة — الفني كان يكتب ملاحظات الإنهاء بدون ما يشوفها
-             بعدين، وتقييم صاحب المولد كان يوصل بس للباك إند بدون أي feedback مرئي. -->
         <p
           v-if="task.status === 'submitted' && task.completion_notes"
-          class="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-white/5 rounded-lg p-3 mt-3"
+          class="text-[12.5px] bg-[#EBF1E7] dark:bg-white/5 rounded-xl p-3 mt-3"
         >
           <strong>{{ t("technician_tasks.completion_notes_label") }}</strong> {{ task.completion_notes }}
         </p>
         <div
           v-if="task.status === 'approved' && task.rating"
-          class="text-sm bg-success-bg text-success rounded-lg p-3 mt-3"
+          class="text-[12.5px] bg-[#28A745]/10 border border-[#28A745]/25 text-[#1f7a37] dark:text-[#7fe19c] rounded-xl p-3 mt-3"
         >
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1.5">
             <strong>{{ t("technician_tasks.owner_rating_label") }}</strong>
             <span class="flex items-center gap-0.5" dir="ltr">
               <Star
                 v-for="star in 5"
                 :key="star"
                 class="text-xs"
-                :class="star <= task.rating.rating ? 'text-warning' : 'text-gray-300 dark:text-gray-600'"
+                :class="star <= task.rating.rating ? 'text-[#D4AF37]' : 'text-[#e7e2d6] dark:text-white/15'"
                 fill="currentColor"
                 aria-hidden="true"
               />
@@ -212,13 +192,13 @@ onMounted(() => fetchTasks(1, null));
           <p v-if="task.rating.comment" class="mt-1">{{ task.rating.comment }}</p>
         </div>
 
-        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-border dark:border-white/10">
+        <div class="flex items-center gap-2 mt-4 pt-3.5 border-t border-[#f0ece0] dark:border-white/5">
           <!-- إجراء مفرد (assigned / on_the_way / waiting_parts) -->
           <button
             v-if="NEXT_ACTION[task.status]"
             type="button"
             @click="handleQuickAction(task, NEXT_ACTION[task.status].action)"
-            class="flex-1 inline-flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 transition"
+            class="btn-fill-brand flex-1 justify-center"
           >
             <AppIcon :name="NEXT_ACTION[task.status].icon" />
             {{ NEXT_ACTION[task.status].label }}
@@ -229,84 +209,83 @@ onMounted(() => fetchTasks(1, null));
             <button
               type="button"
               @click="handleQuickAction(task, 'waitingParts')"
-              class="flex-1 py-2 rounded-lg text-sm font-medium text-warning border border-warning/30 hover:bg-warning-bg transition"
+              class="flex-1 py-2.5 rounded-full text-[12.5px] font-bold text-[#8A6D1F] border border-[#8A6D1F]/35 hover:bg-[#8A6D1F]/10 transition"
             >
               <Clock class="text-xs me-1" aria-hidden="true" /> {{ t("technician_tasks.waiting_parts_button") }}
             </button>
             <button
               type="button"
               @click="submitTarget = task"
-              class="flex-1 py-2 rounded-lg text-sm font-semibold text-white bg-success hover:bg-success/90 transition"
+              class="flex-1 py-2.5 rounded-full text-[12.5px] font-bold text-white bg-[#28A745] hover:bg-[#28A745]/90 transition"
             >
               <FlagTriangleRight class="text-xs me-1" aria-hidden="true" /> {{ t("technician_tasks.finish_and_submit_button") }}
             </button>
           </template>
-
-          <!-- FIX: زر الإلغاء اتشال — TechnicianTaskPolicy::cancel()
-                         يسمح فقط للأدمن أو صاحب المولد، أبداً للفني. الزر
-                         كان موجود بالغلط وكان رح يرجّع 403 دايماً لو ضغط
-                         عليه الفني. الإلغاء الآن بس من شاشة إدارة صاحب
-                         المولد (لو بُنيت لاحقاً). -->
         </div>
-      </div>
+      </section>
     </div>
 
-    <div v-if="pagination.last_page > 1" class="flex justify-center gap-2 pt-2">
+    <!-- ===== ترقيم الصفحات ===== -->
+    <div v-if="pagination.last_page > 1" class="flex justify-center gap-2 pt-1">
       <button
         v-for="page in pagination.last_page"
         :key="page"
         type="button"
         @click="fetchTasks(page, statusFilter === 'active' || statusFilter === 'all' ? null : statusFilter)"
-        class="w-9 h-9 rounded-lg text-sm font-mono font-data transition"
+        class="w-9 h-9 rounded-full text-[12.5px] font-mono font-bold transition"
         :class="
           page === pagination.current_page
-            ? 'bg-primary-500 text-white'
-            : 'bg-surface dark:bg-[#1c1e20] border border-border dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-primary-300'
+            ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white shadow-sm'
+            : 'bg-[#f4efe5]/70 dark:bg-white/5 text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/10'
         "
       >
         {{ page }}
       </button>
     </div>
 
-    <!-- فورم إنهاء المهمة -->
+    <!-- ===== نافذة إنهاء المهمة ===== -->
     <Teleport to="body">
-      <div
-        v-if="submitTarget"
-        class="fixed inset-0 z-50 bg-gray-700/40 backdrop-blur-[2px] flex items-center justify-center p-4"
-        @click.self="submitTarget = null"
-      >
-        <div class="bg-surface dark:bg-[#1c1e20] rounded-card p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-1">{{ t("technician_tasks.submit_modal_title") }}</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-            {{ t("technician_tasks.submit_modal_desc") }}
-          </p>
-          <textarea
-            v-model="submitNotes"
-            rows="4"
-            required
-            maxlength="2000"
-            :placeholder="t('technician_tasks.submit_notes_placeholder')"
-            class="w-full rounded-lg border border-border dark:border-white/10 bg-transparent px-3.5 py-2.5 text-sm text-gray-700 dark:text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-          ></textarea>
-          <div class="flex gap-3 mt-4">
-            <button
-              type="button"
-              @click="submitTarget = null"
-              class="flex-1 py-2.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 border border-border dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition"
-            >
-              {{ t("common.cancel") }}
-            </button>
-            <button
-              type="button"
-              @click="handleSubmit"
-              :disabled="!submitNotes.trim() || actingId === submitTarget.id"
-              class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-success hover:bg-success/90 disabled:opacity-50 transition"
-            >
-              {{ t("technician_tasks.submit_for_review_button") }}
-            </button>
+      <Transition enter-active-class="transition duration-250 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="submitTarget" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="submitTarget = null">
+          <div class="glass-card modal-panel-pop !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-sm shadow-2xl overflow-hidden rounded-2xl">
+            <div class="modal-head-brand modal-head-brand--green">
+              <div class="modal-head-brand__inner">
+                <span class="modal-head-brand__icon"><FlagTriangleRight aria-hidden="true" /></span>
+                <div class="min-w-0">
+                  <h3 class="modal-head-brand__title">{{ t("technician_tasks.submit_modal_title") }}</h3>
+                  <p class="modal-head-brand__subtitle">{{ t("technician_tasks.submit_modal_desc") }}</p>
+                </div>
+              </div>
+              <button :aria-label="t('common.close')" type="button" @click="submitTarget = null" class="modal-head-brand__close"><X aria-hidden="true" /></button>
+            </div>
+
+            <div class="p-5">
+              <label class="field-label">{{ t("technician_tasks.submit_notes_placeholder") }}</label>
+              <textarea
+                v-model="submitNotes"
+                rows="4"
+                required
+                maxlength="2000"
+                :placeholder="t('technician_tasks.submit_notes_placeholder')"
+                class="field-input resize-none"
+              ></textarea>
+            </div>
+
+            <div class="modal-footer-brand">
+              <button type="button" @click="submitTarget = null" class="btn-outline-brand">{{ t("common.cancel") }}</button>
+              <button
+                type="button"
+                @click="handleSubmit"
+                :disabled="!submitNotes.trim() || actingId === submitTarget?.id"
+                class="btn-fill-brand"
+              >
+                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="actingId === submitTarget?.id" /><Check aria-hidden="true" v-else />
+                {{ t("technician_tasks.submit_for_review_button") }}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

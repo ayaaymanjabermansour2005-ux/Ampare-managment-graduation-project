@@ -49,6 +49,9 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'whatsapp',
         'facebook_url',
         'instagram_url',
+        'family_members_count',
+        'has_sick_family_member',
+        'sick_family_member_illness',
     ];
 
     protected $hidden = [
@@ -69,6 +72,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'longitude' => 'decimal:7',
             'commission_mode' => CommissionMode::class,
             'commission_rate' => 'decimal:2',
+            'family_members_count' => 'integer',
+            'has_sick_family_member' => 'boolean',
         ];
     }
 

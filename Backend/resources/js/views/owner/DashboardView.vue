@@ -159,6 +159,13 @@ const KPI_CARDS = computed(() => {
   if (!extraStats.value) return [];
   const s = extraStats.value;
   return [
+    // FIX: أُلغي استخدام v-count-up هون بعد رصده مباشرة — الدايركتيف
+    // بيعرض "." بدل "0" لما تكون القيمة صفرًا، وصفر حالة طبيعية وشائعة جدًا
+    // بهاي البطاقات تحديدًا (لا فواتير متأخرة، لا أعطال مفتوحة... إلخ هي
+    // أخبار جيدة، مش استثناء نادر). عرض بيانات خاطئة لمالك المولد (نقطة
+    // بدل الرقم الحقيقي) خطأ جوهري بالبيانات وليس مجرّد مسألة شكلية، فالقيم
+    // الثابتة (بدون حركة) هي الخيار الصحيح هنا حتى لو غابت الحركة المرئية
+    // المطابقة للأدمن.
     { icon: "fa-bolt", tone: "primary", label: t("owner_dashboard.kpi.active_generators"), value: `${s.active_generators_count} / ${s.generators_count}` },
     { icon: "fa-hourglass-half", tone: "warning", label: t("owner_dashboard.kpi.pending_verification_generators"), value: s.pending_verification_generators_count },
     { icon: "fa-users", tone: "primary", label: t("owner_dashboard.kpi.active_subscriptions"), value: s.active_subscriptions_count },
@@ -428,7 +435,16 @@ async function handleQuickApproveReading(reading) {
          ========================  قسم 2: نظرة سريعة (KPIs)  ======================
          ========================================================================== -->
 
-    <!-- ===== KPI CARDS (هوية kpi-card بالأدمن) ===== -->
+    <!-- ===== KPI CARDS موحّدة (9 مؤشر عام + 3 مالية/تشغيلية = 12 بطاقة) — نفس هوية بطاقات لوحة الأدمن (باستثناء العدّاد المتحرّك) ===== -->
+    <!-- FIX: كانت مقسومة سابقًا على قسمين منفصلين بشبكتين مختلفتي الأعمدة
+         ("نظرة سريعة" 9 بطاقات، و"الملخص المالي السريع" 3 بطاقات بشبكة
+         منفصلة) — دُمجتا هون بشبكة واحدة، وطابقنا التخطيط والتفاصيل الداخلية
+         لكل بطاقة (رأس الأيقونة، الخط الزخرفي bar-track أسفل البطاقة) حرفيًا
+         بنفس بطاقات KPI المستخدمة بلوحة تحكم الأدمن (DashboardView.vue)، بما
+         فيها عدد الأعمدة الأقصى (4 عند xl فأعلى) بدل 6. القيم هون نصّية
+         ثابتة (بدون v-count-up) عن قصد — الدايركتيف بيعرض "." بدل "0"، وصفر
+         حالة شائعة جدًا بهاي البطاقات، فالثبات هون قرار صحّة بيانات وليس
+         تقصيرًا بالتطابق البصري. -->
     <section v-reveal>
       <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
         <h2 class="text-[15px] font-extrabold">{{ t("owner_dashboard.quick_overview") }}</h2>
@@ -438,50 +454,54 @@ async function handleQuickApproveReading(reading) {
         {{ extraStatsError }}
       </div>
 
-      <div v-if="isLoadingExtraStats" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3.5">
-        <div v-for="i in 9" :key="i" class="h-24 rounded-2xl thumb-loading"></div>
-      </div>
-      <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3.5">
-        <div
-          v-for="c in KPI_CARDS" :key="c.label" class="kpi-card glass-card hoverable"
-          :style="{ '--kpi-color': TONE_COLORS[c.tone][0], '--kpi-color2': TONE_COLORS[c.tone][1] }"
-        >
-          <div class="kpi-icon mb-2.5"><AppIcon :name="c.icon" /></div>
-          <div class="text-lg font-extrabold truncate" dir="ltr">{{ c.value }}</div>
-          <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mt-0.5 line-clamp-2">{{ c.label }}</div>
-        </div>
-      </div>
-    </section>
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
+        <!-- 9 بطاقات المؤشرات العامة (تعتمد على isLoadingExtraStats) -->
+        <template v-if="isLoadingExtraStats">
+          <div v-for="i in 9" :key="i" class="h-28 rounded-2xl thumb-loading"></div>
+        </template>
+        <template v-else>
+          <div
+            v-for="c in KPI_CARDS" :key="c.label" class="kpi-card glass-card hoverable"
+            :style="{ '--kpi-color': TONE_COLORS[c.tone][0], '--kpi-color2': TONE_COLORS[c.tone][1] }"
+          >
+            <div class="flex items-start justify-between mb-3">
+              <div class="kpi-icon"><AppIcon :name="c.icon" /></div>
+            </div>
+            <div class="text-xl font-extrabold truncate text-right" dir="ltr">{{ c.value }}</div>
+            <div class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-2.5 line-clamp-2 text-right">{{ c.label }}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%; opacity:.35" :style="{ background: TONE_COLORS[c.tone][0] }"></div></div>
+          </div>
+        </template>
 
-    <!-- ===== كاردات مالية/تشغيلية إضافية (عمولة · شكاوى · عروض) ===== -->
-    <section v-reveal>
-      <h2 class="text-[15px] font-extrabold mb-3">{{ t("owner_dashboard.quick_finance_title") }}</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <!-- 3 بطاقات مالية/تشغيلية إضافية (عمولة · شكاوى · عروض) — نفس الشبكة والهوية -->
         <RouterLink :to="{ name: 'owner.reports' }" class="kpi-card glass-card block" style="--kpi-color:#8A6D1F; --kpi-color2:#D4AF37;">
-          <div class="flex items-start justify-between mb-2.5">
+          <div class="flex items-start justify-between mb-3">
             <span class="kpi-icon"><HandCoins aria-hidden="true" /></span>
           </div>
-          <p class="text-[11px] text-[#9a9d97] mb-0.5">{{ t("owner_dashboard.commission_due_kpi") }}</p>
-          <p v-if="isLoadingCommissions" class="h-6 w-20 rounded thumb-loading"></p>
-          <p v-else class="text-[17px] font-extrabold" dir="ltr">{{ totalEarned.toFixed(2) }} ₪</p>
+          <p v-if="isLoadingCommissions" class="h-6 w-20 rounded thumb-loading ml-auto"></p>
+          <p v-else class="text-xl font-extrabold text-right" dir="ltr">{{ totalEarned.toFixed(2) }} ₪</p>
+          <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-2.5 text-right">{{ t("owner_dashboard.commission_due_kpi") }}</p>
+          <div class="bar-track"><div class="bar-fill" style="width:100%; opacity:.35; background:#8A6D1F"></div></div>
         </RouterLink>
 
         <RouterLink :to="{ name: 'owner.complaints' }" class="kpi-card glass-card block" style="--kpi-color:#D9534F; --kpi-color2:#8A2F2A;">
-          <div class="flex items-start justify-between mb-2.5">
+          <div class="flex items-start justify-between mb-3">
             <span class="kpi-icon"><MessageCircleMore aria-hidden="true" /></span>
           </div>
-          <p class="text-[11px] text-[#9a9d97] mb-0.5">{{ t("owner_dashboard.open_complaints_kpi") }}</p>
-          <p v-if="isLoadingComplaints" class="h-6 w-12 rounded thumb-loading"></p>
-          <p v-else class="text-[17px] font-extrabold">{{ openComplaintsCount }}</p>
+          <p v-if="isLoadingComplaints" class="h-6 w-12 rounded thumb-loading ml-auto"></p>
+          <p v-else class="text-xl font-extrabold text-right">{{ openComplaintsCount }}</p>
+          <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-2.5 text-right">{{ t("owner_dashboard.open_complaints_kpi") }}</p>
+          <div class="bar-track"><div class="bar-fill" style="width:100%; opacity:.35; background:#D9534F"></div></div>
         </RouterLink>
 
         <RouterLink :to="{ name: 'owner.offers' }" class="kpi-card glass-card block" style="--kpi-color:#52733D; --kpi-color2:#3E582E;">
-          <div class="flex items-start justify-between mb-2.5">
+          <div class="flex items-start justify-between mb-3">
             <span class="kpi-icon"><Tags aria-hidden="true" /></span>
           </div>
-          <p class="text-[11px] text-[#9a9d97] mb-0.5">{{ t("owner_dashboard.active_offers_kpi") }}</p>
-          <p v-if="isLoadingOffers" class="h-6 w-12 rounded thumb-loading"></p>
-          <p v-else class="text-[17px] font-extrabold">{{ activeOffers.length }}</p>
+          <p v-if="isLoadingOffers" class="h-6 w-12 rounded thumb-loading ml-auto"></p>
+          <p v-else class="text-xl font-extrabold text-right">{{ activeOffers.length }}</p>
+          <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-2.5 text-right">{{ t("owner_dashboard.active_offers_kpi") }}</p>
+          <div class="bar-track"><div class="bar-fill" style="width:100%; opacity:.35; background:#52733D"></div></div>
         </RouterLink>
       </div>
     </section>

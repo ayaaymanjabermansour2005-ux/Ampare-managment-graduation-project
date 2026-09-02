@@ -1,41 +1,27 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import TasksView from "./TasksView.vue";
 import MeterReadingsView from "./MeterReadingsView.vue";
 import TechnicianPaymentsView from "./TechnicianPaymentsView.vue";
-import AppIcon from "@/components/ui/AppIcon.vue";
 
-const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-const TABS = computed(() => [
-  { key: "tasks", label: t("technician_portal.nav_tasks"), icon: "fa-list-check" },
-  { key: "readings", label: t("technician_portal.nav_readings"), icon: "fa-gauge" },
-  { key: "payments", label: t("technician_portal.nav_payments"), icon: "fa-wallet" },
-]);
+const TAB_KEYS = ["tasks", "readings", "payments"];
 
 const activeTab = ref(
-  TABS.value.some((tab) => tab.key === route.query.tab)
-    ? route.query.tab
-    : "tasks",
+  TAB_KEYS.includes(route.query.tab) ? route.query.tab : "tasks",
 );
 
 watch(activeTab, (val) => {
   router.replace({ query: { ...route.query, tab: val } });
 });
 
-// FIX: لما تتغيّر ?tab= بالرابط (مثلاً من التنقّل السفلي
-// TechnicianBottomNav)، ما كان في مزامنة عكسية لـ activeTab — فيو راوتر
-// بيعيد استخدام نفس الـ component instance لما يتغيّر بس الـ query لنفس
-// الـ route، فـ setup() ما بيعيد التشغيل، وتضل المحتوى المعروض عالقة على
-// آخر تبويب كان ظاهر رغم إنّ التنقّل السفلي وعنوان الرابط تحدّثوا.
 watch(
   () => route.query.tab,
   (val) => {
-    if (TABS.value.some((tab) => tab.key === val) && val !== activeTab.value) {
+    if (TAB_KEYS.includes(val) && val !== activeTab.value) {
       activeTab.value = val;
     }
   },
@@ -50,17 +36,13 @@ const activeComponent = computed(() => {
 
 <template>
   <div class="space-y-4 pb-4">
-    <!-- FIX: كانت sticky top-0 بنفس مستوى الهيدر الخارجي بالـ Layout (وهو
-         كمان sticky top-0 لكن بـ z-30 أعلى)، فلما تنزل بالسكرول القائمة كانت
-         تختفي فعليًا خلف الهيدر بدل ما تثبت تحته. أزلنا sticky بدل ما نربطها
-         بارتفاع هيدر متغيّر (بيتغيّر مع ظهور شريط أوفلاين/مزامنة). -->
-    <div class="flex gap-1 rounded-full bg-[#f4efe5]/70 dark:bg-white/5 p-1">
+    <div v-reveal class="flex gap-1 rounded-full bg-[#f4efe5]/70 dark:bg-white/5 p-1">
       <button
         v-for="tab in TABS"
         :key="tab.key"
         type="button"
         @click="activeTab = tab.key"
-        class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold transition"
+        class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-bold transition-colors"
         :class="
           activeTab === tab.key
             ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white shadow-sm'

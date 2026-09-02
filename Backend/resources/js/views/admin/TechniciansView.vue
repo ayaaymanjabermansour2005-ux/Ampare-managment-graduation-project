@@ -910,6 +910,21 @@ onMounted(() => {
                 class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] transition-colors"
               />
             </div>
+
+            <div
+              v-if="editingTechnician.family_members_count != null || editingTechnician.has_sick_family_member"
+              class="pt-3 border-t border-[#f0ece0] dark:border-white/5 space-y-2"
+            >
+              <p class="text-[10.5px] font-bold text-[#9a9d97] dark:text-[#8f938a]">{{ $t("admin_technicians_page.family_section_title") }}</p>
+              <div v-if="editingTechnician.family_members_count != null" class="flex items-center justify-between text-[12px]">
+                <span class="text-[#6B6B6B] dark:text-[#a8aaa5]">{{ $t("admin_technicians_page.family_members_count_label") }}</span>
+                <b>{{ editingTechnician.family_members_count }}</b>
+              </div>
+              <div v-if="editingTechnician.has_sick_family_member" class="flex items-center justify-between gap-2 text-[12px]">
+                <span class="text-[#6B6B6B] dark:text-[#a8aaa5] shrink-0">{{ $t("admin_technicians_page.sick_family_member_label") }}</span>
+                <b class="text-danger text-end">{{ editingTechnician.sick_family_member_illness || $t("admin_technicians_page.sick_family_member_yes") }}</b>
+              </div>
+            </div>
           </div>
 
           <div class="flex gap-2.5 mt-5">

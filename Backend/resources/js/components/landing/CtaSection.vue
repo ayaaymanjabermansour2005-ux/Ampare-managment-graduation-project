@@ -21,11 +21,6 @@ const { t } = useI18n();
             >
               {{ t("landing.cta.primary") }}
             </RouterLink>
-            <!--
-              FIX: كان RouterLink لراوت 'landing.contact' محذوف — صفحة
-              التواصل صارت قسم Scroll بنفس الصفحة، مش راوت مستقل. رابط
-              Anchor عادي كافي هون (CSS فيه scroll-margin-top أصلًا).
-            -->
             <a href="#contact" class="btn-outline-fill font-bold text-sm px-7 py-3.5 rounded-full">
               {{ t("landing.cta.secondary") }}
             </a>

@@ -13,11 +13,6 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
-// لا نستخدم useSidebarBadgesStore هنا عمدًا — ذلك المخزن يجلب أيضًا
-// /admin/sidebar/badge-counts (نقطة نهاية خاصة بالأدمن فقط)، وبما أن الجلب
-// يتم عبر Promise.all فإن رفض ذلك الطلب بـ403 لدور الفني كان يُسقط طلب
-// عدد الرسائل غير المقروءة معه بالكامل، فلا تظهر الشارة إطلاقًا. هنا نجلب
-// فقط ما يحتاجه الفني فعليًا.
 const unreadMessages = ref(0);
 let refreshTimer = null;
 
@@ -59,7 +54,7 @@ function go(item) {
 
 <template>
   <nav
-    class="fixed inset-x-0 bottom-0 z-40 bg-surface/95 dark:bg-[#1c1e20]/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]"
+    class="fixed inset-x-0 bottom-0 z-40 bg-white/85 dark:bg-[#1c1e20]/90 backdrop-blur-xl border-t border-[#eee8da] dark:border-white/10 pb-[env(safe-area-inset-bottom)]"
   >
     <div class="max-w-lg mx-auto grid grid-cols-5">
       <button
@@ -67,14 +62,19 @@ function go(item) {
         :key="item.key"
         type="button"
         @click="go(item)"
-        class="relative flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] font-medium transition"
-        :class="isActive(item) ? 'text-primary-600' : 'text-gray-400 dark:text-gray-500'"
+        class="relative flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[10.5px] font-bold transition-colors"
+        :class="isActive(item) ? 'text-[#3E582E] dark:text-[#a8d19a]' : 'text-[#a5a99e] dark:text-[#787c73]'"
       >
+        <span
+          v-if="isActive(item)"
+          class="absolute top-0 inset-x-[30%] h-[3px] rounded-b-full bg-gradient-to-l from-[#3E582E] to-[#8A6D1F]"
+          aria-hidden="true"
+        ></span>
         <span class="relative">
           <AppIcon :name="item.icon" class="text-lg" />
           <span
             v-if="item.key === 'messages' && unreadMessages > 0"
-            class="absolute -top-1.5 -end-2 min-w-[16px] h-4 px-1 rounded-full bg-danger text-white text-[9px] font-mono font-data flex items-center justify-center"
+            class="absolute -top-1.5 -end-2 min-w-[16px] h-4 px-1 rounded-full bg-[#D9534F] text-white text-[9px] font-mono font-extrabold flex items-center justify-center"
           >
             {{ unreadMessages > 9 ? "9+" : unreadMessages }}
           </span>
@@ -85,7 +85,7 @@ function go(item) {
       <button
         type="button"
         @click="emit('open-more')"
-        class="flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] font-medium text-gray-400 dark:text-gray-500 transition"
+        class="flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[10.5px] font-bold text-[#a5a99e] dark:text-[#787c73] transition-colors"
       >
         <Menu class="text-lg" aria-hidden="true" />
         {{ t("technician_portal.more_label") }}

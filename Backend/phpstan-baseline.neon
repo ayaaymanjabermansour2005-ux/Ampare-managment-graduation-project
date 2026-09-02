@@ -241,6 +241,12 @@ parameters:
 			path: app/Actions/Complaint/CreateComplaintAction.php
 
 		-
+			message: '#^Parameter \#1 \$complaint of event class App\\Events\\ComplaintSubmitted constructor expects App\\Models\\Complaint in App\\Events\\ComplaintSubmitted\:\:dispatch\(\), App\\Models\\Complaint\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Complaint/CreateComplaintAction.php
+
+		-
 			message: '#^Method App\\Actions\\Complaint\\ResolveComplaintAction\:\:execute\(\) should return App\\Models\\Complaint but returns App\\Models\\Complaint\|null\.$#'
 			identifier: return.type
 			count: 1
@@ -925,6 +931,12 @@ parameters:
 			path: app/Actions/User/UpdateOwnerCommissionSettingsAction.php
 
 		-
+			message: '#^Class App\\Casts\\SafelyEncrypted implements generic interface Illuminate\\Contracts\\Database\\Eloquent\\CastsAttributes but does not specify its types\: TGet, TSet$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Casts/SafelyEncrypted.php
+
+		-
 			message: '#^Method App\\Contracts\\AiChatProviderContract\:\:reply\(\) has parameter \$messages with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1497,7 +1509,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$user of method App\\Policies\\AdminDashboardPolicy\:\:view\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
 			identifier: argument.type
-			count: 9
+			count: 10
 			path: app/Http/Controllers/Api/AdminDashboardController.php
 
 		-
@@ -6213,7 +6225,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\TechnicianResource\:\:\$user\.$#'
 			identifier: property.notFound
-			count: 4
+			count: 7
 			path: app/Http/Resources/TechnicianResource.php
 
 		-
@@ -6226,6 +6238,12 @@ parameters:
 			message: '#^Method App\\Http\\Resources\\TechnicianResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
+			path: app/Http/Resources/TechnicianResource.php
+
+		-
+			message: '#^Parameter \#1 \$condition of method Illuminate\\Http\\Resources\\Json\\JsonResource\:\:when\(\) expects bool, bool\|null given\.$#'
+			identifier: argument.type
+			count: 3
 			path: app/Http/Resources/TechnicianResource.php
 
 		-
@@ -6397,15 +6415,27 @@ parameters:
 			path: app/Http/Resources/UserResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$family_members_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$generators\.$#'
 			identifier: property.notFound
 			count: 2
 			path: app/Http/Resources/UserResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$has_sick_family_member\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$id\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 5
 			path: app/Http/Resources/UserResource.php
 
 		-
@@ -6464,6 +6494,12 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$roles\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$sick_family_member_illness\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/UserResource.php
@@ -8427,6 +8463,30 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Notifications/FaultReportedAdminNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$owner\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/FaultReportedAdminNotification.php
+
+		-
+			message: '#^Method App\\Notifications\\FaultReportedAdminNotification\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Notifications/FaultReportedAdminNotification.php
+
+		-
+			message: '#^Method App\\Notifications\\FaultReportedAdminNotification\:\:via\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Notifications/FaultReportedAdminNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
 			count: 2
 			path: app/Notifications/FaultReportedNotification.php
 
@@ -8623,6 +8683,30 @@ parameters:
 			path: app/Notifications/InvoiceDueSoonNotification.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$subscriberMeter\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/InvoiceOverdueNotification.php
+
+		-
+			message: '#^Method App\\Notifications\\InvoiceOverdueNotification\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Notifications/InvoiceOverdueNotification.php
+
+		-
+			message: '#^Method App\\Notifications\\InvoiceOverdueNotification\:\:via\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Notifications/InvoiceOverdueNotification.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Notifications/InvoiceOverdueNotification.php
+
+		-
 			message: '#^Method App\\Notifications\\InvoicePaidNotification\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -8639,6 +8723,24 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Notifications/InvoicePaidNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/NewComplaintNotification.php
+
+		-
+			message: '#^Method App\\Notifications\\NewComplaintNotification\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Notifications/NewComplaintNotification.php
+
+		-
+			message: '#^Method App\\Notifications\\NewComplaintNotification\:\:via\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Notifications/NewComplaintNotification.php
 
 		-
 			message: '#^Cannot call method label\(\) on string\.$#'
@@ -9296,6 +9398,12 @@ parameters:
 
 		-
 			message: '#^Method App\\Services\\AdminDashboardService\:\:maintenanceAndFaultsByCity\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Services/AdminDashboardService.php
+
+		-
+			message: '#^Method App\\Services\\AdminDashboardService\:\:paymentsActivityLast7Days\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Services/AdminDashboardService.php
