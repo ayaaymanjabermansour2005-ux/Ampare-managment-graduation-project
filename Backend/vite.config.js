@@ -97,6 +97,16 @@ export default defineConfig({
                     if (id.includes('jspdf') || id.includes('html2canvas')) return 'pdf-vendor';
                     if (id.includes('datatables') || id.includes('@tanstack/vue-table')) return 'datatables-vendor';
                     if (id.includes('laravel-echo') || id.includes('pusher-js')) return 'realtime-vendor';
+                    // Both were previously falling into the generic 'vendor' bucket below,
+                    // which meant any one page needing either of them (6 dashboard/management
+                    // views for charts; the admin generator map and the public landing page's
+                    // map section for Leaflet) downloaded that whole ~565 KB shared bundle —
+                    // sweetalert-adjacent one-off libraries and all. Each is genuinely used by
+                    // several separate routes, so unlike a single-route dependency it's worth
+                    // giving them their own named chunk rather than letting Rollup's default
+                    // per-entry splitting duplicate them across those routes' chunks.
+                    if (id.includes('chart.js') || id.includes('vue-chartjs')) return 'chart-vendor';
+                    if (id.includes('leaflet')) return 'map-vendor';
                     if (
                         id.includes('/vue/') || id.includes('\\vue\\') ||
                         id.includes('vue-router') || id.includes('pinia') || id.includes('vue-i18n')
