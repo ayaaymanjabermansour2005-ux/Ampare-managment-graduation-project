@@ -62,6 +62,12 @@ export function useOwnerTechnicians() {
       });
       const payload = data.data;
       eligibleUsers.value = payload.data ?? payload;
+    } catch {
+      // Called fire-and-forget from a debounced search box (TechniciansView.vue)
+      // with no .catch() of its own — an unhandled rejection here previously
+      // left stale/incorrect results showing with no feedback. Clear the list
+      // instead; the loading spinner already disabled itself via `finally`.
+      eligibleUsers.value = [];
     } finally {
       isLoadingUsers.value = false;
     }

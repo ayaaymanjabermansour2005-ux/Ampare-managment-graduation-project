@@ -1856,6 +1856,7 @@ export default {
     load_error: "Failed to load your invoices.",
     payments_load_error: "Failed to load your payment history.",
     resubmit_error: "Failed to resubmit the payment.",
+    cancel_error: "Failed to cancel the payment.",
   },
   invoices_payments_panel: {
     title: "Invoices & Payments",
@@ -3733,6 +3734,7 @@ export default {
     opening_conversation: "Opening conversation...",
     select_conversation: "Select a conversation to view it.",
     load_error: "Failed to load conversations.",
+    messages_load_error: "Failed to load this conversation's messages.",
     send_error: "Failed to send the message.",
     send_failed_title: "Send Failed",
     start_error: "Failed to start the conversation.",
@@ -3746,6 +3748,7 @@ export default {
     no_generators: "No generators available to ask about.",
     generators_load_error: "Failed to load the available generators.",
     sessions_load_error: "Failed to load the conversations.",
+    session_load_error: "Failed to load this conversation.",
     generator_label: "Generator",
     problem_description_label: "Problem Description",
     optional_no_message: "optional, you can start without it",

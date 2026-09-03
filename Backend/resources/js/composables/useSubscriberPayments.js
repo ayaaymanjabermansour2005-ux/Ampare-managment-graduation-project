@@ -73,15 +73,18 @@ export function useSubscriberPayments() {
   }
 
   const isCancelling = ref(false);
+  const cancelError = ref(null);
 
   async function cancelPayment(id) {
     isCancelling.value = true;
+    cancelError.value = null;
     try {
       const { data } = await paymentService.cancel(id);
       const index = payments.value.findIndex((p) => p.id === id);
       if (index !== -1) payments.value[index] = data.data;
       return true;
-    } catch {
+    } catch (err) {
+      cancelError.value = normalizeApiError(err, t("my_invoices_page.cancel_error")).message;
       return false;
     } finally {
       isCancelling.value = false;
@@ -98,6 +101,7 @@ export function useSubscriberPayments() {
     resubmitError,
     resubmitPayment,
     isCancelling,
+    cancelError,
     cancelPayment,
   };
 }

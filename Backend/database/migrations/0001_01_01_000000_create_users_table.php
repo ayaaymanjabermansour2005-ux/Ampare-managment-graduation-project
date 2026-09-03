@@ -50,6 +50,9 @@ return new class extends Migration
             $table->string('whatsapp')->nullable();
             $table->string('facebook_url')->nullable();
             $table->string('instagram_url')->nullable();
+            $table->unsignedSmallInteger('family_members_count')->nullable();
+            $table->boolean('has_sick_family_member')->default(false);
+            $table->text('sick_family_member_illness')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

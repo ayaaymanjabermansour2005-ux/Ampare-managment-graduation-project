@@ -16,6 +16,12 @@ export function useTechnicianMeterReadings() {
       generators.value = payload.data ?? payload;
       if (generators.value.length)
         selectedGeneratorId.value = generators.value[0].id;
+    } catch {
+      // MeterReadingsView.vue awaits this then loadSubscriptions() sequentially
+      // with no surrounding try/catch — an unhandled rejection here previously
+      // skipped loadSubscriptions() entirely. Fall back to empty (same as the
+      // "no generators assigned" state) instead of leaving both calls unresolved.
+      generators.value = [];
     } finally {
       isLoadingGenerators.value = false;
     }
@@ -39,6 +45,8 @@ export function useTechnicianMeterReadings() {
           s.generator?.id === selectedGeneratorId.value &&
           s.status === "active",
       );
+    } catch {
+      subscriptions.value = [];
     } finally {
       isLoadingSubscriptions.value = false;
     }

@@ -57,10 +57,6 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * كلمات مرور الحسابات التجريبية المولَّدة بهذا التشغيل الحالي فقط —
-     * {email => plaintext}. تُستخدم فقط لطباعة جدول اعتماد محلي مرة واحدة
-     * (printSeedCredentials)، ولا تُخزَّن ولا تُسجَّل بأي مكان آخر.
-     *
      * @var array<string, string>
      */
     private array $generatedCredentials = [];
@@ -676,12 +672,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // SEEDER-IDEMPOTENCY: البحث بـ transaction_reference لوحده (فريد عالميًا
-        // بالفعل بقاعدة البيانات) لا بـ invoice_id معه — لأن $invoicePaid نفسها
-        // تُبحَث بمفتاح يعتمد على now()->subDays(28)، وهو تاريخ متحرّك يتغيّر كل
-        // يوم. تشغيل db:seed يومين مختلفين كان يُنشئ Invoice جديدة (id مختلف)،
-        // فما كان بحث Payment يطابق الصف القديم، فيحاول إدخال نفس
-        // transaction_reference من جديد ويصطدم بقيد unique الفعلي.
         Payment::firstOrCreate(
             ['transaction_reference' => 'DEMO-PAY-0001'],
             [

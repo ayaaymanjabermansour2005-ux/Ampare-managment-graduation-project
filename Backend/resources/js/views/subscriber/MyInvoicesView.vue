@@ -3,6 +3,7 @@ import { onMounted } from "vue";
 import { useSubscriberInvoices } from "@/composables/useSubscriberInvoices";
 import { useSubscriberPayments } from "@/composables/useSubscriberPayments";
 import InvoicesPaymentsPanel from "@/components/invoices/InvoicesPaymentsPanel.vue";
+import { useToastStore } from "@/stores/toast";
 import { ref } from "vue";
 
 const {
@@ -13,9 +14,10 @@ const {
 const {
   payments, pagination: paymentsPagination, isLoading: isLoadingPayments,
   error: paymentsError, fetchPayments, isResubmitting, resubmitError,
-  resubmitPayment, isCancelling, cancelPayment,
+  resubmitPayment, isCancelling, cancelError, cancelPayment,
 } = useSubscriberPayments();
 
+const toast = useToastStore();
 const panelRef = ref(null);
 
 async function handleFetchInvoiceDetail(id, cb) {
@@ -26,6 +28,11 @@ async function handleFetchInvoiceDetail(id, cb) {
 async function handleResubmitPayment({ id, payload }) {
   const ok = await resubmitPayment(id, payload);
   if (ok) panelRef.value?.onResubmitDone();
+}
+
+async function handleCancelPayment(id) {
+  const ok = await cancelPayment(id);
+  if (!ok) toast.show({ type: "danger", title: cancelError.value });
 }
 
 onMounted(() => {
@@ -54,6 +61,6 @@ onMounted(() => {
     @fetch-invoice-detail="handleFetchInvoiceDetail"
     @fetch-payments="fetchPayments"
     @resubmit-payment="handleResubmitPayment"
-    @cancel-payment="cancelPayment"
+    @cancel-payment="handleCancelPayment"
   />
 </template>

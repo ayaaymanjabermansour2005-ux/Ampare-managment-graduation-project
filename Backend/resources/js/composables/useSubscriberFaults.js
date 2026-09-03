@@ -29,12 +29,19 @@ export function useSubscriberFaults() {
   const myGeneratorName = ref(null);
 
   async function loadMyGenerator() {
-    const { data } = await subscriptionService.list({ per_page: 1 });
-    const payload = data.data;
-    const sub = (payload.data ?? payload)[0];
-    if (sub) {
-      myGeneratorId.value = sub.generator?.id;
-      myGeneratorName.value = sub.generator?.name;
+    try {
+      const { data } = await subscriptionService.list({ per_page: 1 });
+      const payload = data.data;
+      const sub = (payload.data ?? payload)[0];
+      if (sub) {
+        myGeneratorId.value = sub.generator?.id;
+        myGeneratorName.value = sub.generator?.name;
+      }
+    } catch {
+      // A failed lookup here must not reject — SupportCenterView.vue chains
+      // .then(() => faults.fetchFaults()) after this call with no .catch(),
+      // so an unhandled rejection here previously skipped fetchFaults()
+      // entirely and left isLoading stuck at its initial true forever.
     }
   }
 

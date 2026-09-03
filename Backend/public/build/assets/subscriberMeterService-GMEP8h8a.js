@@ -1,1 +1,0 @@
-import{h as r}from"./app-CN81J3tJ.js";const b={list(){return r.get("/subscriber-meters")},show(e){return r.get(`/subscriber-meters/${e}`)},create(e){return r.post("/subscriber-meters",e)},update(e,s){return r.patch(`/subscriber-meters/${e}`,s)},destroy(e){return r.delete(`/subscriber-meters/${e}`)},qrCode(e){return r.get(`/subscriber-meters/${e}/qr`)}};export{b as s};

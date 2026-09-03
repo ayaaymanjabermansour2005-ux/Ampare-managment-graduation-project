@@ -86,6 +86,7 @@ export function useAdminOffers() {
     isLoading,
     error,
     search,
+    includeExpired,
     cancellingId,
     cancelError,
     deletingId,

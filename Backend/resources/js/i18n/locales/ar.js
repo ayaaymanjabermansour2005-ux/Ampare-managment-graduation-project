@@ -1852,6 +1852,7 @@ export default {
     load_error: "تعذّر تحميل فواتيرك.",
     payments_load_error: "تعذّر تحميل سجل دفعاتك.",
     resubmit_error: "تعذّر إعادة إرسال الدفعة.",
+    cancel_error: "تعذّر إلغاء الدفعة.",
   },
   invoices_payments_panel: {
     title: "الفواتير والدفعات",
@@ -3732,6 +3733,7 @@ export default {
     opening_conversation: "جارٍ فتح المحادثة...",
     select_conversation: "اختر محادثة لعرضها.",
     load_error: "تعذّر تحميل المحادثات.",
+    messages_load_error: "تعذّر تحميل رسائل هذه المحادثة.",
     send_error: "تعذّر إرسال الرسالة.",
     send_failed_title: "تعذّر الإرسال",
     start_error: "تعذّر بدء المحادثة.",
@@ -3745,6 +3747,7 @@ export default {
     no_generators: "ما في مولدات متاحة للاستفسار عنها.",
     generators_load_error: "تعذّر تحميل المولدات المتاحة.",
     sessions_load_error: "تعذّر تحميل المحادثات.",
+    session_load_error: "تعذّر تحميل هذه المحادثة.",
     generator_label: "المولد",
     problem_description_label: "وصف المشكلة",
     optional_no_message: "اختياري، ممكن تبدأ بدونه",

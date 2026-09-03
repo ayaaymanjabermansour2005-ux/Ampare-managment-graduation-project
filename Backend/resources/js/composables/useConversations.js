@@ -29,16 +29,27 @@ export function useConversations() {
   const activeConversation = ref(null);
   const messages = ref([]);
   const isLoadingMessages = ref(false);
+  const messagesError = ref(null);
 
   async function openConversation(conversation) {
     activeConversation.value = conversation;
     isLoadingMessages.value = true;
+    messagesError.value = null;
     try {
       const { data } = await conversationService.messages(conversation.id, {
         per_page: 50,
       });
       const payload = data.data;
       messages.value = (payload.data ?? payload).slice().reverse();
+    } catch (err) {
+      // Without this, a failed fetch left the PREVIOUS conversation's stale
+      // messages rendered under the newly selected conversation's header — and
+      // the exception propagated into startConversation/startSupportConversation/
+      // startWithOwnerConversation's own try/catch (they all `await
+      // openConversation(...)` internally), misreporting a messages-load failure
+      // as a failed conversation *start* even though the conversation was created.
+      messages.value = [];
+      messagesError.value = normalizeApiError(err, t("owner_messages.messages_load_error")).message;
     } finally {
       isLoadingMessages.value = false;
     }
@@ -155,6 +166,7 @@ export function useConversations() {
     activeConversation,
     messages,
     isLoadingMessages,
+    messagesError,
     openConversation,
     isSending,
     sendError,

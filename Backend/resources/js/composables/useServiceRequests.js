@@ -29,10 +29,17 @@ export function useServiceRequests() {
   const mySubscriptionId = ref(null);
 
   async function loadMySubscription() {
-    const { data } = await subscriptionService.list({ per_page: 1 });
-    const payload = data.data;
-    const sub = (payload.data ?? payload)[0];
-    mySubscriptionId.value = sub?.id ?? null;
+    try {
+      const { data } = await subscriptionService.list({ per_page: 1 });
+      const payload = data.data;
+      const sub = (payload.data ?? payload)[0];
+      mySubscriptionId.value = sub?.id ?? null;
+    } catch {
+      // A failed lookup here must not reject — SupportCenterView.vue chains
+      // .then(() => serviceRequests.fetchRequests()) after this call inside a
+      // Promise.all with no .catch(), so an unhandled rejection here previously
+      // skipped fetchRequests() entirely and left isLoading stuck at true forever.
+    }
   }
 
   const isSubmitting = ref(false);

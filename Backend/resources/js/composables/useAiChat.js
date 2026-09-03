@@ -45,13 +45,18 @@ export function useAiChat() {
   const activeSession = ref(null);
   const messages = ref([]);
   const isLoadingSession = ref(false);
+  const sessionError = ref(null);
 
   async function openSession(sessionId) {
     isLoadingSession.value = true;
+    sessionError.value = null;
     try {
       const { data } = await aiChatService.show(sessionId);
       activeSession.value = data.data;
       messages.value = data.data.messages ?? [];
+    } catch (err) {
+      sessionError.value =
+        normalizeApiError(err, t("owner_ai_chat.session_load_error")).message;
     } finally {
       isLoadingSession.value = false;
     }
@@ -171,6 +176,7 @@ export function useAiChat() {
     activeSession,
     messages,
     isLoadingSession,
+    sessionError,
     openSession,
     isStarting,
     startError,

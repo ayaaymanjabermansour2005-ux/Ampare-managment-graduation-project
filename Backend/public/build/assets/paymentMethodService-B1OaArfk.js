@@ -1,0 +1,1 @@
+import{h as e}from"./app-BzaJaxPt.js";const m={list(t={}){return e.get("/payment-methods",{params:t})},create(t){return e.post("/payment-methods",t)},update(t,r){return e.put(`/payment-methods/${t}`,r)},destroy(t){return e.delete(`/payment-methods/${t}`)}};export{m as p};

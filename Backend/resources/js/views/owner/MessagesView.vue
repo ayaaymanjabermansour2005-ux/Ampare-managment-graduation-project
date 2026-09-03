@@ -21,6 +21,7 @@ const {
   activeConversation,
   messages,
   isLoadingMessages,
+  messagesError,
   openConversation,
   isSending,
   sendError,
@@ -365,6 +366,7 @@ onMounted(async () => {
               <div v-if="isLoadingMessages" class="text-center text-[12px] text-[#9a9d97] py-8">
                 <LoaderCircle class="me-1.5 animate-spin" aria-hidden="true" />{{ t("common.loading") }}
               </div>
+              <div v-else-if="messagesError" class="text-center text-[12px] text-[#D9534F] py-8">{{ messagesError }}</div>
 
               <div
                 v-for="msg in messages"
