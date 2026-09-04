@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
         ]);
 
-        Model::unguarded(fn() => $this->seedCoreData());
+        Model::unguarded(fn () => $this->seedCoreData());
         $this->call(DemoAccountsSeeder::class);
         $this->call(PlatformUsersSeeder::class);
     }
@@ -889,7 +889,6 @@ class DatabaseSeeder extends Seeder
         $this->printSeedCredentials();
     }
 
-
     private function demoPassword(string $identifier, string $model = User::class): string
     {
         $password = Str::password(16);
@@ -900,7 +899,6 @@ class DatabaseSeeder extends Seeder
 
         return $password;
     }
-
 
     private function printSeedCredentials(): void
     {

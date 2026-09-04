@@ -3,6 +3,7 @@
 namespace Tests\Feature\Generator;
 
 use App\Enums\Role as RoleEnum;
+use App\Models\FuelReading;
 use App\Models\Generator;
 use App\Models\Location;
 use App\Models\Subscriber;
@@ -645,7 +646,7 @@ class GeneratorTest extends TestCase
         $this->assertNull($response->json('data.fuel_percentage'));
 
         $generatorId = $response->json('data.id');
-        \App\Models\FuelReading::factory()->create([
+        FuelReading::factory()->create([
             'generator_id' => $generatorId,
             'tank_level_liters' => 100,
             'reading_date' => now()->toDateString(),

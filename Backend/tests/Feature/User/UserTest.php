@@ -5,6 +5,7 @@ namespace Tests\Feature\User;
 use App\Enums\Role as RoleEnum;
 use App\Exports\UsersExport;
 use App\Models\Conversation;
+use App\Models\Generator;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -237,7 +238,7 @@ class UserTest extends TestCase
     {
         $admin = $this->makeAdmin();
         $ownerWithGenerators = $this->makeOwner();
-        \App\Models\Generator::factory()->count(3)->create(['owner_id' => $ownerWithGenerators->id]);
+        Generator::factory()->count(3)->create(['owner_id' => $ownerWithGenerators->id]);
         $ownerWithoutGenerators = $this->makeOwner();
 
         $response = $this->actingAs($admin)

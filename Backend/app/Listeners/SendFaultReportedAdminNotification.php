@@ -4,8 +4,8 @@ namespace App\Listeners;
 
 use App\Enums\Role;
 use App\Events\FaultReported;
-use App\Notifications\FaultReportedAdminNotification;
 use App\Models\User;
+use App\Notifications\FaultReportedAdminNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 

@@ -27,7 +27,7 @@ class DemoAccountsSeeder extends Seeder
             return;
         }
 
-        Model::unguarded(fn() => $this->seed());
+        Model::unguarded(fn () => $this->seed());
     }
 
     private function seed(): void
