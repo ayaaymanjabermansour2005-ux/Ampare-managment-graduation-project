@@ -90,7 +90,7 @@ class TechnicianService
             $technician->user->update($userFields);
         }
 
-        return $technician->fresh(['user']);
+        return $technician->fresh(['user', 'owner']);
     }
 
     public function delete(Technician $technician): void

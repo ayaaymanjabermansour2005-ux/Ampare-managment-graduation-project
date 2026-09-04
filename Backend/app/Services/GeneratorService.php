@@ -156,7 +156,7 @@ class GeneratorService
 
         $fuelRows = (clone $base)
             ->whereNotNull('tank_capacity_liters')
-            ->with('latestFuelReading:id,generator_id,tank_level_liters')
+            ->with('latestFuelReading:id,fuel_readings.generator_id,tank_level_liters')
             ->get(['id', 'tank_capacity_liters']);
 
         $fuelPercentages = $fuelRows

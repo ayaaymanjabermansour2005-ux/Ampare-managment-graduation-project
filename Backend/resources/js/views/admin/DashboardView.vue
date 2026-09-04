@@ -18,7 +18,7 @@ import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import GeneratorsTablePanel from "@/components/generators/GeneratorsTablePanel.vue";
 import GazaWeatherCard from "@/components/dashboard/GazaWeatherCard.vue";
 import { downloadCsv } from "@/utils/csv";
-import { CalendarDays, Check, CircleAlert, Database, Eye, EyeOff, FileDown, ListChecks, LoaderCircle, Megaphone, Plus, UserPlus, UserRound, UsersRound, WandSparkles, Wrench, X } from "@lucide/vue";
+import { CalendarDays, Check, CircleAlert, Database, Eye, EyeOff, FileDown, ListChecks, LoaderCircle, Megaphone, UserPlus, UserRound, UsersRound, WandSparkles, Wrench, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -402,14 +402,6 @@ onMounted(async () => {
           </p>
           <!-- ===== إضافة: أزرار الإجراءات السريعة الثلاثة المطلوبة ===== -->
           <div class="flex flex-wrap gap-2.5">
-            <button
-              type="button"
-              @click="generatorsPanelRef?.openAddModal()"
-              class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2"
-            >
-              <Plus aria-hidden="true" />
-              {{ t("owner_generators.form.add_title") }}
-            </button>
             <button
               type="button"
               @click="exportTodayReport"

@@ -156,7 +156,12 @@ async function handleSave() {
   const ok = await updateTechnician(editingTechnician.value.id, {
     ...editForm,
   });
-  if (ok) editingTechnician.value = null;
+  if (ok) {
+    editingTechnician.value = null;
+    toast.show({ type: "success", title: t("admin_technicians_page.updated_toast_title"), message: t("admin_technicians_page.updated_toast_message") });
+  } else {
+    toast.show({ type: "danger", title: t("admin_technicians_page.save_failed_title"), message: saveError.value?.message ?? t("admin_technicians_page.update_error") });
+  }
 }
 
 async function handleDelete(technician) {
@@ -166,7 +171,14 @@ async function handleDelete(technician) {
     confirmLabel: t("admin_technicians_page.delete_confirm_button"),
     variant: "danger",
   });
-  if (confirmed) await deleteTechnician(technician.id);
+  if (!confirmed) return;
+
+  const ok = await deleteTechnician(technician.id);
+  if (ok) {
+    toast.show({ type: "success", title: t("admin_technicians_page.deleted_toast_title"), message: t("admin_technicians_page.deleted_toast_message") });
+  } else {
+    toast.show({ type: "danger", title: t("admin_technicians_page.save_failed_title"), message: deleteError.value?.message ?? t("admin_technicians_page.delete_error") });
+  }
 }
 
 onMounted(() => fetchTechnicians());
@@ -502,7 +514,7 @@ onMounted(() => {
     <template v-if="activeTab === 'technicians'">
       <!-- ===== KPI CARDS ===== -->
       <section v-reveal>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
           <StatCard
             v-for="c in KPI_CARDS" :key="c.label"
             :label="c.label" :value="c.value" :icon="c.icon" :tone="c.tone" :decimals="c.decimals ?? 0"

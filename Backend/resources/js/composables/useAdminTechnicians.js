@@ -69,6 +69,9 @@ export function useAdminTechnicians() {
       const supportedPayload = {};
       if (payload.status !== undefined) supportedPayload.status = payload.status;
       if (payload.notes !== undefined) supportedPayload.notes = payload.notes;
+      if (payload.name !== undefined) supportedPayload.name = payload.name;
+      if (payload.email !== undefined) supportedPayload.email = payload.email;
+      if (payload.phone !== undefined) supportedPayload.phone = payload.phone;
 
       const { data } = await technicianService.update(id, supportedPayload);
       const index = technicians.value.findIndex((t) => t.id === id);

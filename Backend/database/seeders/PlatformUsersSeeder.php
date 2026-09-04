@@ -89,6 +89,7 @@ class PlatformUsersSeeder extends Seeder
         $admin = User::where('email', 'admin@ampare.test')->firstOrFail();
 
         $owners = $this->seedOwners($neighborhoods, $plans);
+        $this->backfillAyatGenerators($neighborhoods);
         $technicians = $this->seedExtraTechnicians($owners);
         $subscribers = $this->seedSubscribers($neighborhoods, $owners);
         $this->seedAdmins();
@@ -233,6 +234,126 @@ class PlatformUsersSeeder extends Seeder
         }
 
         return $result;
+    }
+
+    /**
+     * AYAT-GENERATORS-BACKFILL: قبل هالسيدر كان في مولدين بنفس الاسم "مولد أيات"
+     * تحت خالد النجار انعملوا يدويًا من واجهة الأدمن (مش من generators الأعلى)،
+     * فطلعوا بدون موقع/مدينة، والمولد الفعّال منهم بدون أي مشترك (فتظهر أعمدة
+     * المدينة/المشتركين/الإيراد فاضية بالجدول). ما ضفناهم لمصفوفة generators
+     * بالأعلى لأنو firstOrCreate هناك بيتعرّف على المولد بـ owner_id+name، واسم
+     * الاثنين متطابق فما بيفرّق بينهم. بدلها، نكمّل بياناتهم هون بالبحث عنهم
+     * مباشرة بالاسم تحت نفس المالك.
+     */
+    private function backfillAyatGenerators(Collection $neighborhoods): void
+    {
+        $owner = User::where('email', 'khaled.alnajjar@example.test')->first();
+        if (! $owner) {
+            return;
+        }
+
+        $ayatGenerators = Generator::where('owner_id', $owner->id)->where('name', 'مولد أيات')->get();
+        $neighborhood = $neighborhoods->first();
+        if ($ayatGenerators->isEmpty() || ! $neighborhood) {
+            return;
+        }
+
+        $location = Location::firstOrCreate(
+            ['city' => 'غزة', 'neighborhood_id' => $neighborhood->id, 'address' => "شارع أيات - {$neighborhood->name}"],
+            ['latitude' => 31.52, 'longitude' => 34.46]
+        );
+
+        $ayatGenerators->whereNull('location_id')->each(
+            fn (Generator $g) => $g->update(['location_id' => $location->id])
+        );
+
+        $activeGenerator = $ayatGenerators->firstWhere('status', GeneratorStatus::Active->value);
+        if (! $activeGenerator || $activeGenerator->subscriptions()->exists()) {
+            return;
+        }
+
+        $subUser = User::updateOrCreate(
+            ['email' => 'wael.zarab@example.test'],
+            [
+                'name' => 'وائل زعرب',
+                'phone' => '0599200313',
+                'password' => Hash::make(self::PASSWORD),
+                'email_verified_at' => now(),
+                'status' => 'active',
+            ]
+        );
+        if (! $subUser->hasRole(RoleEnum::SUBSCRIBER->value)) {
+            $subUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        }
+
+        $subscriber = Subscriber::firstOrCreate(
+            ['user_id' => $subUser->id],
+            [
+                'neighborhood_id' => $neighborhood->id,
+                'address' => "منزل رقم 30 - {$neighborhood->name}",
+                'joined_at' => now()->subDays(20),
+                'beneficiary_type' => BeneficiaryType::Normal,
+            ]
+        );
+
+        $meter = SubscriberMeter::firstOrCreate(
+            ['meter_number' => 'PU-5001'],
+            [
+                'subscriber_id' => $subscriber->id,
+                'property_label' => 'المنزل الرئيسي',
+                'status' => SubscriberMeterStatus::Active,
+            ]
+        );
+
+        $subscription = Subscription::firstOrCreate(
+            ['subscriber_meter_id' => $meter->id, 'generator_id' => $activeGenerator->id, 'schedule' => 'day'],
+            [
+                'agreed_price_per_kw' => $activeGenerator->price_per_kw,
+                'currency' => $activeGenerator->currency,
+                'requested_capacity_kw' => 15,
+                'contract_type' => 'residential',
+                'start_date' => now()->subDays(20),
+                'status' => SubscriptionStatus::Active,
+            ]
+        );
+
+        $reading = MeterReading::firstOrCreate(
+            ['subscription_id' => $subscription->id, 'reading_date' => now()->subDays(5)->toDateString()],
+            ['previous_reading' => 500, 'current_reading' => 540, 'created_by' => $owner->id]
+        );
+
+        $amount = 32.5;
+        $invoice = Invoice::firstOrCreate(
+            ['subscription_id' => $subscription->id, 'due_date' => now()->addDays(7)->toDateString()],
+            [
+                'meter_reading_id' => $reading->id,
+                'amount' => $amount,
+                'discount_amount' => 0,
+                'discount_id' => null,
+                'final_amount' => $amount,
+                'currency' => $activeGenerator->currency,
+                'exchange_rate' => $activeGenerator->currency->value === 'ILS' ? null : 3.6,
+                'final_amount_ils' => $activeGenerator->currency->value === 'USD' ? round($amount * 3.6, 2) : $amount,
+                'status' => InvoiceStatus::Paid,
+            ]
+        );
+
+        Payment::firstOrCreate(
+            ['transaction_reference' => 'AYAT-PAY-0001'],
+            [
+                'invoice_id' => $invoice->id,
+                'source' => 'subscriber',
+                'amount' => $amount,
+                'currency' => $activeGenerator->currency,
+                'exchange_rate' => $activeGenerator->currency->value === 'ILS' ? null : 3.6,
+                'amount_ils' => $activeGenerator->currency->value === 'USD' ? round($amount * 3.6, 2) : $amount,
+                'status' => PaymentStatus::Paid,
+                'processed_by' => $owner->id,
+                'paid_at' => now()->subDays(3),
+                'reviewed_by' => $owner->id,
+                'reviewed_at' => now()->subDays(3),
+            ]
+        );
     }
 
     // ==================== فنيّون إضافيون ====================
