@@ -10,6 +10,7 @@ import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import activityLogService from "@/services/activityLogService";
 import userService from "@/services/userService";
+import neighborhoodService from "@/services/neighborhoodService";
 import { useRolePermissions } from "@/composables/useRolePermissions";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, Eye, EyeOff, FileSpreadsheet, Info, Key, LoaderCircle, Lock, LockOpen, Pencil, Save, Search, Shuffle, Trash2, UserPlus, UserX, X } from "@lucide/vue";
@@ -470,6 +471,7 @@ function openAddUserMenu() {
 function selectAddUserType(type) {
   addUserStep.value = type;
   if (type === "technician" && owners.value.length === 0) fetchOwners();
+  if (type === "subscriber") fetchNeighborhoods();
 }
 function backToAddUserChoice() {
   addUserStep.value = "choice";
@@ -508,7 +510,7 @@ async function handleCreateOwner() {
 }
 
 /* ---------------- فورم إضافة مشترك ---------------- */
-const subscriberForm = reactive({ name: "", email: "", phone: "", password: "", password_confirmation: "", address: "" });
+const subscriberForm = reactive({ name: "", email: "", phone: "", password: "", password_confirmation: "", address: "", neighborhood_id: "" });
 const showSubscriberPassword = ref(false);
 function generateSubscriberPassword() {
   const pwd = generateRandomPassword();
@@ -519,13 +521,32 @@ function generateSubscriberPassword() {
 const isCreatingSubscriber = ref(false);
 const createSubscriberErrors = ref(null);
 
+// FIX: نموذج "إضافة مشترك" كان بدون حي (neighborhood_id) رغم إن
+// AdminCreateSubscriberRequest بيقبله (اختياري) — بيُستخدَم بلوحة تحكم
+// الحي (neighborhoods/dashboard) وبمرشِّح الحي بصفحة المشتركين.
+const neighborhoods = ref([]);
+const isLoadingNeighborhoods = ref(false);
+const neighborhoodOptions = computed(() => neighborhoods.value.map((n) => ({ value: n.id, label: n.name })));
+async function fetchNeighborhoods() {
+  if (neighborhoods.value.length) return;
+  isLoadingNeighborhoods.value = true;
+  try {
+    const { data } = await neighborhoodService.list();
+    neighborhoods.value = data.data ?? [];
+  } catch {
+    neighborhoods.value = [];
+  } finally {
+    isLoadingNeighborhoods.value = false;
+  }
+}
+
 async function handleCreateSubscriber() {
   isCreatingSubscriber.value = true;
   createSubscriberErrors.value = null;
   try {
-    await userService.createSubscriber({ ...subscriberForm });
+    await userService.createSubscriber({ ...subscriberForm, neighborhood_id: subscriberForm.neighborhood_id || undefined });
     toast.show({ type: "success", title: t("users_page.created_toast_title"), message: t("users_page.subscriber_created_message") });
-    Object.assign(subscriberForm, { name: "", email: "", phone: "", password: "", password_confirmation: "", address: "" });
+    Object.assign(subscriberForm, { name: "", email: "", phone: "", password: "", password_confirmation: "", address: "", neighborhood_id: "" });
     showSubscriberPassword.value = false;
     closeAddUserForms();
     loadUsers();
@@ -1262,6 +1283,18 @@ onMounted(() => {
                   <div>
                     <label class="text-[11px] font-bold block mb-1.5">{{ $t("users_page.address_optional_label") }}</label>
                     <input v-model="subscriberForm.address" type="text" class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-lg px-3 py-2 text-[12.5px] outline-none focus:border-[#8A6D1F]" />
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold block mb-1.5">{{ $t("users_page.neighborhood_optional_label") }}</label>
+                    <AppDropdownSelect
+                      v-model="subscriberForm.neighborhood_id"
+                      :options="neighborhoodOptions"
+                      :disabled="isLoadingNeighborhoods"
+                      :placeholder="isLoadingNeighborhoods ? $t('common.loading') : $t('users_page.neighborhood_placeholder')"
+                      variant="field"
+                      width-class="w-full"
+                      match-trigger-width
+                    />
                   </div>
                   <div>
                     <label class="text-[11px] font-bold block mb-1.5">{{ $t("dashboard.password") }}</label>

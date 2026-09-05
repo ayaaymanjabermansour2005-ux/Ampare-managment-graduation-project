@@ -53,6 +53,12 @@ export default [
         meta: { permission: "meter-readings.view" },
       },
       {
+        path: "service-requests",
+        name: "admin.service-requests",
+        component: () => import("@/views/admin/ServiceRequestsView.vue"),
+        meta: { permission: "service-requests.view" },
+      },
+      {
         path: "offers",
         name: "admin.offers",
         component: () => import("@/views/admin/AdminOffersView.vue"),

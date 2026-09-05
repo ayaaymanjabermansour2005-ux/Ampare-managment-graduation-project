@@ -10,8 +10,9 @@ import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import { printTable } from "@/utils/printTable";
 import generatorService from "@/services/generatorService";
+import technicianService from "@/services/technicianService";
 import { normalizeApiError } from "@/utils/normalizeApiError";
-import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Eye, FileSpreadsheet, LoaderCircle, Plus, PlugZap, Printer, Search, ShieldCheck, Trash2, TriangleAlert, User, WandSparkles, X, Zap } from "@lucide/vue";
+import { Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Eye, FileSpreadsheet, LoaderCircle, Plus, PlugZap, Printer, Search, ShieldCheck, Trash2, TriangleAlert, User, WandSparkles, Wrench, X, Zap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -23,9 +24,11 @@ const {
   faults, pagination, isLoading, error,
   search, statusFilter,
   isOverriding, overrideError,
+  isVerifying, verifyError,
+  isDecidingRepair, decideRepairError,
   deletingId,
   fetchFaults, onSearchInput, onFilterChange,
-  overrideFaultStatus, deleteFault,
+  overrideFaultStatus, verifyFault, decideFaultRepair, deleteFault,
 } = useAdminFaults();
 
 const {
@@ -191,17 +194,78 @@ const paginationRange = computed(() => {
   return withDots;
 });
 
-/* ---------------- نافذة التفاصيل + تجاوز الحالة ---------------- */
+/* ---------------- نافذة التفاصيل + التحقق + قرار الإصلاح + تجاوز الحالة ----------------
+ * FIX (تدقيق شامل للوحة الأدمن): نفس نمط owner/FaultsView.vue (verify/decideRepair) —
+ * منقول هون كمان عشان الأدمن يقدر يمشي بمسار المراجعة الطبيعي (تحقق ثم قرار إصلاح)
+ * بدل ما يكون مضطر يستخدم "التجاوز اليدوي" (override) لكل شي.
+ */
 const isDetailOpen = ref(false);
 const activeFault = ref(null);
 const overrideStatusValue = ref("");
 const overrideReason = ref("");
 
+const REPAIR_METHOD_OPTIONS = computed(() => [
+  { value: "owner_fixed", label: t("owner_faults.repair_owner_fixed") },
+  { value: "internal_technician", label: t("owner_faults.repair_internal_technician") },
+]);
+const repairMethod = ref("owner_fixed");
+const repairTechnicianId = ref("");
+const repairInstructions = ref("");
+
+const technicianOptions = ref([]);
+const isLoadingTechnicians = ref(false);
+async function ensureTechnicianOptionsLoaded() {
+  if (technicianOptions.value.length > 0) return;
+  isLoadingTechnicians.value = true;
+  try {
+    const { data } = await technicianService.list({ per_page: 200 });
+    const payload = data.data;
+    technicianOptions.value = payload.data ?? payload;
+  } finally {
+    isLoadingTechnicians.value = false;
+  }
+}
+const technicianSelectOptions = computed(() => technicianOptions.value.map((tech) => ({ value: tech.id, label: tech.name })));
+
 function openDetail(f) {
   activeFault.value = f;
   overrideStatusValue.value = f.status;
   overrideReason.value = "";
+  repairMethod.value = "owner_fixed";
+  repairTechnicianId.value = "";
+  repairInstructions.value = "";
   isDetailOpen.value = true;
+  if (f.status === "verified") ensureTechnicianOptionsLoaded();
+}
+
+async function handleVerify(isValid) {
+  if (isValid) {
+    const confirmed = await confirm({
+      title: t("owner_faults.verify_title"),
+      message: t("owner_faults.confirm_valid_message"),
+      confirmLabel: t("owner_faults.valid_fault_button"),
+    });
+    if (!confirmed) return;
+  } else {
+    const confirmed = await confirm({
+      title: t("owner_faults.verify_title"),
+      message: t("owner_faults.confirm_invalid_message"),
+      confirmLabel: t("owner_faults.invalid_fault_button"),
+      variant: "danger",
+    });
+    if (!confirmed) return;
+  }
+  const updated = await verifyFault(activeFault.value.id, isValid);
+  if (updated) activeFault.value = updated;
+}
+
+async function handleDecideRepairSubmit() {
+  const updated = await decideFaultRepair(activeFault.value.id, {
+    repair_method: repairMethod.value,
+    technician_id: repairMethod.value === "internal_technician" ? (repairTechnicianId.value || null) : null,
+    instructions: repairInstructions.value.trim() || undefined,
+  });
+  if (updated) activeFault.value = updated;
 }
 
 async function handleOverrideSubmit() {
@@ -544,6 +608,60 @@ onMounted(() => {
             <div v-if="activeFault.admin_override_reason" class="glass-card p-3.5 border border-[#D4AF37]/40">
               <p class="text-[11px] font-bold text-[#8A6D1F] mb-1"><ShieldCheck aria-hidden="true" /> {{ $t("faults_page.previously_overridden") }}</p>
               <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5]">{{ activeFault.admin_override_reason }}</p>
+            </div>
+
+            <!-- ===== التحقق من صحة البلاغ (pending_verification فقط) ===== -->
+            <div v-if="activeFault.status === 'pending_verification'" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
+              <p class="text-[12px] font-extrabold mb-3 flex items-center gap-1.5"><ShieldCheck class="text-[#8A6D1F]" aria-hidden="true" /> {{ $t("owner_faults.verify_title") }}</p>
+              <div v-if="verifyError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">{{ verifyError }}</div>
+              <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-3">{{ $t("owner_faults.verify_question") }}</p>
+              <div class="flex gap-2.5">
+                <button type="button" @click="handleVerify(false)" :disabled="isVerifying" class="flex-1 text-[12.5px] font-bold py-2.5 rounded-full border border-[#D9534F]/40 text-[#D9534F] hover:bg-[#D9534F]/10 transition disabled:opacity-60">
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isVerifying" /><X aria-hidden="true" v-else />
+                  {{ $t("owner_faults.invalid_fault_button") }}
+                </button>
+                <button type="button" @click="handleVerify(true)" :disabled="isVerifying" class="flex-1 btn-fill-brand !justify-center disabled:opacity-60">
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isVerifying" /><Check aria-hidden="true" v-else />
+                  {{ $t("owner_faults.valid_fault_button") }}
+                </button>
+              </div>
+            </div>
+
+            <!-- ===== قرار الإصلاح (verified فقط) ===== -->
+            <div v-else-if="activeFault.status === 'verified'" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
+              <p class="text-[12px] font-extrabold mb-3 flex items-center gap-1.5"><Wrench class="text-[#8A6D1F]" aria-hidden="true" /> {{ $t("owner_faults.decide_repair_title") }}</p>
+              <div v-if="decideRepairError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">{{ decideRepairError }}</div>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("owner_faults.repair_method_label") }}</label>
+                  <AppDropdownSelect
+                    v-model="repairMethod" @update:model-value="ensureTechnicianOptionsLoaded"
+                    :options="REPAIR_METHOD_OPTIONS" variant="field" width-class="w-full" match-trigger-width
+                  />
+                </div>
+                <div v-if="repairMethod === 'internal_technician'">
+                  <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("owner_faults.technician_label") }}</label>
+                  <AppDropdownSelect
+                    v-model="repairTechnicianId"
+                    :options="technicianSelectOptions"
+                    :disabled="isLoadingTechnicians"
+                    :placeholder="isLoadingTechnicians ? $t('common.loading') : $t('owner_faults.choose_technician')"
+                    variant="field" width-class="w-full" match-trigger-width
+                  />
+                </div>
+                <div>
+                  <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("owner_faults.instructions_label") }} <span class="text-[#9a9d97] font-normal">({{ $t("common.optional") }})</span></label>
+                  <textarea v-model="repairInstructions" rows="3" maxlength="2000" :placeholder="$t('owner_faults.instructions_placeholder')" class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] resize-none"></textarea>
+                </div>
+              </div>
+              <button
+                type="button" @click="handleDecideRepairSubmit"
+                :disabled="isDecidingRepair || (repairMethod === 'internal_technician' && !repairTechnicianId)"
+                class="btn-fill-brand w-full !justify-center mt-3"
+              >
+                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isDecidingRepair" /><Check aria-hidden="true" v-else />
+                {{ $t("owner_faults.submit_decision") }}
+              </button>
             </div>
 
             <div class="border-t border-[#eee8da] dark:border-white/10 pt-4">

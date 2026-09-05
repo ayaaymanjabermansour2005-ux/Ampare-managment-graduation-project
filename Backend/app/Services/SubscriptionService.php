@@ -68,6 +68,24 @@ class SubscriptionService
 
     public function create(array $data, User $user): Subscription
     {
+        // مسار الأدمن (إنشاء اشتراك يدويًا نيابةً عن أي مشترك — SubscribersView.vue):
+        // العداد بيُختار من عدادات المشترك المستهدَف مباشرة (لا علاقة له بعدادات
+        // $user نفسه، الأدمن أصلًا ما إله ملف مشترك) — بنفس نمط createForOwner
+        // (يأخذ العداد جاهزًا، بدون قيد "يخص $user").
+        if ($user->isAdmin()) {
+            $meter = SubscriberMeter::where('id', $data['subscriber_meter_id'])
+                ->where('status', SubscriberMeterStatus::Active)
+                ->first();
+
+            if (! $meter) {
+                throw ValidationException::withMessages([
+                    'subscriber_meter_id' => ['العداد المحدد غير موجود أو غير فعّال.'],
+                ]);
+            }
+
+            return $this->createForMeter($data, $meter);
+        }
+
         $subscriber = $user->subscriber;
 
         if (! $subscriber) {

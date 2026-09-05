@@ -265,7 +265,8 @@ onUnmounted(() => document.removeEventListener("click", onDocumentClick));
 
 /* ---------------- اختصار لوحة مفاتيح Ctrl+K / Cmd+K لفتح البحث فورًا ---------------- */
 function onGlobalKeydown(e) {
-  const key = e.key.toLowerCase();
+  // FIX: نفس الملاحظة بـ AdminTopbar.vue — e.key مش مضمون دايمًا.
+  const key = (e.key ?? "").toLowerCase();
   const isPlainK = (e.ctrlKey || e.metaKey) && !e.shiftKey && key === "k";
   const isShiftK = (e.ctrlKey || e.metaKey) && e.shiftKey && key === "k";
   if (!isPlainK && !isShiftK) return;

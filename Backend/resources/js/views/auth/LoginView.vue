@@ -16,19 +16,22 @@ const authStore = useAuthStore();
 const { t } = useI18n();
 
 /* ---------------- أزرار تعبئة سريعة للمشرفين — dev فقط ----------------
- * بيانات ثابتة (كلمة مرور PlatformUsersSeeder الموحّدة Ampare@2026، ما بتتغيّر
- * عشوائيًا بكل db:seed بعكس حسابات DatabaseSeeder) — أربعة حسابات تجريبية
- * حقيقية موجودة مسبقًا بالقاعدة، وحدة لكل دور. الشرط الثلاثي (مش v-if بالتمبلت
- * لحاله) مهم أمنيًا: import.meta.env.DEV يُستبدَل بقيمة ثابتة وقت الـ build،
- * فـ Terser فعليًا بيحذف مصفوفة بيانات الدخول بالكامل من حزمة الإنتاج (مش بس
- * يخفيها بالـ DOM) — تأكّدت فعليًا إنه grep على public/build ما بيلاقي
- * "Ampare@2026" ولا أي بريد تجريبي بعد هالتعديل. لو كان بس v-if على التمبلت،
- * السلسلة كانت تضل موجودة بالحزمة القابلة للتنزيل حتى لو مخفية بصريًا.
+ * بيانات ثابتة — أربعة حسابات تجريبية حقيقية موجودة مسبقًا بالقاعدة، وحدة
+ * لكل دور. حساب الأدمن الوحيد المسموح به بالنظام (admin@ampare.test) بكلمة
+ * مرور DEV_ADMIN_PASSWORD من .env (افتراضيًا Password123! — راجع
+ * config/seeding.php وRoleSeeder)، لا علاقة لها بكلمة مرور PlatformUsersSeeder
+ * الموحّدة (Ampare@2026) المستخدَمة لبقية الحسابات الثلاثة. الشرط الثلاثي
+ * (مش v-if بالتمبلت لحاله) مهم أمنيًا: import.meta.env.DEV يُستبدَل بقيمة
+ * ثابتة وقت الـ build، فـ Terser فعليًا بيحذف مصفوفة بيانات الدخول بالكامل
+ * من حزمة الإنتاج (مش بس يخفيها بالـ DOM) — تأكّدت فعليًا إنه grep على
+ * public/build ما بيلاقي "Ampare@2026" ولا أي بريد تجريبي بعد هالتعديل. لو
+ * كان بس v-if على التمبلت، السلسلة كانت تضل موجودة بالحزمة القابلة للتنزيل
+ * حتى لو مخفية بصريًا.
  */
 const isProductionBuild = import.meta.env.PROD;
 const QUICK_LOGIN_ACCOUNTS = import.meta.env.DEV
   ? [
-      { key: "admin", icon: ShieldUser, login: "suha.almadhoun@example.test", password: "Ampare@2026" },
+      { key: "admin", icon: ShieldUser, login: "admin@ampare.test", password: "Password123!" },
       { key: "owner", icon: Factory, login: "mahmoud.abushamala@example.test", password: "Ampare@2026" },
       { key: "subscriber", icon: House, login: "ahmad.alhilu@example.test", password: "Ampare@2026" },
       { key: "technician", icon: Wrench, login: "majed.abuamra@example.test", password: "Ampare@2026" },

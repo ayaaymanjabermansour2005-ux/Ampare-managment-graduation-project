@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import subscriptionService from "@/services/subscriptionService";
 import generatorService from "@/services/generatorService";
 import userService from "@/services/userService";
+import subscriberMeterService from "@/services/subscriberMeterService";
 
 /**
  * Primary CRUD data-access for the admin Subscriptions view — list/filter/
@@ -116,6 +117,59 @@ export function useAdminSubscriptionsData() {
         isSearchingSubscribers.value = false;
       }
     }, 400);
+  }
+
+  /* ---------------- عدادات المشترك المختار (نموذج إضافة اشتراك) ----------------
+   * عقد /owner/subscriptions الحقيقي (StoreSubscriptionRequest) بده subscriber_meter_id،
+   * generator_id، schedule، billing_cycle و start_date — لا subscriber_id ولا price_per_kw
+   * ولا starts_at/ends_at كما كان بالنموذج القديم (كان دايمًا يرجع 422). نفس النمط
+   * المستخدَم فعليًا وبنجاح بصفحة owner/SubscribersView.vue (createByOwner)، بس هون
+   * الأدمن بيحتاج يختار المشترك أولًا عبر owner/subscriber-lookup (مسموح له كمان).
+   */
+  const subscriberMeters = ref([]);
+  const isLoadingSubscriberMeters = ref(false);
+
+  async function fetchSubscriberMeters(userId) {
+    isLoadingSubscriberMeters.value = true;
+    try {
+      const { data } = await userService.ownerSubscriberMeters(userId);
+      subscriberMeters.value = data.data ?? [];
+    } catch {
+      subscriberMeters.value = [];
+    } finally {
+      isLoadingSubscriberMeters.value = false;
+    }
+    return subscriberMeters.value;
+  }
+
+  function resetSubscriberMeters() {
+    subscriberMeters.value = [];
+  }
+
+  const isCreatingMeter = ref(false);
+  const createMeterError = ref(null);
+
+  /**
+   * إنشاء عداد جديد نيابةً عن مشترك (لما يكون بدون أي عداد فعّال بعد).
+   * subscriber-meters.store بيقبل user_id للأدمن (SubscriberMeterPolicy::create
+   * + StoreSubscriberMeterRequest تم تعديلهم لدعم هذا المسار).
+   */
+  async function createMeterForSubscriber(userId, { meterNumber, propertyLabel }) {
+    isCreatingMeter.value = true;
+    createMeterError.value = null;
+    try {
+      const { data } = await subscriberMeterService.create({
+        meter_number: meterNumber,
+        property_label: propertyLabel || undefined,
+        user_id: userId,
+      });
+      return data?.data ?? null;
+    } catch (err) {
+      createMeterError.value = normalizeApiError(err, t("subscriptions_page.meter_create_error")).message;
+      return null;
+    } finally {
+      isCreatingMeter.value = false;
+    }
   }
 
   const isSavingSubscription = ref(false);
@@ -277,6 +331,14 @@ export function useAdminSubscriptionsData() {
     subscriberSearchResults,
     isSearchingSubscribers,
     handleSubscriberSearchInput,
+
+    subscriberMeters,
+    isLoadingSubscriberMeters,
+    fetchSubscriberMeters,
+    resetSubscriberMeters,
+    isCreatingMeter,
+    createMeterError,
+    createMeterForSubscriber,
 
     isSavingSubscription,
     saveSubscriptionError,

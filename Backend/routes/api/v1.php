@@ -1014,14 +1014,20 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
     |----------------------------------------------------------------------
     | Owner — Subscriber Lookup & Bulk Payment Reminder (نسخ محدودة النطاق
     | من ميزات إدارية، مخصَّصة لمالك المولد نيابةً عن مشتركيه)
+    |
+    | مسموح كمان لـ role:admin — نفس المسارين يُستخدَمان من لوحة تحكم الأدمن
+    | (SubscribersView.vue) لاختيار/تصفّح عدادات مشترك عند إنشاء اشتراك يدويًا،
+    | بنفس نمط owner-monthly-report/download (role:admin|generator_owner)
+    | بالأسفل. النطاق الفعلي (لا معنى له بالنسبة للأدمن) يبقى مضبوطًا عبر
+    | UserPolicy::lookupForOwner.
     |----------------------------------------------------------------------
     */
 
     Route::get('owner/subscriber-lookup', [UserController::class, 'ownerSubscriberLookup'])
-        ->middleware('role:generator_owner');
+        ->middleware('role:generator_owner|admin');
 
     Route::get('owner/subscriber-lookup/{user}/meters', [UserController::class, 'ownerSubscriberMeters'])
-        ->middleware('role:generator_owner');
+        ->middleware('role:generator_owner|admin');
 
     Route::post('owner/subscribers/bulk-payment-reminder', [UserController::class, 'sendOwnerBulkPaymentReminder'])
         ->middleware(['role:generator_owner', 'permission:payments.view']);

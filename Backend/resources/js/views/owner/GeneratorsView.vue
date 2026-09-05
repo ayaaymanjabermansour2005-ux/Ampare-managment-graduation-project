@@ -4,7 +4,6 @@ import { useI18n } from "vue-i18n";
 import { Chart as ChartJS, registerables } from "chart.js";
 import { Doughnut } from "vue-chartjs";
 import { useGeneratorsTable } from "@/composables/useGeneratorsTable";
-import { useMaintenance } from "@/composables/useMaintenance";
 import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import generatorService from "@/services/generatorService";
@@ -12,8 +11,9 @@ import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import GeneratorCard from "@/components/generators/GeneratorCard.vue";
 import GeneratorForm from "@/components/generators/GeneratorForm.vue";
 import GeneratorViewModal from "@/components/generators/GeneratorViewModal.vue";
+import GeneratorDiagnosticsPanel from "@/components/generators/GeneratorDiagnosticsPanel.vue";
 import { useLeafletMap } from "@/composables/useLeafletMap";
-import { Activity, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, GripVertical, LoaderCircle, Pencil, PlugZap, Plus, Printer, QrCode, Save, Search, Sparkles, Table2, Trash2, TriangleAlert, X, Zap, ZoomOut } from "@lucide/vue";
+import { Activity, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, GripVertical, LoaderCircle, Pencil, PlugZap, Plus, Printer, QrCode, Search, Table2, Trash2, TriangleAlert, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
@@ -301,85 +301,21 @@ function switchToEditFromView() {
   openEditForm(viewingGenerator.value);
 }
 
-const {
-  selectedGeneratorId: diagnosticGeneratorId,
-  submitDiagnostic,
-  isSubmittingDiagnostic,
-  diagnosticError,
-  isAnalyzing,
-  analyzeError,
-  analyzeReading,
-} = useMaintenance();
-
+/* ---------------- نافذة البيانات التشخيصية ----------------
+ * FIX: النموذج القديم هون كان يبني payload بأسماء حقول لا علاقة لها إطلاقًا
+ * بـ StoreGeneratorDiagnosticReadingRequest الحقيقي (oil_temperature،
+ * coolant_temperature، oil_pressure، battery_voltage، run_hours، noise_level؛
+ * وvibration_level كرقم بينما الباك اند بده enum نصي normal/abnormal) —
+ * وناقص reading_date المطلوب — فكان يرجع 422 دايمًا. استُبدل بمكوّن
+ * GeneratorDiagnosticsPanel المشترك (مبني فعليًا على الحقول الصحيحة،
+ * ومُستخدَم أيضًا بصفحة تفاصيل المولد للأدمن) بدل تكرار نفس المنطق بشكل خاطئ.
+ */
 const isDiagnosticModalOpen = ref(false);
 const diagnosticTargetGenerator = ref(null);
-const diagnosticSavedReading = ref(null);
-
-function emptyDiagnosticForm() {
-  return {
-    oil_temperature: null,
-    coolant_temperature: null,
-    vibration_level: null,
-    oil_pressure: null,
-    battery_voltage: null,
-    run_hours: null,
-    noise_level: null,
-    notes: "",
-  };
-}
-const diagnosticForm = ref(emptyDiagnosticForm());
 
 function openDiagnosticModal(generator) {
   diagnosticTargetGenerator.value = generator;
-  diagnosticGeneratorId.value = generator.id;
-  diagnosticForm.value = emptyDiagnosticForm();
-  diagnosticError.value = null;
-  diagnosticSavedReading.value = null;
-  analyzeError.value = null;
   isDiagnosticModalOpen.value = true;
-}
-
-async function submitDiagnosticForm() {
-  // نستبعد الحقول الفارغة (null/"") لأنه مو إلزامي تعبئة كل قراءة — الفني/المالك
-  // بيعبّي بس القراءات المتوفرة عنده وقت الفحص الميداني.
-  const payload = Object.fromEntries(
-    Object.entries(diagnosticForm.value).filter(([, v]) => v !== null && v !== ""),
-  );
-
-  const reading = await submitDiagnostic(payload);
-  if (reading) {
-    diagnosticSavedReading.value = reading;
-    toast.show({
-      type: "success",
-      title: t("generator_diagnostics.saved_toast_title"),
-      message: t("generator_diagnostics.saved_toast_message"),
-    });
-  } else {
-    toast.show({
-      type: "danger",
-      title: t("generator_diagnostics.save_failed_title"),
-      message: diagnosticError.value?.message ?? t("generator_diagnostics.save_failed_message"),
-    });
-  }
-}
-
-async function runAnalyzeReading() {
-  if (!diagnosticSavedReading.value) return;
-  const ok = await analyzeReading(diagnosticSavedReading.value.id);
-  if (ok) {
-    isDiagnosticModalOpen.value = false;
-    toast.show({
-      type: "success",
-      title: t("generator_diagnostics.analyze_success_title"),
-      message: t("generator_diagnostics.analyze_success_message"),
-    });
-  } else {
-    toast.show({
-      type: "danger",
-      title: t("generator_diagnostics.analyze_failed_title"),
-      message: analyzeError.value?.message ?? t("generator_diagnostics.analyze_failed_message"),
-    });
-  }
 }
 
 onMounted(async () => {
@@ -773,80 +709,8 @@ onMounted(async () => {
               <button type="button" @click="isDiagnosticModalOpen = false" class="modal-head-brand__close"><X aria-hidden="true" /></button>
             </div>
 
-            <form v-if="!diagnosticSavedReading" @submit.prevent="submitDiagnosticForm" class="p-5 space-y-3.5">
-              <div v-if="diagnosticError?.message" class="alert-box">
-                <CircleAlert class="shrink-0" aria-hidden="true" /> {{ diagnosticError.message }}
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="field-label">{{ t("generator_diagnostics.oil_temp_label") }}</label>
-                  <input v-model.number="diagnosticForm.oil_temperature" type="number" step="0.1" class="field-input" dir="ltr" />
-                </div>
-                <div>
-                  <label class="field-label">{{ t("generator_diagnostics.coolant_temp_label") }}</label>
-                  <input v-model.number="diagnosticForm.coolant_temperature" type="number" step="0.1" class="field-input" dir="ltr" />
-                </div>
-                <div>
-                  <label class="field-label">{{ t("generator_diagnostics.vibration_label") }}</label>
-                  <input v-model.number="diagnosticForm.vibration_level" type="number" step="0.01" class="field-input" dir="ltr" />
-                </div>
-                <div>
-                  <label class="field-label">{{ t("generator_diagnostics.oil_pressure_label") }}</label>
-                  <input v-model.number="diagnosticForm.oil_pressure" type="number" step="0.1" class="field-input" dir="ltr" />
-                </div>
-                <div>
-                  <label class="field-label">{{ t("generator_diagnostics.battery_voltage_label") }}</label>
-                  <input v-model.number="diagnosticForm.battery_voltage" type="number" step="0.1" class="field-input" dir="ltr" />
-                </div>
-                <div>
-                  <label class="field-label">{{ t("generator_diagnostics.run_hours_label") }}</label>
-                  <input v-model.number="diagnosticForm.run_hours" type="number" step="1" class="field-input" dir="ltr" />
-                </div>
-                <div class="col-span-2">
-                  <label class="field-label">
-                    {{ t("generator_diagnostics.noise_level_label") }}
-                    <span class="text-[#9a9d97] font-normal">({{ t("generator_diagnostics.optional_label") }})</span>
-                  </label>
-                  <input v-model.number="diagnosticForm.noise_level" type="number" step="0.1" class="field-input" dir="ltr" />
-                </div>
-              </div>
-
-              <div>
-                <label class="field-label">{{ t("generator_diagnostics.notes_label") }}</label>
-                <textarea
-                  v-model="diagnosticForm.notes" rows="2" maxlength="1000" class="field-input resize-none"
-                  :placeholder="t('generator_diagnostics.notes_placeholder')"
-                ></textarea>
-              </div>
-
-              <p class="text-[10.5px] text-[#9a9d97]">
-                {{ t("generator_diagnostics.hint") }}
-              </p>
-
-              <div class="modal-footer-brand !px-0 !pb-0">
-                <button type="button" @click="isDiagnosticModalOpen = false" class="btn-outline-brand">{{ t("generator_diagnostics.cancel") }}</button>
-                <button type="submit" :disabled="isSubmittingDiagnostic" class="btn-fill-brand">
-                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSubmittingDiagnostic" /><Save aria-hidden="true" v-else />
-                  {{ isSubmittingDiagnostic ? t("generator_diagnostics.saving") : t("generator_diagnostics.save") }}
-                </button>
-              </div>
-            </form>
-
-            <div v-else class="p-5 space-y-3.5">
-              <div v-if="analyzeError?.message" class="alert-box">
-                <CircleAlert class="shrink-0" aria-hidden="true" /> {{ analyzeError.message }}
-              </div>
-              <p class="text-sm text-[#5b5e59] dark:text-[#c9cbc6]">
-                {{ t("generator_diagnostics.analyze_prompt") }}
-              </p>
-              <div class="modal-footer-brand !px-0 !pb-0">
-                <button type="button" @click="isDiagnosticModalOpen = false" class="btn-outline-brand">{{ t("generator_diagnostics.close") }}</button>
-                <button type="button" :disabled="isAnalyzing" @click="runAnalyzeReading" class="btn-fill-brand">
-                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isAnalyzing" /><Sparkles aria-hidden="true" v-else />
-                  {{ isAnalyzing ? t("generator_diagnostics.analyzing") : t("generator_diagnostics.analyze_button") }}
-                </button>
-              </div>
+            <div class="p-5">
+              <GeneratorDiagnosticsPanel v-if="diagnosticTargetGenerator" :generator-id="diagnosticTargetGenerator.id" :can-manage="true" />
             </div>
           </div>
         </div>

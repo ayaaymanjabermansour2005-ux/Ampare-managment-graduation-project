@@ -1,1 +1,0 @@
-import{h as e}from"./app-DtyGKdIF.js";const h={list(){return e.get("/auth/neighborhoods")},store(o){return e.post("/admin/neighborhoods",o)},update(o,r){return e.patch(`/admin/neighborhoods/${o}`,r)},destroy(o){return e.delete(`/admin/neighborhoods/${o}`)}};export{h as n};

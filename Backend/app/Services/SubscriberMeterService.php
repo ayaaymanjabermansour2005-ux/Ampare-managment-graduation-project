@@ -26,7 +26,11 @@ class SubscriberMeterService
 
     public function create(array $data, User $user): SubscriberMeter
     {
-        $subscriber = $user->subscriber;
+        // مسار الأدمن (إنشاء عداد نيابةً عن مشترك — user_id مضبوط ومتحقَّق منه
+        // مسبقًا بـ StoreSubscriberMeterRequest) مقابل مسار المشترك الذاتي.
+        $subscriber = isset($data['user_id'])
+            ? User::find((int) $data['user_id'])?->subscriber
+            : $user->subscriber;
 
         if (! $subscriber) {
             throw ValidationException::withMessages([

@@ -44,7 +44,10 @@ class SubscriptionPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('subscriptions.create') && $user->isSubscriber();
+        // الأدمن كمان بيقدر ينشئ اشتراك يدويًا نيابةً عن أي مشترك (نموذج "إضافة
+        // اشتراك" بـ SubscribersView.vue) — SubscriptionService::create() بيتعامل
+        // مع هذا المسار بشكل منفصل (العداد بيُختار مباشرة، بدون ربطه بـ $user->subscriber).
+        return $user->can('subscriptions.create') && ($user->isSubscriber() || $user->isAdmin());
     }
 
     /**

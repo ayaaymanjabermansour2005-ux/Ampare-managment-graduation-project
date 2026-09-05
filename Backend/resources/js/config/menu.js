@@ -114,6 +114,16 @@ export default [
     groupKey: "menu_groups.maintenance_support",
     badgeKey: "faults_pending",
   },
+  {
+    label: "طلبات الخدمة",
+    labelKey: "menu.service_requests",
+    icon: "fa-solid fa-bolt-lightning",
+    route: "admin.service-requests",
+    roles: ["admin"],
+    permission: "service-requests.view",
+    group: "الصيانة والدعم",
+    groupKey: "menu_groups.maintenance_support",
+  },
     {
     label: "ملخص الأحياء",
     labelKey: "neighborhood_dashboard_page.title",

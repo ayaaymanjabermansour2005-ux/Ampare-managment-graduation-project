@@ -125,6 +125,13 @@ const {
   subscriberSearchResults,
   isSearchingSubscribers,
   handleSubscriberSearchInput: searchSubscribers,
+  subscriberMeters,
+  isLoadingSubscriberMeters,
+  fetchSubscriberMeters,
+  resetSubscriberMeters,
+  isCreatingMeter,
+  createMeterError,
+  createMeterForSubscriber,
   isSavingSubscription,
   saveSubscriptionError,
   createSubscription,
@@ -273,40 +280,81 @@ const subscriptionPaginationRange = computed(() => {
 
 /* ==================================================================
  * إضافة اشتراك جديد يدويًا من الأدمن
- * قرارات العمل المعتمدة (تم تأكيدها):
- *  - الحالة الابتدائية للاشتراك دائمًا "active" (الأدمن موثوق، ما في مسار موافقة).
- *  - المشترك: بحث أولاً عن مشترك موجود (بالاسم/الإيميل/الهاتف)، ولو مش موجود يُنشأ كمشترك
- *    جديد ضمن نفس النموذج (subscriberMode: 'search' | 'new').
- *  - تاريخ البدء والانتهاء وسعر الكيلووات تُدخل يدويًا (مش مشتقة من خطة المولد الافتراضية).
+ *
+ * FIX (تدقيق شامل للوحة الأدمن): النموذج القديم كان يبعت subscriber_id/
+ * price_per_kw/starts_at/ends_at/status — ولا حقل منهم موجود فعليًا بقواعد
+ * StoreSubscriptionRequest (اللي بده subscriber_meter_id، generator_id،
+ * schedule، billing_cycle و start_date كحقول مطلوبة) — يعني كان يرجع 422
+ * دايمًا. أُعيد بناؤه بنفس النمط المستخدَم فعليًا وبنجاح بصفحة owner/
+ * SubscribersView.vue (createByOwner)، مع فرق واحد: الأدمن مش عنده مولد
+ * خاص فيه فلازم يختار مشترك موجود أولًا (عبر owner/subscriber-lookup —
+ * مسموح له كمان الآن، UserPolicy::lookupForOwner) ثم يختار أحد عداداته أو
+ * يسجّل له عدادًا جديدًا (subscriber-meters.store بيقبل الآن user_id
+ * للأدمن — SubscriberMeterPolicy::create).
+ *
+ * "إنشاء مشترك جديد بالكامل" مش جزء من هذا النموذج — نفس القرار المعتمَد
+ * بصفحة المالك (تعليق createByOwner أعلاه): المشترك الجديد يُنشأ أولًا من
+ * تبويب "المشتركون" (زر "إضافة مشترك" — openAdd/createSubscriber بالأعلى)
+ * ثم يُختار هون بالبحث، بدل تكرار منطق إنشاء الحساب (بما فيه كلمة السر)
+ * بنافذتين مختلفتين.
  * ================================================================== */
 const isAddFormOpen = ref(false);
-
-const subscriberMode = ref("search"); // 'search' | 'new'
 const selectedSubscriber = ref(null);
 
-const newSubscriber = reactive({ name: "", email: "", phone: "" });
+const SUBSCRIPTION_SCHEDULE_OPTIONS = ["day", "night", "24h", "custom"];
+const SUBSCRIPTION_BILLING_CYCLE_OPTIONS = ["daily", "weekly", "monthly"];
+
+const meterMode = ref("pick"); // 'pick' | 'new'
+const newMeterForm = reactive({ meter_number: "", property_label: "" });
 
 function emptyAddForm() {
-  return { generator_id: "", price_per_kw: "", starts_at: "", ends_at: "" };
+  return {
+    generator_id: "",
+    subscriber_meter_id: "",
+    requested_capacity_kw: "",
+    schedule: "",
+    billing_cycle: "",
+    service_start_time: "",
+    service_end_time: "",
+    contract_type: "",
+    start_date: "",
+    end_date: "",
+  };
 }
 const subscriptionAddForm = ref(emptyAddForm());
 
+const scheduleDropdownOptions = computed(() =>
+  SUBSCRIPTION_SCHEDULE_OPTIONS.map((opt) => ({ value: opt, label: t(`owner_subscribers.schedule.${opt}`) })),
+);
+const billingCycleDropdownOptions = computed(() =>
+  SUBSCRIPTION_BILLING_CYCLE_OPTIONS.map((opt) => ({ value: opt, label: t(`owner_subscribers.cycle.${opt}`) })),
+);
+const activeSubscriberMeterOptions = computed(() =>
+  subscriberMeters.value
+    .filter((m) => m.status === "active")
+    .map((m) => ({
+      value: m.id,
+      label: m.property_label ? `${m.meter_number} — ${m.property_label}` : m.meter_number,
+    })),
+);
+
 async function openAddModal() {
   subscriptionAddForm.value = emptyAddForm();
-  subscriberMode.value = "search";
   subscriberSearchTerm.value = "";
   subscriberSearchResults.value = [];
   selectedSubscriber.value = null;
-  newSubscriber.name = "";
-  newSubscriber.email = "";
-  newSubscriber.phone = "";
+  resetSubscriberMeters();
+  meterMode.value = "pick";
+  newMeterForm.meter_number = "";
+  newMeterForm.property_label = "";
   saveSubscriptionError.value = null;
+  createMeterError.value = null;
   isAddFormOpen.value = true;
   if (generatorsForForm.value.length === 0) await fetchGeneratorsForForm();
 }
 
 function closeAddModal() {
-  if (isSavingSubscription.value) return;
+  if (isSavingSubscription.value || isCreatingMeter.value) return;
   isAddFormOpen.value = false;
   saveSubscriptionError.value = null;
 }
@@ -315,46 +363,51 @@ function handleSubscriberSearchInput() {
   // بخلاف الـ composable، الـ view هو اللي بيمسك selectedSubscriber (حالة
   // نموذج محلية) — لازم يُلغى الاختيار السابق كل ما المستخدم يكتب بحثًا جديدًا.
   selectedSubscriber.value = null;
+  resetSubscriberMeters();
   searchSubscribers();
 }
 
-function pickSubscriber(subscriber) {
+async function pickSubscriber(subscriber) {
   selectedSubscriber.value = subscriber;
   subscriberSearchResults.value = [];
   subscriberSearchTerm.value = "";
+  subscriptionAddForm.value.subscriber_meter_id = "";
+  newMeterForm.meter_number = "";
+  newMeterForm.property_label = "";
+
+  const meters = await fetchSubscriberMeters(subscriber.id);
+  meterMode.value = meters.some((m) => m.status === "active") ? "pick" : "new";
 }
 
 function clearPickedSubscriber() {
   selectedSubscriber.value = null;
+  resetSubscriberMeters();
+  subscriptionAddForm.value.subscriber_meter_id = "";
 }
 
-function switchSubscriberMode(mode) {
-  subscriberMode.value = mode;
-  selectedSubscriber.value = null;
-  subscriberSearchTerm.value = "";
-  subscriberSearchResults.value = [];
-  newSubscriber.name = "";
-  newSubscriber.email = "";
-  newSubscriber.phone = "";
-}
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const addFormValidationError = computed(() => {
-  if (subscriberMode.value === "search" && !selectedSubscriber.value) {
-    return t("subscriptions_page.validation_select_subscriber");
-  }
-  if (subscriberMode.value === "new") {
-    if (!newSubscriber.name.trim()) return t("subscriptions_page.validation_name_required");
-    if (!EMAIL_RE.test(newSubscriber.email.trim())) return t("subscriptions_page.validation_invalid_email");
-    if (!newSubscriber.phone.trim()) return t("subscriptions_page.validation_phone_required");
-  }
+  if (!selectedSubscriber.value) return t("subscriptions_page.validation_select_subscriber");
   if (!subscriptionAddForm.value.generator_id) return t("subscriptions_page.validation_select_generator");
-  if (!subscriptionAddForm.value.price_per_kw || Number(subscriptionAddForm.value.price_per_kw) <= 0) {
-    return t("subscriptions_page.validation_price_positive");
+
+  if (meterMode.value === "pick") {
+    if (!subscriptionAddForm.value.subscriber_meter_id) return t("subscriptions_page.validation_select_meter");
+  } else if (!newMeterForm.meter_number.trim()) {
+    return t("subscriptions_page.validation_meter_number_required");
   }
-  if (!subscriptionAddForm.value.starts_at) return t("subscriptions_page.validation_start_date_required");
-  if (!subscriptionAddForm.value.ends_at) return t("subscriptions_page.validation_end_date_required");
-  if (subscriptionAddForm.value.ends_at < subscriptionAddForm.value.starts_at) {
+
+  if (!subscriptionAddForm.value.schedule) return t("subscriptions_page.validation_select_schedule");
+  if (
+    subscriptionAddForm.value.schedule === "custom" &&
+    (!subscriptionAddForm.value.service_start_time || !subscriptionAddForm.value.service_end_time)
+  ) {
+    return t("subscriptions_page.validation_custom_schedule_times_required");
+  }
+  if (!subscriptionAddForm.value.billing_cycle) return t("subscriptions_page.validation_select_billing_cycle");
+  if (!subscriptionAddForm.value.start_date) return t("subscriptions_page.validation_start_date_required");
+  if (
+    subscriptionAddForm.value.end_date &&
+    subscriptionAddForm.value.end_date < subscriptionAddForm.value.start_date
+  ) {
     return t("subscriptions_page.validation_end_after_start");
   }
   return null;
@@ -366,25 +419,36 @@ async function handleAddSubscription() {
     saveSubscriptionError.value = validationError;
     return;
   }
+  saveSubscriptionError.value = null;
 
-  const payload = {
-    generator_id: Number(subscriptionAddForm.value.generator_id),
-    price_per_kw: Number(subscriptionAddForm.value.price_per_kw),
-    starts_at: subscriptionAddForm.value.starts_at,
-    ends_at: subscriptionAddForm.value.ends_at,
-    status: "active",
-  };
-  if (subscriberMode.value === "search") {
-    payload.subscriber_id = selectedSubscriber.value.id;
-  } else {
-    payload.subscriber = {
-      name: newSubscriber.name.trim(),
-      email: newSubscriber.email.trim(),
-      phone: newSubscriber.phone.trim(),
-    };
+  let meterId = subscriptionAddForm.value.subscriber_meter_id;
+  if (meterMode.value === "new") {
+    const meter = await createMeterForSubscriber(selectedSubscriber.value.id, {
+      meterNumber: newMeterForm.meter_number.trim(),
+      propertyLabel: newMeterForm.property_label.trim(),
+    });
+    if (!meter) {
+      saveSubscriptionError.value = createMeterError.value;
+      return;
+    }
+    meterId = meter.id;
   }
 
-  const subscriberName = subscriberMode.value === "search" ? selectedSubscriber.value?.name : newSubscriber.name;
+  const form = subscriptionAddForm.value;
+  const payload = {
+    generator_id: Number(form.generator_id),
+    subscriber_meter_id: meterId,
+    requested_capacity_kw: form.requested_capacity_kw ? Number(form.requested_capacity_kw) : undefined,
+    schedule: form.schedule,
+    billing_cycle: form.billing_cycle,
+    service_start_time: form.schedule === "custom" ? form.service_start_time : undefined,
+    service_end_time: form.schedule === "custom" ? form.service_end_time : undefined,
+    contract_type: form.contract_type.trim() || undefined,
+    start_date: form.start_date,
+    end_date: form.end_date || undefined,
+  };
+
+  const subscriberName = selectedSubscriber.value?.name;
   const created = await createSubscription(payload);
   if (created) {
     pushActivity({
@@ -2358,17 +2422,7 @@ onMounted(() => {
             <div class="form-section">
               <div class="form-section-head"><span class="form-section-icon"><User aria-hidden="true" /></span>{{ $t("subscribers_page.subscriber_col") }}</div>
 
-              <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 w-fit mt-3">
-                <button type="button" @click="switchSubscriberMode('search')" class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors" :class="subscriberMode === 'search' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5]'">
-                  {{ $t("subscriptions_page.search_subscriber_tab") }}
-                </button>
-                <button type="button" @click="switchSubscriberMode('new')" class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors" :class="subscriberMode === 'new' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5]'">
-                  {{ $t("subscriptions_page.new_subscriber_tab") }}
-                </button>
-              </div>
-
-              <!-- Search mode -->
-              <div v-if="subscriberMode === 'search'" class="mt-3">
+              <div class="mt-3">
                 <div v-if="!selectedSubscriber">
                   <div class="relative">
                     <Search class="absolute top-1/2 -translate-y-1/2 start-3 text-[#9a9d97] dark:text-[#8f938a] text-[10px]" aria-hidden="true" />
@@ -2382,7 +2436,7 @@ onMounted(() => {
                   </div>
                   <div v-if="isSearchingSubscribers" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-2">{{ $t("common.searching") }}</div>
                   <div v-else-if="subscriberSearchTerm.trim().length >= 2 && subscriberSearchResults.length === 0" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a] mt-2">
-                    {{ $t("subscriptions_page.no_results_try_new_tab") }}
+                    {{ $t("subscriptions_page.no_results_create_subscriber_first") }}
                   </div>
                   <div v-else-if="subscriberSearchResults.length" class="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
                     <button
@@ -2407,26 +2461,10 @@ onMounted(() => {
                   <button type="button" @click="clearPickedSubscriber" class="text-[10.5px] font-bold text-[#D9534F] shrink-0">{{ $t("subscriptions_page.change_action") }}</button>
                 </div>
               </div>
-
-              <!-- New subscriber mode -->
-              <div v-else class="grid sm:grid-cols-2 gap-3.5 mt-3">
-                <div class="sm:col-span-2">
-                  <label class="field-label">{{ $t("dashboard.name") }}</label>
-                  <input v-model="newSubscriber.name" type="text" class="field-input" />
-                </div>
-                <div>
-                  <label class="field-label">{{ $t("users_page.email_label") }}</label>
-                  <input v-model="newSubscriber.email" type="email" class="field-input" />
-                </div>
-                <div>
-                  <label class="field-label">{{ $t("users_page.phone_label") }}</label>
-                  <input v-model="newSubscriber.phone" type="tel" class="field-input" />
-                </div>
-              </div>
             </div>
 
-            <!-- Section: Generator & Pricing -->
-            <div class="form-section">
+            <!-- Section: Generator & Meter -->
+            <div class="form-section" v-if="selectedSubscriber">
               <div class="form-section-head"><span class="form-section-icon" style="--ic1:#8A6D1F;--ic2:#D4AF37"><PlugZap aria-hidden="true" /></span>{{ $t("subscriptions_page.generator_pricing_section_title") }}</div>
               <div class="grid sm:grid-cols-2 gap-3.5">
                 <div class="sm:col-span-2">
@@ -2441,24 +2479,97 @@ onMounted(() => {
                     match-trigger-width
                   />
                 </div>
+
                 <div class="sm:col-span-2">
-                  <label class="field-label">{{ $t("subscriptions_page.price_per_kw_subscription_label") }}</label>
-                  <input v-model="subscriptionAddForm.price_per_kw" type="number" min="0" step="0.01" class="field-input" />
+                  <label class="field-label">{{ $t("subscriptions_page.meter_col") }}</label>
+                  <div v-if="isLoadingSubscriberMeters" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("common.loading") }}</div>
+                  <template v-else>
+                    <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 w-fit mb-2">
+                      <button
+                        type="button" @click="meterMode = 'pick'" :disabled="!activeSubscriberMeterOptions.length"
+                        class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors disabled:opacity-40"
+                        :class="meterMode === 'pick' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5]'"
+                      >{{ $t("subscriptions_page.pick_existing_meter_tab") }}</button>
+                      <button
+                        type="button" @click="meterMode = 'new'"
+                        class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors"
+                        :class="meterMode === 'new' ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5]'"
+                      >{{ $t("subscriptions_page.new_meter_tab") }}</button>
+                    </div>
+
+                    <template v-if="meterMode === 'pick'">
+                      <AppDropdownSelect
+                        v-model="subscriptionAddForm.subscriber_meter_id"
+                        :options="activeSubscriberMeterOptions"
+                        :placeholder="$t('subscriptions_page.select_meter_placeholder')"
+                        variant="field" width-class="w-full" match-trigger-width
+                      />
+                      <p v-if="!activeSubscriberMeterOptions.length" class="text-[10.5px] text-[#D9534F] mt-1">{{ $t("subscriptions_page.no_active_meters_for_subscriber") }}</p>
+                    </template>
+                    <div v-else class="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label class="field-label">{{ $t("subscriptions_page.meter_number_field_label") }}</label>
+                        <input v-model="newMeterForm.meter_number" type="text" dir="ltr" class="field-input" />
+                      </div>
+                      <div>
+                        <label class="field-label">{{ $t("subscriptions_page.property_label_field_label") }} <span class="text-[#9a9d97] font-normal">({{ $t("common.optional") }})</span></label>
+                        <input v-model="newMeterForm.property_label" type="text" class="field-input" />
+                      </div>
+                    </div>
+                    <p v-if="createMeterError" class="text-[10.5px] text-[#D9534F] mt-1.5">{{ createMeterError }}</p>
+                  </template>
+                </div>
+
+                <div>
+                  <label class="field-label">{{ $t("subscriptions_page.capacity_col") }} (kW) <span class="text-[#9a9d97] font-normal">({{ $t("common.optional") }})</span></label>
+                  <input v-model="subscriptionAddForm.requested_capacity_kw" type="number" min="0" step="0.1" class="field-input" />
                 </div>
               </div>
             </div>
 
-            <!-- Section: Period -->
-            <div class="form-section">
+            <!-- Section: Schedule & Billing -->
+            <div class="form-section" v-if="selectedSubscriber">
               <div class="form-section-head"><span class="form-section-icon" style="--ic1:#17A2B8;--ic2:#0f6c7d"><CalendarDays aria-hidden="true" /></span>{{ $t("subscriptions_page.subscription_period_section_title") }}</div>
               <div class="grid sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label class="field-label">{{ $t("subscriptions_page.start_date_field_label") }}</label>
-                  <input v-model="subscriptionAddForm.starts_at" type="date" class="field-input" />
+                  <label class="field-label">{{ $t("subscriptions_page.schedule_col") }}</label>
+                  <AppDropdownSelect
+                    v-model="subscriptionAddForm.schedule"
+                    :options="scheduleDropdownOptions"
+                    :placeholder="$t('common.choose')"
+                    variant="field" width-class="w-full" match-trigger-width
+                  />
                 </div>
                 <div>
-                  <label class="field-label">{{ $t("subscriptions_page.end_date_col") }}</label>
-                  <input v-model="subscriptionAddForm.ends_at" type="date" class="field-input" />
+                  <label class="field-label">{{ $t("subscriptions_page.billing_cycle_col") }}</label>
+                  <AppDropdownSelect
+                    v-model="subscriptionAddForm.billing_cycle"
+                    :options="billingCycleDropdownOptions"
+                    :placeholder="$t('common.choose')"
+                    variant="field" width-class="w-full" match-trigger-width
+                  />
+                </div>
+                <template v-if="subscriptionAddForm.schedule === 'custom'">
+                  <div>
+                    <label class="field-label">{{ $t("owner_subscribers.service_start_time") }}</label>
+                    <input v-model="subscriptionAddForm.service_start_time" type="time" class="field-input" />
+                  </div>
+                  <div>
+                    <label class="field-label">{{ $t("owner_subscribers.service_end_time") }}</label>
+                    <input v-model="subscriptionAddForm.service_end_time" type="time" class="field-input" />
+                  </div>
+                </template>
+                <div>
+                  <label class="field-label">{{ $t("subscriptions_page.start_date_field_label") }}</label>
+                  <input v-model="subscriptionAddForm.start_date" type="date" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">{{ $t("subscriptions_page.end_date_col") }} <span class="text-[#9a9d97] font-normal">({{ $t("common.optional") }})</span></label>
+                  <input v-model="subscriptionAddForm.end_date" type="date" class="field-input" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="field-label">{{ $t("subscriptions_page.contract_type_field_label") }} <span class="text-[#9a9d97] font-normal">({{ $t("common.optional") }})</span></label>
+                  <input v-model="subscriptionAddForm.contract_type" type="text" class="field-input" />
                 </div>
               </div>
             </div>
@@ -2466,8 +2577,8 @@ onMounted(() => {
 
           <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0 bg-[#f4efe5]/40 dark:bg-white/[0.02]">
             <button type="button" @click="closeAddModal" class="text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#e7e2d6] dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition-colors">{{ $t("dashboard.cancel") }}</button>
-            <button type="submit" @click="handleAddSubscription" :disabled="isSavingSubscription" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2 disabled:opacity-60">
-              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSavingSubscription" /><Check aria-hidden="true" v-else />
+            <button type="submit" @click="handleAddSubscription" :disabled="isSavingSubscription || isCreatingMeter" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-5 py-2.5 rounded-full shadow-md flex items-center gap-2 disabled:opacity-60">
+              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isSavingSubscription || isCreatingMeter" /><Check aria-hidden="true" v-else />
               {{ $t("subscriptions_page.save_subscription_button") }}
             </button>
           </div>

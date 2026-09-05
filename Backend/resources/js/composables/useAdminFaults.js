@@ -16,6 +16,16 @@ export function useAdminFaults() {
   const isOverriding = ref(false);
   const overrideError = ref(null);
 
+  // FIX (تدقيق شامل للوحة الأدمن): verify/decideRepair كانتا موجودتين فقط
+  // بصفحة المالك (useOwnerFaults) رغم إن الأدمن يملك صلاحية faults.updateStatus
+  // فعليًا بالباك اند (كل الصلاحيات) — الأدمن كان قادر فقط على الحذف أو
+  // التجاوز اليدوي الاستثنائي (override-status)، بدون مسار المراجعة الطبيعي.
+  const isVerifying = ref(false);
+  const verifyError = ref(null);
+
+  const isDecidingRepair = ref(false);
+  const decideRepairError = ref(null);
+
   const deletingId = ref(null);
   const deleteError = ref(null);
 
@@ -69,6 +79,38 @@ export function useAdminFaults() {
     }
   }
 
+  async function verifyFault(id, isValid) {
+    isVerifying.value = true;
+    verifyError.value = null;
+    try {
+      const { data } = await faultService.verify(id, { is_valid: isValid });
+      const index = faults.value.findIndex((f) => f.id === id);
+      if (index !== -1) faults.value[index] = data.data;
+      return data.data;
+    } catch (err) {
+      verifyError.value = normalizeApiError(err, t("owner_faults.verify_error")).message;
+      return null;
+    } finally {
+      isVerifying.value = false;
+    }
+  }
+
+  async function decideFaultRepair(id, payload) {
+    isDecidingRepair.value = true;
+    decideRepairError.value = null;
+    try {
+      const { data } = await faultService.decideRepair(id, payload);
+      const index = faults.value.findIndex((f) => f.id === id);
+      if (index !== -1) faults.value[index] = data.data;
+      return data.data;
+    } catch (err) {
+      decideRepairError.value = normalizeApiError(err, t("owner_faults.decide_repair_error")).message;
+      return null;
+    } finally {
+      isDecidingRepair.value = false;
+    }
+  }
+
   async function deleteFault(id) {
     deletingId.value = id;
     deleteError.value = null;
@@ -93,12 +135,18 @@ export function useAdminFaults() {
     statusFilter,
     isOverriding,
     overrideError,
+    isVerifying,
+    verifyError,
+    isDecidingRepair,
+    decideRepairError,
     deletingId,
     deleteError,
     fetchFaults,
     onSearchInput,
     onFilterChange,
     overrideFaultStatus,
+    verifyFault,
+    decideFaultRepair,
     deleteFault,
   };
 }

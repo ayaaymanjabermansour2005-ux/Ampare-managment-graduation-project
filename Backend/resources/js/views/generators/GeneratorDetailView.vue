@@ -8,6 +8,8 @@ import generatorService from "@/services/generatorService";
 import GeneratorScheduleBoard from "@/components/generators/GeneratorScheduleBoard.vue";
 import GeneratorHealthReports from "@/components/generators/GeneratorHealthReports.vue";
 import GeneratorTimeline from "@/components/generators/GeneratorTimeline.vue";
+import GeneratorFuelPanel from "@/components/generators/GeneratorFuelPanel.vue";
+import GeneratorDiagnosticsPanel from "@/components/generators/GeneratorDiagnosticsPanel.vue";
 import { CalendarDays, CircleAlert, Lock, MapPin, PlugZap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
@@ -258,6 +260,16 @@ onMounted(load);
           :generator-id="generator.id"
           :can-manage="canManageSchedule"
         />
+      </section>
+
+      <!-- تتبّع الوقود -->
+      <section class="glass-card p-4">
+        <GeneratorFuelPanel :generator-id="generator.id" :can-manage="canManageSchedule" />
+      </section>
+
+      <!-- البيانات التشخيصية -->
+      <section class="glass-card p-4">
+        <GeneratorDiagnosticsPanel :generator-id="generator.id" :can-manage="canManageSchedule" />
       </section>
 
       <section class="glass-card p-4">

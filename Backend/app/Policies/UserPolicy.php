@@ -51,7 +51,10 @@ class UserPolicy
      */
     public function lookupForOwner(User $user): bool
     {
-        return $user->isOwner();
+        // الأدمن كمان بيستخدم نفس مسار البحث/العدادات هذا عند إنشاء اشتراك
+        // يدويًا من لوحة التحكم (SubscribersView.vue) — نفس نمط
+        // owner-monthly-report/download (role:admin|generator_owner).
+        return $user->isOwner() || $user->isAdmin();
     }
 
     /**

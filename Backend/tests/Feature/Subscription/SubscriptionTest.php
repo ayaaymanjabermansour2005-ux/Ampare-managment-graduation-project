@@ -129,6 +129,42 @@ class SubscriptionTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_subscription_for_any_subscriber(): void
+    {
+        [,, $meter] = $this->makeSubscriberUser();
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $admin = $this->makeAdmin();
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/v1/subscriptions', $this->validPayload($generator, $meter));
+
+        $response->assertStatus(201);
+        $this->assertSame('pending', $response->json('data.status'));
+        $this->assertDatabaseHas('subscriptions', [
+            'subscriber_meter_id' => $meter->id,
+            'generator_id' => $generator->id,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_admin_creating_subscription_with_inactive_meter_is_rejected(): void
+    {
+        [, $subscriber] = $this->makeSubscriberUser();
+        $inactiveMeter = SubscriberMeter::factory()->create([
+            'subscriber_id' => $subscriber->id,
+            'status' => 'inactive',
+        ]);
+        $owner = $this->makeOwner();
+        $generator = $this->makeGenerator($owner);
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/subscriptions', $this->validPayload($generator, $inactiveMeter))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('subscriber_meter_id');
+    }
+
     public function test_owner_cannot_create_subscription(): void
     {
         $owner = $this->makeOwner();

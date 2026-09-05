@@ -293,7 +293,10 @@ function onGlobalKeydown(e) {
   // ملاحظة: Ctrl+K وحده محجوز من متصفحات Chrome/Edge نفسها (بيفتح خانة البحث
   // بشريط العنوان) ولا يصل أبدًا لصفحة الويب — لذلك نقبل أيضًا Ctrl+Shift+K
   // كبديل مضمون لا يتعارض مع أي اختصار متصفح معروف.
-  const key = e.key.toLowerCase();
+  // FIX: e.key مش مضمون دايمًا (بعض الأحداث الاصطناعية — إضافات المتصفح،
+  // أدوات إدخال خاصة — بترسل keydown بدون key محدَّد) فكانت ترمي استثناء
+  // "Cannot read properties of undefined (reading 'toLowerCase')" بالكونسول.
+  const key = (e.key ?? "").toLowerCase();
   const isPlainK = (e.ctrlKey || e.metaKey) && !e.shiftKey && key === "k";
   const isShiftK = (e.ctrlKey || e.metaKey) && e.shiftKey && key === "k";
   if (!isPlainK && !isShiftK) return;

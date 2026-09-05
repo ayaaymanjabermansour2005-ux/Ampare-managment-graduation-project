@@ -119,6 +119,7 @@ export const DYNAMIC_ICON_MAP = {
   "fa-arrow-right": ArrowRight,
   "fa-bell": Bell,
   "fa-bolt": Zap,
+  "fa-bolt-lightning": Zap,
   "fa-briefcase": Briefcase,
   "fa-building-columns": Landmark,
   "fa-bullhorn": Megaphone,

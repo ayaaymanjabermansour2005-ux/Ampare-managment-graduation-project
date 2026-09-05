@@ -92,7 +92,6 @@ class PlatformUsersSeeder extends Seeder
         $this->backfillAyatGenerators($neighborhoods);
         $technicians = $this->seedExtraTechnicians($owners);
         $subscribers = $this->seedSubscribers($neighborhoods, $owners);
-        $this->seedAdmins();
         $this->seedArticleEngagement($subscribers, $admin);
 
         $this->printCredentialsTable($owners, $subscribers, $technicians);
@@ -652,26 +651,6 @@ class PlatformUsersSeeder extends Seeder
         return $result;
     }
 
-    // ==================== أدمن إضافي ====================
-
-    private function seedAdmins(): void
-    {
-        $admin = User::updateOrCreate(
-            ['email' => 'suha.almadhoun@example.test'],
-            [
-                'name' => 'سُهى المدهون',
-                'phone' => '0599300401',
-                'password' => Hash::make(self::PASSWORD),
-                'email_verified_at' => now(),
-                'status' => 'active',
-            ]
-        );
-
-        if (! $admin->hasRole(RoleEnum::ADMIN->value)) {
-            $admin->assignRole(RoleEnum::ADMIN->value);
-        }
-    }
-
     // ==================== تفاعل على المقالات (تعليقات + تقييمات) ====================
 
     /** @param array<int, User> $subscribers */
@@ -724,7 +703,7 @@ class PlatformUsersSeeder extends Seeder
         foreach ($technicians as $u) {
             $rows[] = [$u->name, $u->email, 'technician', self::PASSWORD];
         }
-        $rows[] = ['سُهى المدهون', 'suha.almadhoun@example.test', 'admin', self::PASSWORD];
+        $rows[] = ['(الأدمن الوحيد)', 'admin@ampare.test', 'admin', 'راجع DatabaseSeeder'];
 
         $this->command->info('==================== بيانات دخول الحسابات التجريبية (PlatformUsersSeeder) ====================');
         $this->command->table(['الاسم', 'البريد الإلكتروني', 'الدور', 'كلمة المرور'], $rows);

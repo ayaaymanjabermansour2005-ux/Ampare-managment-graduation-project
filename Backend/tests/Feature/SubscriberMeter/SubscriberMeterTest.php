@@ -105,6 +105,61 @@ class SubscriberMeterTest extends TestCase
             ->assertJsonValidationErrors('subscriber');
     }
 
+    public function test_admin_can_create_meter_for_subscriber(): void
+    {
+        $admin = $this->makeAdmin();
+        [$subscriber, $subscriberUser] = $this->makeSubscriberUser();
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/v1/subscriber-meters', [
+                'meter_number' => 'MTR-ADMIN-1',
+                'user_id' => $subscriberUser->id,
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('subscriber_meters', [
+            'subscriber_id' => $subscriber->id,
+            'meter_number' => 'MTR-ADMIN-1',
+        ]);
+    }
+
+    public function test_admin_creating_meter_without_user_id_is_rejected(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/subscriber-meters', ['meter_number' => 'MTR-ADMIN-2'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('user_id');
+    }
+
+    public function test_admin_creating_meter_for_non_subscriber_user_is_rejected(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/subscriber-meters', [
+                'meter_number' => 'MTR-ADMIN-3',
+                'user_id' => $owner->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('user_id');
+    }
+
+    public function test_subscriber_cannot_send_user_id_when_creating_meter(): void
+    {
+        [, $subscriberUser] = $this->makeSubscriberUser();
+
+        $this->actingAs($subscriberUser)
+            ->postJson('/api/v1/subscriber-meters', [
+                'meter_number' => 'MTR-SELF-1',
+                'user_id' => $subscriberUser->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('user_id');
+    }
+
     public function test_subscriber_can_view_own_meter(): void
     {
         [$subscriber, $subscriberUser] = $this->makeSubscriberUser();
@@ -160,6 +215,19 @@ class SubscriberMeterTest extends TestCase
         $this->actingAs($otherSubscriberUser)
             ->patchJson("/api/v1/subscriber-meters/{$meter->id}", ['property_label' => 'محاولة'])
             ->assertStatus(403);
+    }
+
+    public function test_admin_can_update_any_meter(): void
+    {
+        $admin = $this->makeAdmin();
+        [$subscriber] = $this->makeSubscriberUser();
+        $meter = SubscriberMeter::factory()->create(['subscriber_id' => $subscriber->id]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/subscriber-meters/{$meter->id}", ['property_label' => 'تعديل الأدمن'])
+            ->assertOk();
+
+        $this->assertSame('تعديل الأدمن', $meter->fresh()->property_label);
     }
 
     public function test_meter_number_uniqueness_ignores_self_on_update(): void
