@@ -20,6 +20,8 @@ final class CreateComplaintAction
             'complainable_id' => $class ? $data->complainableId : null,
             'subject' => $data->subject,
             'description' => $data->description,
+            'channel' => $data->channel,
+            'priority' => $data->priority,
             'status' => ComplaintStatus::Pending,
         ]);
 

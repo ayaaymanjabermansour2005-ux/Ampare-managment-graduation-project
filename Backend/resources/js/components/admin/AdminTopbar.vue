@@ -14,6 +14,7 @@ import { setLocale } from "@/i18n";
 import { ArrowLeft, ArrowRight, Bell, Circle, CircleX, Expand, Menu, MessageCircleMore, Moon, Plus, Search, Shrink, Sun } from "@lucide/vue";
 
 import AppIcon from "@/components/ui/AppIcon.vue";
+import NotificationItem from "@/components/notifications/NotificationItem.vue";
 
 const router = useRouter();
 const ui = useAdminUiStore();
@@ -243,27 +244,6 @@ function goToConversation(conv) {
 
 /* ---------------- الإشعارات ---------------- */
 const isNotifOpen = ref(false);
-const NOTIF_ICONS = {
-  FaultReportedNotification: { icon: "fa-triangle-exclamation", color: "#D9534F" },
-  FuelStockLowNotification: { icon: "fa-gas-pump", color: "#D9534F" },
-  InvoiceDueSoonNotification: { icon: "fa-file-invoice-dollar", color: "#FFC107" },
-  InvoicePaidNotification: { icon: "fa-wallet", color: "#28A745" },
-  InvoiceApprovedNotification: { icon: "fa-file-invoice", color: "#28A745" },
-  PaymentSubmittedNotification: { icon: "fa-wallet", color: "#17A2B8" },
-  ComplaintResolvedNotification: { icon: "fa-comment-dots", color: "#17A2B8" },
-  GeneratorHealthReportNotification: { icon: "fa-heart-pulse", color: "#8A6D1F" },
-  GeneratorVerifiedNotification: { icon: "fa-circle-check", color: "#28A745" },
-  GeneratorRejectedNotification: { icon: "fa-circle-xmark", color: "#D9534F" },
-  SubscriptionApprovedNotification: { icon: "fa-file-circle-check", color: "#28A745" },
-  TechnicianTaskAssignedNotification: { icon: "fa-user-helmet-safety", color: "#FFC107" },
-  TechnicianTaskSubmittedNotification: { icon: "fa-screwdriver-wrench", color: "#52733D" },
-  TechnicianTaskApprovedNotification: { icon: "fa-circle-check", color: "#28A745" },
-  TechnicianTaskRejectedNotification: { icon: "fa-circle-xmark", color: "#D9534F" },
-  GeneratorScheduleAnnouncedNotification: { icon: "fa-calendar-day", color: "#8A6D1F" },
-};
-function notifMeta(type) {
-  return NOTIF_ICONS[type] || { icon: "fa-bell", color: "#52733D" };
-}
 function timeAgo(str) {
   if (!str) return "—";
   const diffMs = Date.now() - new Date(str.replace(" ", "T")).getTime();
@@ -488,23 +468,16 @@ function toggleQuickAdd() {
             <div class="overflow-y-auto flex-1 divide-y divide-[#eee8da] dark:divide-white/5">
               <div v-if="notificationStore.loading" class="dropdown-empty">{{ t("common.loading") }}</div>
               <div v-else-if="notificationStore.notifications.length === 0" class="dropdown-empty">{{ t("common.no_notifications") }}</div>
-              <button
+              <!-- FIX (بند 16): كان يُعلَّم كمقروء فقط بدون أي تنقّل فعلي لصفحة
+                   الإشعار، رغم أن NotificationItem.vue يملك منطق تنقّل كامل
+                   يدعم أدوار الأدمن (admin.invoices/complaints/faults/...). -->
+              <NotificationItem
                 v-for="n in notificationStore.notifications"
                 :key="n.id"
-                type="button"
-                class="dropdown-row w-full text-start"
-                :class="{ unread: !n.is_read }"
-                @click="!n.is_read && notificationStore.markAsRead(n.id)"
-              >
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] shrink-0" :style="{ background: notifMeta(n.type).color }">
-                  <AppIcon :name="notifMeta(n.type).icon" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-[12px] font-bold truncate">{{ n.title ?? "—" }}</p>
-                  <p class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5] truncate">{{ n.message }}</p>
-                  <span class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ timeAgo(n.created_at) }}</span>
-                </div>
-              </button>
+                :notification="n"
+                @read="notificationStore.markAsRead($event)"
+                @close="isNotifOpen = false"
+              />
             </div>
           </div>
         </div>

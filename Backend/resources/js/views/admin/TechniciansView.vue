@@ -4,6 +4,7 @@ import { reactive, ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAdminTechnicians } from "@/composables/useAdminTechnicians";
 import { useOwnerOptions } from "@/composables/useOwnerOptions";
+import { useTechnicianAttachments } from "@/composables/useTechnicianAttachments";
 import { useConfirm } from "@/composables/useConfirm";
 import { usePermissions } from "@/composables/usePermissions";
 import { useToastStore } from "@/stores/toast";
@@ -12,7 +13,8 @@ import technicianTaskService from "@/services/technicianTaskService";
 import technicianService from "@/services/technicianService";
 import generatorService from "@/services/generatorService";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { Ban, Check, ChevronLeft, ChevronRight, ClipboardCheck, FileSpreadsheet, LoaderCircle, LockOpen, Pencil, Plus, Search, Trash2, UserCog, UserPlus, UserRound, Wrench } from "@lucide/vue";
+import AttachmentPreviewModal from "@/components/ui/AttachmentPreviewModal.vue";
+import { Ban, Check, ChevronLeft, ChevronRight, ClipboardCheck, Eye, FileSpreadsheet, LoaderCircle, LockOpen, Mail, Paperclip, Pencil, Phone, Plus, Search, Star, Trash2, UserCog, UserPlus, UserRound, Wrench, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -183,6 +185,84 @@ async function handleDelete(technician) {
 
 onMounted(() => fetchTechnicians());
 
+/* ==========================================================================
+ * FIX (تدقيق شامل للوحة الأدمن — بندان 15 و5): technicianService.show()
+ * ومرفقات الفني (GET/POST technicians/{id}/attachments) كانا جاهزين بالكامل
+ * بالباك اند بلا أي واجهة استخدام. نافذة واحدة تجمع بين عرض تفاصيل الفني
+ * وإدارة مرفقاته (شهادة/هوية) — نفس منطق الارتباط الطبيعي بين الميزتين.
+ * ========================================================================== */
+const viewingTechnician = ref(null);
+const isLoadingTechnicianView = ref(false);
+
+const {
+  attachments: technicianAttachments,
+  isLoading: isLoadingTechnicianAttachments,
+  error: technicianAttachmentsError,
+  fetchAttachments: fetchTechnicianAttachments,
+  isUploading: isUploadingTechnicianAttachment,
+  uploadError: technicianAttachmentUploadError,
+  uploadAttachment: uploadTechnicianAttachment,
+} = useTechnicianAttachments();
+
+const TECHNICIAN_DOCUMENT_TYPE_OPTIONS = computed(() => [
+  { value: "technician_certificate", label: t("admin_technicians_page.document_type_certificate") },
+  { value: "technician_identity", label: t("admin_technicians_page.document_type_identity") },
+]);
+const newTechnicianAttachmentType = ref("technician_certificate");
+const newTechnicianAttachmentFile = ref(null);
+const newTechnicianAttachmentDescription = ref("");
+const technicianAttachmentFileInput = ref(null);
+const previewingTechnicianAttachment = ref(null);
+
+async function openView(technician) {
+  viewingTechnician.value = technician;
+  isLoadingTechnicianView.value = true;
+  newTechnicianAttachmentType.value = "technician_certificate";
+  newTechnicianAttachmentFile.value = null;
+  newTechnicianAttachmentDescription.value = "";
+  try {
+    const { data } = await technicianService.show(technician.id);
+    viewingTechnician.value = data.data;
+  } catch {
+    // تفاصيل الصفّ الأصلي (من القائمة) تبقى معروضة كحد أدنى لو فشل التحميل.
+  } finally {
+    isLoadingTechnicianView.value = false;
+  }
+  fetchTechnicianAttachments(technician.id);
+}
+
+function onTechnicianAttachmentFileChange(e) {
+  newTechnicianAttachmentFile.value = e.target.files?.[0] ?? null;
+}
+
+async function handleUploadTechnicianAttachment() {
+  if (!newTechnicianAttachmentFile.value || !viewingTechnician.value) return;
+  const ok = await uploadTechnicianAttachment(viewingTechnician.value.id, {
+    documentType: newTechnicianAttachmentType.value,
+    file: newTechnicianAttachmentFile.value,
+    description: newTechnicianAttachmentDescription.value || undefined,
+  });
+  if (ok) {
+    newTechnicianAttachmentFile.value = null;
+    newTechnicianAttachmentDescription.value = "";
+    if (technicianAttachmentFileInput.value) technicianAttachmentFileInput.value.value = "";
+    toast.show({
+      type: "success",
+      title: t("admin_technicians_page.attachments_title"),
+      message: t("admin_technicians_page.attachment_uploaded_message"),
+    });
+  }
+}
+
+const AVAILABILITY_META = {
+  available: "admin_technicians_page.availability_available",
+  busy: "admin_technicians_page.availability_busy",
+  unavailable: "admin_technicians_page.availability_unavailable",
+};
+function availabilityLabel(technician) {
+  const status = availabilityOf(technician);
+  return t(AVAILABILITY_META[status] ?? AVAILABILITY_META.unavailable);
+}
 
 const MAINTENANCE_STATUS_META = {
   pending: { chip: "chip-info" },
@@ -612,6 +692,16 @@ onMounted(() => {
             </div>
 
             <div class="flex items-center gap-1 shrink-0">
+              <button
+                v-if="can('technicians.view')"
+                type="button"
+                @click="openView(technician)"
+                class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#8A6D1F] hover:bg-[#8A6D1F]/10 transition"
+                :title="$t('admin_technicians_page.view_title')"
+                :aria-label="$t('admin_technicians_page.view_title')"
+              >
+                <Eye class="text-[12px]" aria-hidden="true" />
+              </button>
               <button
                 v-if="technician.is_locked && can('technicians.update')"
                 type="button"
@@ -1229,5 +1319,103 @@ onMounted(() => {
         </div>
       </div>
     </Teleport>
+
+    <!-- ===================== نافذة عرض تفاصيل الفني + إدارة مرفقاته =====================
+         FIX (تدقيق شامل للوحة الأدمن — بندان 5 و15): technicianService.show()
+         ومرفقات الفني (GET/POST technicians/{id}/attachments) كانا بلا أي
+         واجهة استخدام رغم دعمهما الكامل بالباك اند. -->
+    <Teleport to="body">
+      <div
+        v-if="viewingTechnician"
+        class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+        @click.self="viewingTechnician = null"
+      >
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-md p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="text-[14px] font-extrabold flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8A6D1F] to-[#D4AF37] text-white flex items-center justify-center text-[12px]">
+                <UserCog aria-hidden="true" />
+              </span>
+              {{ $t("admin_technicians_page.view_modal_title") }}
+            </h3>
+            <button :aria-label="$t('common.close')" type="button" @click="viewingTechnician = null" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#f4efe5]/70 dark:hover:bg-white/5">
+              <X class="text-[13px]" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div class="space-y-3.5">
+            <div class="glass-card p-4 flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#8A6D1F] to-[#D4AF37] flex items-center justify-center shrink-0 text-white font-bold text-[14px]">
+                {{ viewingTechnician.name?.charAt(0) }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-[13px] font-bold truncate">{{ viewingTechnician.name }}</p>
+                <p class="text-[10.5px] text-[#8A6D1F] dark:text-[#D4AF37] truncate">
+                  <UserRound class="text-[9px] me-1" aria-hidden="true" />{{ viewingTechnician.owner_name ?? $t("admin_technicians_page.no_owner") }}
+                </p>
+              </div>
+              <LoaderCircle v-if="isLoadingTechnicianView" class="animate-spin text-[12px] text-[#9a9d97] shrink-0 ms-auto" aria-hidden="true" />
+            </div>
+
+            <div class="glass-card p-4 space-y-2 text-[12px]">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[#9a9d97] dark:text-[#8f938a] flex items-center gap-1.5"><Mail class="text-[10px]" aria-hidden="true" />{{ $t("admin_technicians_page.field_email") }}</span>
+                <b dir="ltr" class="truncate">{{ viewingTechnician.email }}</b>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[#9a9d97] dark:text-[#8f938a] flex items-center gap-1.5"><Phone class="text-[10px]" aria-hidden="true" />{{ $t("admin_technicians_page.field_phone") }}</span>
+                <b dir="ltr">{{ viewingTechnician.phone ?? "—" }}</b>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[#9a9d97] dark:text-[#8f938a] flex items-center gap-1.5"><Star class="text-[10px]" aria-hidden="true" />{{ $t("admin_technicians_page.rating_label") }}</span>
+                <b>{{ typeof viewingTechnician.rating === "number" ? viewingTechnician.rating.toFixed(1) : $t("admin_technicians_page.no_rating_yet") }}</b>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[#9a9d97] dark:text-[#8f938a]">{{ $t("admin_technicians_page.availability_label") }}</span>
+                <span class="status-chip" :class="availabilityOf(viewingTechnician) === 'available' ? 'chip-success' : availabilityOf(viewingTechnician) === 'busy' ? 'chip-info' : 'chip-danger'">{{ availabilityLabel(viewingTechnician) }}</span>
+              </div>
+            </div>
+
+            <!-- ===== المرفقات (شهادة/هوية) ===== -->
+            <div class="glass-card p-4">
+              <h5 class="text-[12px] font-bold mb-2.5 flex items-center gap-1.5"><Paperclip class="text-[10px]" aria-hidden="true" />{{ $t("admin_technicians_page.attachments_title") }}</h5>
+
+              <div v-if="isLoadingTechnicianAttachments" class="space-y-2">
+                <div v-for="i in 2" :key="i" class="h-9 rounded-lg thumb-loading"></div>
+              </div>
+              <div v-else-if="technicianAttachmentsError" class="text-[11px] text-[#D9534F]">{{ technicianAttachmentsError }}</div>
+              <div v-else-if="technicianAttachments.length === 0" class="dropdown-empty py-4 text-[11px]">
+                {{ $t("admin_technicians_page.no_attachments_yet") }}
+              </div>
+              <div v-else class="space-y-2 mb-3">
+                <div v-for="a in technicianAttachments" :key="a.id" class="flex items-center gap-2.5 p-2 rounded-lg bg-[#f4efe5]/50 dark:bg-white/5">
+                  <Paperclip class="text-[11px] text-[#9a9d97] shrink-0" aria-hidden="true" />
+                  <div class="min-w-0 flex-1">
+                    <button type="button" @click="previewingTechnicianAttachment = a" class="text-[11.5px] font-semibold hover:underline truncate block text-start">{{ a.original_name }}</button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="can('technicians.update')" class="space-y-2 pt-3 border-t border-[#f0ece0] dark:border-white/5">
+                <div v-if="technicianAttachmentUploadError?.file" class="text-[11px] text-[#D9534F]">{{ technicianAttachmentUploadError.file[0] }}</div>
+                <AppDropdownSelect v-model="newTechnicianAttachmentType" :options="TECHNICIAN_DOCUMENT_TYPE_OPTIONS" variant="field" width-class="w-full" match-trigger-width />
+                <input ref="technicianAttachmentFileInput" type="file" @change="onTechnicianAttachmentFileChange" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" class="field-input text-[11px]" />
+                <input v-model="newTechnicianAttachmentDescription" type="text" :placeholder="$t('admin_technicians_page.short_description_optional')" class="field-input text-[11.5px]" />
+                <button
+                  type="button" @click="handleUploadTechnicianAttachment"
+                  :disabled="!newTechnicianAttachmentFile || isUploadingTechnicianAttachment"
+                  class="w-full btn-fill relative text-[11.5px] font-bold py-2 rounded-full text-white bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] shadow-md flex items-center justify-center gap-2 disabled:opacity-50 transition"
+                >
+                  <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isUploadingTechnicianAttachment" /><Plus aria-hidden="true" v-else />
+                  {{ isUploadingTechnicianAttachment ? $t("admin_technicians_page.uploading_ellipsis") : $t("admin_technicians_page.upload_attachment_button") }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <AttachmentPreviewModal :attachment="previewingTechnicianAttachment" @close="previewingTechnicianAttachment = null" />
   </div>
 </template>

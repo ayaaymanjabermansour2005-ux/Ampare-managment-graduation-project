@@ -133,9 +133,9 @@ const ROLE_PILLS = computed(() => [
 
 /* ---------------- فرز الصفحة الحالية (Backend لا يدعم فرز عام، فنفرز محليًا) ---------------- */
 const sortBy = ref("name-asc");
-const sortedUsers = computed(() => {
+function sortUsers(list) {
   const [key, dir] = sortBy.value.split("-");
-  return [...userStore.users].sort((a, b) => {
+  return [...list].sort((a, b) => {
     let av, bv;
     if (key === "created") {
       av = new Date(a.created_at).getTime();
@@ -147,7 +147,8 @@ const sortedUsers = computed(() => {
     if (typeof av === "string") return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     return dir === "asc" ? av - bv : bv - av;
   });
-});
+}
+const sortedUsers = computed(() => sortUsers(userStore.users));
 function toggleSort(key) {
   const [curKey, curDir] = sortBy.value.split("-");
   const newDir = curKey === key && curDir === "desc" ? "asc" : "desc";
@@ -159,10 +160,39 @@ function sortIconClass(key) {
   return curDir === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
 }
 
-/* ---------------- زر سريع: عرض المقفولين بس بالصفحة الحالية ---------------- */
+/* ---------------- زر: عرض كل المستخدمين المقفولين (كل النظام، مش الصفحة الحالية) ----------------
+ * FIX: كان الزر يفلتر محليًا على userStore.users (الصفحة المحمَّلة حاليًا
+ * فقط بحد أقصى per_page)، فيخفي أي مستخدم مقفول موجود بصفحة أخرى غير
+ * المعروضة. الباك اند يوفر GET /users/locked (UserLockoutController::
+ * lockedIndex) يرجّع فعليًا كل الحسابات المقفولة بالنظام (بدون Pagination —
+ * قائمة كاملة واحدة)، فاستبدلنا الفلترة المحلية باستدعاء حقيقي له.
+ */
 const showLockedOnly = ref(false);
+const lockedUsers = ref([]);
+const isLoadingLocked = ref(false);
+const lockedLoadError = ref(null);
+
+async function fetchLockedUsers() {
+  isLoadingLocked.value = true;
+  lockedLoadError.value = null;
+  try {
+    const { data } = await userService.lockedList();
+    lockedUsers.value = data.data ?? [];
+  } catch (err) {
+    lockedLoadError.value = normalizeApiError(err, t("common.unexpected_error_retry")).message;
+  } finally {
+    isLoadingLocked.value = false;
+  }
+}
+
+function toggleLockedOnly() {
+  showLockedOnly.value = !showLockedOnly.value;
+  if (showLockedOnly.value) fetchLockedUsers();
+}
+
+const sortedLockedUsers = computed(() => sortUsers(lockedUsers.value));
 const displayedUsers = computed(() =>
-  showLockedOnly.value ? sortedUsers.value.filter((u) => u.is_locked) : sortedUsers.value
+  showLockedOnly.value ? sortedLockedUsers.value : sortedUsers.value
 );
 
 /* ---------------- KPI Cards (نفس منهجية صفحة الأعطال — الإجمالي دقيق، الباقي لهذه الصفحة فقط) ---------------- */
@@ -257,6 +287,10 @@ async function handleDelete(user) {
 async function handleUnlock(user) {
   try {
     await userStore.unlockUser(user.id);
+    // FIX: بعد فك القفل، لازم يختفي فورًا من لائحة "المقفولين" المحلية
+    // (lockedUsers) لو كانت هذه اللائحة معروضة حاليًا — مصدرها منفصل عن
+    // userStore.users اللي unlockUser() فوق بيحدّثه.
+    lockedUsers.value = lockedUsers.value.filter((u) => u.id !== user.id);
     toast.show({
       type: "success",
       title: t("users_page.unlocked_toast_title"),
@@ -723,11 +757,11 @@ onMounted(() => {
           <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
           <button
             type="button"
-            @click="showLockedOnly = !showLockedOnly"
+            @click="toggleLockedOnly"
             class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors flex items-center gap-1.5"
             :class="showLockedOnly ? 'bg-gradient-to-l from-[#D9534F] to-[#8A2E2A] text-white' : 'bg-[#f4efe5]/70 dark:bg-white/5 text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
           >
-            <Lock class="text-[10px]" aria-hidden="true" /> {{ $t("users_page.locked_only") }}
+            <LoaderCircle class="animate-spin text-[10px]" aria-hidden="true" v-if="showLockedOnly && isLoadingLocked" /><Lock class="text-[10px]" aria-hidden="true" v-else /> {{ $t("users_page.locked_only") }}
           </button>
         </div>
       </div>
@@ -748,15 +782,15 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="userStore.isLoading" class="space-y-2">
+      <div v-if="showLockedOnly ? isLoadingLocked : userStore.isLoading" class="space-y-2">
         <div v-for="i in 6" :key="i" class="h-16 rounded-lg thumb-loading"></div>
       </div>
 
       <!-- FIX: ما كان في حالة خطأ منفصلة أصلًا — فشل التحميل (صلاحيات/شبكة/500)
            كان يظهر بصمت كـ "لا يوجد مستخدمون مطابقون" بدل رسالة خطأ حقيقية. -->
-      <div v-else-if="userStore.error" class="text-center py-8 text-[12px] text-[#D9534F]">{{ userStore.error }}</div>
+      <div v-else-if="showLockedOnly ? lockedLoadError : userStore.error" class="text-center py-8 text-[12px] text-[#D9534F]">{{ showLockedOnly ? lockedLoadError : userStore.error }}</div>
 
-      <div v-else-if="!userStore.users.length" class="text-center py-12">
+      <div v-else-if="!showLockedOnly && !userStore.users.length" class="text-center py-12">
         <UserX class="text-2xl text-[#9a9d97] dark:text-[#8f938a] mb-2" aria-hidden="true" />
         <p class="text-[12.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("users_page.no_matching_users") }}</p>
       </div>
@@ -845,7 +879,10 @@ onMounted(() => {
       </div>
 
       <!-- Pagination بأزرار محدودة -->
-      <div v-if="userStore.pagination.last_page > 1" class="flex items-center justify-between mt-3.5">
+      <!-- FIX: GET /users/locked (lockedList) يرجّع قائمة كاملة غير مُصفَّحة —
+           أزرار الصفحات هون مرتبطة حصرًا بترقيم userStore (القائمة العادية)
+           ولا معنى لعرضها في وضع "المقفولين فقط". -->
+      <div v-if="!showLockedOnly && userStore.pagination.last_page > 1" class="flex items-center justify-between mt-3.5">
         <span class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
           {{ $t("users_page.pagination_text", { current: userStore.pagination.current_page, last: userStore.pagination.last_page, total: userStore.pagination.total }) }}
         </span>

@@ -3,15 +3,21 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useConversations } from "@/composables/useConversations";
+import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
+import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AiChatWorkspace from "@/components/ai/AiChatWorkspace.vue";
 import aiChatService from "@/services/aiChatService";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleCheck, LoaderCircle, MessageSquareOff, MessagesSquare, Search, Send, TriangleAlert, ZoomOut } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleCheck, LoaderCircle, MessageSquareOff, MessagesSquare, Search, Send, Trash2, TriangleAlert, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 
 
 const { t } = useI18n();
+const { can } = usePermissions();
+const { confirm } = useConfirm();
+const toast = useToastStore();
 
 const {
   conversations,
@@ -32,9 +38,33 @@ const {
   isConverting,
   convertError,
   convertToIssue,
+  isDeletingConversation,
+  deleteConversation,
 } = useConversations();
 
 const route = useRoute();
+
+/* ---------------- حذف محادثة ----------------
+ * FIX (تدقيق شامل للوحة الأدمن — بند 8): DELETE /conversations/{id} جاهز
+ * بالكامل بالباك اند والصلاحية موجودة للأدمن، لكن لم يكن هناك زر حذف
+ * بلوحة الأدمن إطلاقًا.
+ */
+async function handleDeleteConversation(conversation) {
+  const confirmed = await confirm({
+    title: t("messages_page.delete_conversation_title"),
+    message: t("messages_page.delete_conversation_message", { name: conversation.other_participant?.name ?? "" }),
+    confirmLabel: t("common.delete"),
+    variant: "danger",
+  });
+  if (!confirmed) return;
+
+  const ok = await deleteConversation(conversation.id);
+  if (ok) {
+    toast.show({ type: "success", title: t("messages_page.delete_conversation_success") });
+  } else {
+    toast.show({ type: "danger", title: t("messages_page.delete_conversation_error") });
+  }
+}
 
 /* ==========================================================================
  * ========================  التابات (المساعد الذكي / الرسائل)  =============
@@ -287,6 +317,17 @@ onMounted(async () => {
               >
                 <TriangleAlert aria-hidden="true" />
                 {{ t("messages_page.convert_to_issue_button") }}
+              </button>
+              <button
+                v-if="can('conversations.delete')"
+                type="button"
+                :disabled="isDeletingConversation"
+                @click="handleDeleteConversation(activeConversation)"
+                class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-danger hover:bg-danger/10 transition shrink-0 disabled:opacity-50"
+                :title="t('messages_page.delete_conversation_title')"
+                :aria-label="t('messages_page.delete_conversation_title')"
+              >
+                <LoaderCircle class="animate-spin text-[12px]" aria-hidden="true" v-if="isDeletingConversation" /><Trash2 class="text-[12px]" aria-hidden="true" v-else />
               </button>
             </header>
 

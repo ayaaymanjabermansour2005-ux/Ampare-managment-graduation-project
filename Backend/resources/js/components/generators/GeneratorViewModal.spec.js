@@ -14,7 +14,14 @@ vi.mock('@/services/generatorService', () => ({
         availableTechnicians: vi.fn(),
         linkTechnician: vi.fn(),
         unlinkTechnician: vi.fn(),
+        qrCode: vi.fn(),
     },
+}));
+
+// FIX: أضفنا RouterLink فعليًا بالمكوّن (بند 19 — روابط الفحص السريع والتشخيص)،
+// و`useLink`/`useRoute` بحاجة راوتر فعلي مُركَّب — بنفس نمط GeneratorsTablePanel.spec.js.
+vi.mock('vue-router', () => ({
+    RouterLink: { template: '<a><slot /></a>' },
 }));
 
 const confirmMock = vi.fn();
@@ -45,6 +52,8 @@ const i18n = createI18n({
             },
             generators_management_page: {
                 generator_details_title: 'تفاصيل المولد',
+                show_qr: 'عرض رمز QR', qr_scan_hint: 'امسح الرمز لعرض بيانات المولد مباشرة.',
+                quick_scan_link: 'الفحص السريع', diagnostics_link: 'التفاصيل الكاملة والتشخيص',
                 attachments_title: 'المرفقات', no_attachments_yet: 'لا يوجد مرفقات بعد.',
                 short_description_optional: 'وصف مختصر (اختياري)', uploading_ellipsis: 'جارٍ الرفع...',
                 upload_attachment_button: 'رفع المرفق',

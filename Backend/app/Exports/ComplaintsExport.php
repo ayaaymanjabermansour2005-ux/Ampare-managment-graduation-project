@@ -33,11 +33,14 @@ class ComplaintsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
         protected ?string $status = null,
         protected ?string $dateFrom = null,
         protected ?string $dateTo = null,
+        protected ?string $channel = null,
+        protected ?string $priority = null,
+        protected ?int $assignedTo = null,
     ) {}
 
     public function query(): Builder
     {
-        $query = Complaint::query()->with(['submitter', 'resolver', 'complainable']);
+        $query = Complaint::query()->with(['submitter', 'resolver', 'assignedTo', 'complainable']);
 
         if (! $this->user->isAdmin()) {
             $query->where(function (Builder $q) {
@@ -62,6 +65,9 @@ class ComplaintsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
 
         return $query
             ->when($this->status, fn ($q) => $q->where('status', $this->status))
+            ->when($this->channel, fn ($q) => $q->where('channel', $this->channel))
+            ->when($this->priority, fn ($q) => $q->where('priority', $this->priority))
+            ->when($this->assignedTo, fn ($q) => $q->where('assigned_to', $this->assignedTo))
             ->when($this->dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $this->dateFrom))
             ->when($this->dateTo, fn ($q) => $q->whereDate('created_at', '<=', $this->dateTo))
             ->latest();
@@ -74,7 +80,10 @@ class ComplaintsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
             ExportLabel::heading('subject'),
             ExportLabel::heading('submitted_by'),
             ExportLabel::heading('related_to'),
+            ExportLabel::heading('channel'),
+            ExportLabel::heading('priority'),
             ExportLabel::heading('status'),
+            ExportLabel::heading('assigned_to'),
             ExportLabel::heading('resolved_by'),
             ExportLabel::heading('resolved_at'),
             ExportLabel::heading('created_at'),
@@ -90,7 +99,10 @@ class ComplaintsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
             $complaint->subject,
             $complaint->submitter?->name,
             $relatedKey ? __('exports.related_to.'.$relatedKey) : '',
+            ExportLabel::forEnum($complaint->channel),
+            ExportLabel::forEnum($complaint->priority),
             ExportLabel::forEnum($complaint->status),
+            $complaint->assignedTo?->name,
             $complaint->resolver?->name,
             $complaint->resolved_at?->toDateString(),
             $complaint->created_at?->toDateString(),

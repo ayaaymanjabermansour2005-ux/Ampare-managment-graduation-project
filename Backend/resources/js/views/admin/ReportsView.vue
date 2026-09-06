@@ -1,11 +1,14 @@
 <script setup>
-import { onMounted, computed } from "vue";
+import { onMounted, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCommissionReports } from "@/composables/useCommissionReports";
+import { useOwnerOptions } from "@/composables/useOwnerOptions";
 import { usePermissions } from "@/composables/usePermissions";
 import platformCommissionService from "@/services/platformCommissionService";
+import ownerMonthlyReportService from "@/services/ownerMonthlyReportService";
 import { vReveal } from "@/directives/reveal";
-import { ChevronLeft, ChevronRight, CircleAlert, FileDown, HandCoins, PlugZap } from "@lucide/vue";
+import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, FileDown, HandCoins, PlugZap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -25,6 +28,23 @@ const {
   markAsPaid,
 } = useCommissionReports();
 const { hasRole } = usePermissions();
+
+/* ==========================================================================
+ * FIX (تدقيق شامل للوحة الأدمن — بند 7): OwnerMonthlyReportController::
+ * downloadPdf يدعم الأدمن صراحة (يتطلب owner_id بدل الاعتماد على هوية
+ * المستخدم الحالي كما بواجهة المالك)، لكن ownerMonthlyReportService كان
+ * مستخدَمًا فقط بواجهة المالك (views/owner/ReportsView.vue) — لا زر بلوحة
+ * الأدمن لتنزيل التقرير الشهري لأي مالك.
+ * ========================================================================== */
+const { owners, isLoadingOwners, ownerSelectOptions, fetchOwners } = useOwnerOptions();
+const monthlyReportOwnerId = ref("");
+const monthlyReportMonth = ref("");
+const monthlyReportUrl = computed(() =>
+  ownerMonthlyReportService.downloadUrl({
+    owner_id: monthlyReportOwnerId.value,
+    month: monthlyReportMonth.value || undefined,
+  }),
+);
 
 const STATUS_META = {
   earned: { chip: "chip-warning", key: "reports_page.status_earned" },
@@ -75,6 +95,7 @@ const paginationRange = computed(() => {
 onMounted(() => {
   fetchCommissions();
   fetchSummary();
+  if (hasRole("admin")) fetchOwners();
 });
 </script>
 
@@ -121,6 +142,41 @@ onMounted(() => {
             {{ $t("reports_page.download_full_report") }}
           </a>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== التقرير الشهري لصاحب مولد (أدمن فقط) ===== -->
+    <section v-if="hasRole('admin')" v-reveal class="glass-card p-4 lg:p-5">
+      <h3 class="text-[13px] font-bold mb-1 flex items-center gap-1.5"><CalendarDays class="text-[11px]" aria-hidden="true" />{{ $t("reports_page.owner_monthly_report_title") }}</h3>
+      <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-3">{{ $t("reports_page.owner_monthly_report_subtitle") }}</p>
+      <div class="flex flex-wrap items-end gap-2.5">
+        <div class="min-w-[220px]">
+          <label class="block text-[11px] font-bold mb-1">{{ $t("reports_page.owner_label") }}</label>
+          <AppDropdownSelect
+            v-model="monthlyReportOwnerId"
+            :options="ownerSelectOptions"
+            :disabled="isLoadingOwners"
+            :placeholder="isLoadingOwners ? $t('common.loading') : $t('reports_page.choose_owner_placeholder')"
+            variant="field" width-class="w-full" match-trigger-width
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold mb-1">{{ $t("reports_page.month_optional_label") }}</label>
+          <input
+            v-model="monthlyReportMonth"
+            type="month"
+            class="bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full py-2 px-3.5 text-[11.5px] outline-none focus:border-[#8A6D1F]"
+          />
+        </div>
+        <a
+          :href="monthlyReportOwnerId ? monthlyReportUrl : undefined"
+          target="_blank"
+          class="btn-fill relative inline-flex items-center gap-2 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white px-4 py-2.5 rounded-full text-[12px] font-bold shadow-md shrink-0"
+          :class="{ 'opacity-50 pointer-events-none': !monthlyReportOwnerId }"
+        >
+          <FileDown class="text-[11px]" aria-hidden="true" />
+          {{ $t("reports_page.download_owner_report_button") }}
+        </a>
       </div>
     </section>
 

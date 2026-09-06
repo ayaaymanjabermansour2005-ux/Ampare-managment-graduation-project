@@ -101,9 +101,9 @@ const TODAY_PRIORITIES = computed(() => {
   return [
     { key: "invoices_overdue_count", icon: "fa-file-invoice-dollar", color: "#D9534F", to: { name: "admin.invoices" } },
     { key: "payments_pending_count", icon: "fa-wallet", color: "#FFC107", to: { name: "admin.payments" } },
-    { key: "open_faults_count", icon: "fa-triangle-exclamation", color: "#D9534F", to: { name: "admin.technicians" } },
-    { key: "complaints_open_count", icon: "fa-comment-dots", color: "#17A2B8", to: { name: "admin.subscribers" } },
-    { key: "new_service_requests_count", icon: "fa-hand-holding-hand", color: "#8A6D1F", to: { name: "admin.subscriptions" } },
+    { key: "open_faults_count", icon: "fa-triangle-exclamation", color: "#D9534F", to: { name: "admin.faults" } },
+    { key: "complaints_open_count", icon: "fa-comment-dots", color: "#17A2B8", to: { name: "admin.complaints" } },
+    { key: "new_service_requests_count", icon: "fa-hand-holding-hand", color: "#8A6D1F", to: { name: "admin.service-requests" } },
   ]
     .map((p) => ({ ...p, label: t(`kpi.${p.key}`), count: stats.value[p.key] ?? 0 }))
     .filter((p) => p.count > 0)
@@ -352,7 +352,7 @@ const aiInsights = computed(() => {
       color: "#17A2B8",
       title: t("dashboard.insight_complaints_title"),
       description: t("dashboard.insight_complaints_desc", { count: stats.value.complaints_open_count }),
-      to: { name: "admin.subscribers" },
+      to: { name: "admin.complaints" },
     });
   }
 

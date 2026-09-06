@@ -12,9 +12,18 @@ export function useAdminComplaints() {
 
   const search = ref("");
   const statusFilter = ref("");
+  // FIX (بند 18): channel/priority/assigned_to صارت أعمدة حقيقية بجدول
+  // complaints (بعد إضافتها بالباك اند)، فصارت الفلترة هون فعليًا من
+  // السيرفر بدل الفلترة المحلية السابقة على بيانات الصفحة الحالية فقط.
+  const channelFilter = ref("");
+  const priorityFilter = ref("");
+  const assignedToFilter = ref("");
 
   const isResolving = ref(false);
   const resolveError = ref(null);
+
+  const isAssigning = ref(false);
+  const assignError = ref(null);
 
   const deletingId = ref(null);
   const deleteError = ref(null);
@@ -27,6 +36,9 @@ export function useAdminComplaints() {
         page,
         search: search.value || undefined,
         status: statusFilter.value || undefined,
+        channel: channelFilter.value || undefined,
+        priority: priorityFilter.value || undefined,
+        assigned_to: assignedToFilter.value || undefined,
       });
       const payload = data.data;
       complaints.value = payload.data ?? payload;
@@ -69,6 +81,22 @@ export function useAdminComplaints() {
     }
   }
 
+  async function assignComplaint(id, assignedTo) {
+    isAssigning.value = true;
+    assignError.value = null;
+    try {
+      const { data } = await complaintService.assign(id, assignedTo);
+      const index = complaints.value.findIndex((c) => c.id === id);
+      if (index !== -1) complaints.value[index] = data.data;
+      return true;
+    } catch (err) {
+      assignError.value = normalizeApiError(err, t("complaints_page.assign_error")).message;
+      return false;
+    } finally {
+      isAssigning.value = false;
+    }
+  }
+
   async function deleteComplaint(id) {
     deletingId.value = id;
     deleteError.value = null;
@@ -91,14 +119,20 @@ export function useAdminComplaints() {
     error,
     search,
     statusFilter,
+    channelFilter,
+    priorityFilter,
+    assignedToFilter,
     isResolving,
     resolveError,
+    isAssigning,
+    assignError,
     deletingId,
     deleteError,
     fetchComplaints,
     onSearchInput,
     onFilterChange,
     resolveComplaint,
+    assignComplaint,
     deleteComplaint,
   };
 }

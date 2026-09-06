@@ -103,11 +103,37 @@ export function useAdminMeterReadings() {
     }
   }
 
-  async function createReading(payload) {
+  /* ---------------- رفع صورة إثبات مع القراءة الجديدة ----------------
+   * FIX (تدقيق شامل للوحة الأدمن — بند 11): نفس النمط المطبَّق فعليًا بواجهة
+   * المالك (useOwnerMeterReadings::submitReading) — الصورة (إن وُجدت) تُرفَع
+   * كطلب منفصل بعد نجاح إنشاء القراءة عبر endpoint المرفقات المخصص، لأن
+   * StoreMeterReadingRequest لا يعرف حقل صورة ضمن نفس طلب الإنشاء.
+   */
+  const attachmentError = ref(null);
+
+  async function createReading(payload, meterImageFile = null) {
     isSaving.value = true;
     saveError.value = null;
+    attachmentError.value = null;
     try {
-      await meterReadingService.createReading(payload);
+      const { data } = await meterReadingService.createReading(payload);
+      const created = data.data;
+
+      if (meterImageFile) {
+        const formData = new FormData();
+        formData.append("file", meterImageFile);
+        try {
+          await meterReadingService.storeAttachment(created.id, formData);
+        } catch (attachErr) {
+          // القراءة نفسها اتسجلت بنجاح — فشل رفع الصورة فقط ما لازم يُقرأ
+          // كفشل بتسجيل القراءة، بس لازم يبان للأدمن مش يختفي بصمت.
+          attachmentError.value = normalizeApiError(
+            attachErr,
+            t("meter_readings_page.attachment_upload_error"),
+          ).message;
+        }
+      }
+
       await fetchReadings(pagination.value.current_page);
       return true;
     } catch (err) {
@@ -115,6 +141,54 @@ export function useAdminMeterReadings() {
       return false;
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  /* ---------------- تنبيه القراءات المتأخرة ----------------
+   * FIX (تدقيق شامل للوحة الأدمن — بند 10): GET /meter-readings/overdue-subscribers
+   * يرجّع للأدمن كل الاشتراكات النشطة المتأخرة بالنظام (بدون تقييد بمولد
+   * معيّن، بعكس المالك)، لكن الفرونت الإداري لا يعرضها إطلاقًا — نفس النمط
+   * المطبَّق فعليًا بواجهة المالك.
+   */
+  const overdueSubscribers = ref([]);
+  const isLoadingOverdue = ref(false);
+  const overdueError = ref(null);
+
+  async function loadOverdueSubscribers() {
+    isLoadingOverdue.value = true;
+    overdueError.value = null;
+    try {
+      const { data } = await meterReadingService.overdueSubscribers();
+      const payload = data.data;
+      overdueSubscribers.value = payload.data ?? payload;
+    } catch (err) {
+      overdueError.value = normalizeApiError(err, t("meter_readings_page.overdue_load_error")).message;
+      overdueSubscribers.value = [];
+    } finally {
+      isLoadingOverdue.value = false;
+    }
+  }
+
+  /* ---------------- سجل الاستهلاك الشهري (Drill-down) ----------------
+   * FIX (تدقيق شامل للوحة الأدمن — بند 12): meterReadingService.history()
+   * جاهز بالكامل لكنه Endpoint ميت بلوحة الأدمن — لا drill-down تاريخي
+   * لاشتراك معيّن. نفس النمط المطبَّق فعليًا بواجهة المالك.
+   */
+  const subscriberHistory = ref([]);
+  const isLoadingHistory = ref(false);
+  const historyError = ref(null);
+
+  async function loadSubscriberHistory(subscriptionId) {
+    isLoadingHistory.value = true;
+    historyError.value = null;
+    subscriberHistory.value = [];
+    try {
+      const { data } = await meterReadingService.history(subscriptionId);
+      subscriberHistory.value = data.data ?? [];
+    } catch (err) {
+      historyError.value = normalizeApiError(err, t("meter_readings_page.history_load_error")).message;
+    } finally {
+      isLoadingHistory.value = false;
     }
   }
 
@@ -164,6 +238,7 @@ export function useAdminMeterReadings() {
     saveError,
     deletingId,
     deleteError,
+    attachmentError,
     fetchReadings,
     onSearchInput,
     onFilterChange,
@@ -172,5 +247,13 @@ export function useAdminMeterReadings() {
     createReading,
     updateReading,
     deleteReading,
+    overdueSubscribers,
+    isLoadingOverdue,
+    overdueError,
+    loadOverdueSubscribers,
+    subscriberHistory,
+    isLoadingHistory,
+    historyError,
+    loadSubscriberHistory,
   };
 }

@@ -85,6 +85,8 @@ return [
         'subject' => 'الموضوع',
         'submitted_by' => 'مقدّم الشكوى',
         'related_to' => 'متعلقة بـ',
+        'channel' => 'القناة',
+        'assigned_to' => 'المسؤول',
         'resolved_by' => 'تم الحل بواسطة',
 
         // Login logs
@@ -177,6 +179,18 @@ return [
             'pending' => 'قيد الانتظار',
             'in_progress' => 'قيد المعالجة',
             'resolved' => 'تم الحل',
+        ],
+        'ComplaintChannel' => [
+            'app' => 'تطبيق',
+            'phone' => 'هاتف',
+            'whatsapp' => 'واتساب',
+            'web' => 'الموقع',
+        ],
+        'ComplaintPriority' => [
+            'low' => 'عادية',
+            'medium' => 'متوسطة',
+            'high' => 'عالية',
+            'urgent' => 'عاجلة',
         ],
         'UserStatus' => [
             'active' => 'نشط',

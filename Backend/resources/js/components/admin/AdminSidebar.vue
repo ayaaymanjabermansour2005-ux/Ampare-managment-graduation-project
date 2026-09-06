@@ -58,7 +58,10 @@ const userInitials = computed(() => {
   return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
 });
 
-const roleLabel = computed(() => (authStore.hasRole("admin") ? t("common.role_admin") : t("common.role_super_admin")));
+// FIX (تدقيق شامل — بند تنظيف): هذا المكوّن محمي أصلًا بـ meta: { role: "admin" }
+// بالراوتر، ولا يوجد دور "super_admin" بالنظام إطلاقًا (لا بالـ enum ولا بأي
+// seeder) — فرع else كان كودًا ميتًا لن يُعرض أبدًا.
+const roleLabel = computed(() => t("common.role_admin"));
 
 async function handleLogout() {
   const confirmed = await confirm({

@@ -28,7 +28,14 @@ return new class extends Migration
 
             $table->string('subject');
             $table->text('description');
+            $table->string('channel', 20)->default('app');
+            $table->string('priority', 20)->default('medium');
             $table->string('status', 20)->default('pending');
+
+            $table->foreignId('assigned_to')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->foreignId('resolved_by')
                 ->nullable()
@@ -47,6 +54,20 @@ return new class extends Migration
             ALTER TABLE complaints
             ADD CONSTRAINT chk_complaints_status CHECK (
                 status IN ('pending', 'in_progress', 'resolved')
+            )
+        ");
+
+        DB::statement("
+            ALTER TABLE complaints
+            ADD CONSTRAINT chk_complaints_channel CHECK (
+                channel IN ('app', 'phone', 'whatsapp', 'web')
+            )
+        ");
+
+        DB::statement("
+            ALTER TABLE complaints
+            ADD CONSTRAINT chk_complaints_priority CHECK (
+                priority IN ('low', 'medium', 'high', 'urgent')
             )
         ");
     }

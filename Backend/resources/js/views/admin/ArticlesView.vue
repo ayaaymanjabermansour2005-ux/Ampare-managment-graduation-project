@@ -122,7 +122,7 @@ async function uploadCoverImage(e) {
 async function handleDelete(article) {
   const confirmed = await confirm({
     title: t("articles_page.delete_article_title", { title: article.title }),
-    message: t("subscriptions_page.confirm_status_change_message"),
+    message: t("articles_page.delete_article_message"),
     confirmLabel: t("common.delete"),
     variant: "danger",
   });

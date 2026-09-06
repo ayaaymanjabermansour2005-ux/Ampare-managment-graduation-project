@@ -20,11 +20,12 @@ class SubscribersExport implements FromQuery, ShouldAutoSize, WithHeadings, With
     public function __construct(
         protected ?string $search = null,
         protected ?string $status = null,
+        protected ?string $subscriptionStatus = null,
     ) {}
 
     public function query(): Builder
     {
-        return User::query()
+        $query = User::query()
             ->whereHas('roles', fn ($q) => $q->where('name', 'subscriber'))
             ->with([
                 'subscriber.subscriptions.generator',
@@ -33,7 +34,27 @@ class SubscribersExport implements FromQuery, ShouldAutoSize, WithHeadings, With
                     InvoiceStatus::Overdue->value,
                     InvoiceStatus::PartiallyPaid->value,
                 ]),
-            ])
+            ]);
+
+        // FIX (تدقيق شامل — الجولة الثالثة): كان الفلتر subscription_status
+        // المُرسَل فعليًا من شاشة المشتركين (نشط له اشتراك / بدون اشتراك /
+        // مقفول) يُتجاهَل بصمت هون — نفس منطق UserService::list()/UsersExport
+        // حرفيًا، بدل مفهوم "status" المختلف كليًا (حالة الحساب العامة).
+        if ($this->subscriptionStatus === 'active') {
+            $query->whereHas(
+                'subscriber.subscriptions',
+                fn ($q) => $q->where('subscriptions.status', SubscriptionStatus::Active->value)
+            );
+        } elseif ($this->subscriptionStatus === 'none') {
+            $query->whereDoesntHave(
+                'subscriber.subscriptions',
+                fn ($q) => $q->where('subscriptions.status', SubscriptionStatus::Active->value)
+            );
+        } elseif ($this->subscriptionStatus === 'locked') {
+            $query->whereNotNull('locked_until')->where('locked_until', '>', now());
+        }
+
+        return $query
             ->when($this->search, fn ($q) => $q->where(function ($sub) {
                 $sub->where('name', 'like', "%{$this->search}%")
                     ->orWhere('email', 'like', "%{$this->search}%");

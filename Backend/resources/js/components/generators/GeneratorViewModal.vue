@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
+import { RouterLink } from "vue-router";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
 import { normalizeApiError } from "@/utils/normalizeApiError";
@@ -9,7 +10,7 @@ import { useConfirm } from "@/composables/useConfirm";
 import { usePermissions } from "@/composables/usePermissions";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import AttachmentPreviewModal from "@/components/ui/AttachmentPreviewModal.vue";
-import { File, Info, Link, Link2Off, LoaderCircle, Paperclip, Pencil, Trash2, Upload, UserCog, X } from "@lucide/vue";
+import { Activity, File, Info, Link, Link2Off, LoaderCircle, Paperclip, Pencil, QrCode, ScanLine, Trash2, Upload, UserCog, X } from "@lucide/vue";
 
 
 const props = defineProps({
@@ -266,6 +267,26 @@ watch(
 function close() {
   emit("close");
 }
+
+/* ---------------- QR / الفحص السريع / التشخيص ----------------
+ * FIX (تدقيق شامل للوحة الأدمن — بند 19): هذه الأدوات كانت جاهزة بالكامل
+ * بالباك اند (والصلاحية generators.view يملكها الأدمن أصلًا) ومربوطة فعليًا
+ * بواجهة المالك، لكن غير متاحة من لوحة إدارة المولدات بالأدمن. GeneratorViewModal
+ * مشترك بين الصفحتين، فإضافتها هون تعطي الأدمن نفس الوصول دون تكرار كود.
+ * generators.quick-scan و generators.show (تحتوي GeneratorDiagnosticsPanel)
+ * مسارات مشتركة بدون قيد دور بالراوتر (requiresAuth فقط).
+ */
+const qrModal = ref({ open: false, loading: false, src: null });
+async function handleShowQr() {
+  if (!props.generator) return;
+  qrModal.value = { open: true, loading: true, src: null };
+  try {
+    const { data } = await generatorService.qrCode(props.generator.id);
+    qrModal.value.src = data.data.qr;
+  } finally {
+    qrModal.value.loading = false;
+  }
+}
 </script>
 
 <template>
@@ -470,11 +491,56 @@ function close() {
           </div>
 
           <!-- Footer -->
-          <div class="modal-footer-brand shrink-0">
+          <div class="modal-footer-brand shrink-0 flex-wrap">
+            <div class="flex items-center gap-1.5 me-auto">
+              <button
+                type="button" @click="handleShowQr"
+                class="icon-btn !w-9 !h-9"
+                :title="$t('generators_management_page.show_qr')"
+                :aria-label="$t('generators_management_page.show_qr')"
+              ><QrCode class="text-[12px]" aria-hidden="true" /></button>
+              <RouterLink
+                :to="{ name: 'generators.quick-scan', params: { id: generator.id } }"
+                class="icon-btn !w-9 !h-9"
+                :title="$t('generators_management_page.quick_scan_link')"
+                :aria-label="$t('generators_management_page.quick_scan_link')"
+              ><ScanLine class="text-[12px]" aria-hidden="true" /></RouterLink>
+              <RouterLink
+                :to="{ name: 'generators.show', params: { id: generator.id } }"
+                class="icon-btn !w-9 !h-9"
+                :title="$t('generators_management_page.diagnostics_link')"
+                :aria-label="$t('generators_management_page.diagnostics_link')"
+              ><Activity class="text-[12px]" aria-hidden="true" /></RouterLink>
+            </div>
             <button type="button" @click="close" class="btn-outline-brand">{{ $t("common.close") }}</button>
             <button type="button" @click="emit('edit', generator)" class="btn-fill-brand">
               <Pencil aria-hidden="true" /> {{ $t("common.edit") }}
             </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- ===================== نافذة QR ===================== -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="qrModal.open" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="qrModal.open = false">
+        <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-xs shadow-2xl overflow-hidden">
+          <div class="modal-head-brand modal-head-brand--gold shrink-0">
+            <div class="modal-head-brand__inner">
+              <span class="modal-head-brand__icon"><QrCode aria-hidden="true" /></span>
+              <h3 class="modal-head-brand__title truncate">{{ generator?.name }}</h3>
+            </div>
+            <button :aria-label="$t('common.close')" type="button" @click="qrModal.open = false" class="modal-head-brand__close"><X aria-hidden="true" /></button>
+          </div>
+          <div class="p-5 text-center">
+            <p class="text-[11px] text-[#9a9d97] mb-4">{{ $t("generators_management_page.qr_scan_hint") }}</p>
+            <div class="flex items-center justify-center h-44">
+              <LoaderCircle class="text-2xl text-[#8A6D1F] animate-spin" aria-hidden="true" v-if="qrModal.loading" />
+              <img v-else-if="qrModal.src" :src="qrModal.src" :alt="$t('generators_management_page.show_qr')" class="w-40 h-40" />
+            </div>
+            <button type="button" class="btn-outline-brand w-full mt-2" @click="qrModal.open = false">{{ $t("common.close") }}</button>
           </div>
         </div>
       </div>

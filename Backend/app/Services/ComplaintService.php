@@ -14,9 +14,16 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ComplaintService
 {
-    public function list(User $user, int $perPage = 15, ?string $search = null, ?string $status = null): LengthAwarePaginator
-    {
-        $query = Complaint::query()->with(['submitter', 'resolver', 'complainable']);
+    public function list(
+        User $user,
+        int $perPage = 15,
+        ?string $search = null,
+        ?string $status = null,
+        ?string $channel = null,
+        ?string $priority = null,
+        ?int $assignedTo = null,
+    ): LengthAwarePaginator {
+        $query = Complaint::query()->with(['submitter', 'resolver', 'assignedTo', 'complainable']);
 
         if (! $user->isAdmin()) {
             $query->where(function (Builder $q) use ($user) {
@@ -43,6 +50,25 @@ class ComplaintService
             $query->where('status', $status);
         }
 
+        if ($channel) {
+            $query->where('channel', $channel);
+        }
+
+        if ($priority) {
+            $query->where('priority', $priority);
+        }
+
+        if ($assignedTo) {
+            $query->where('assigned_to', $assignedTo);
+        }
+
         return $query->latest()->paginate($perPage);
+    }
+
+    public function assign(Complaint $complaint, ?int $assignedTo): Complaint
+    {
+        $complaint->update(['assigned_to' => $assignedTo]);
+
+        return $complaint->fresh(['submitter', 'resolver', 'assignedTo', 'complainable']);
     }
 }

@@ -137,6 +137,33 @@ export function useConversations() {
     }
   }
 
+  /* ---------------- حذف محادثة ----------------
+   * FIX (تدقيق شامل للوحة الأدمن — بند 8): DELETE /conversations/{id} جاهز
+   * بالكامل بالباك اند (ConversationPolicy::delete) لكن conversationService.
+   * destroy() لم يكن مستخدَمًا من أي واجهة إطلاقًا.
+   */
+  const isDeletingConversation = ref(false);
+  const deleteConversationError = ref(null);
+
+  async function deleteConversation(conversationId) {
+    isDeletingConversation.value = true;
+    deleteConversationError.value = null;
+    try {
+      await conversationService.destroy(conversationId);
+      conversations.value = conversations.value.filter((c) => c.id !== conversationId);
+      if (activeConversation.value?.id === conversationId) {
+        activeConversation.value = null;
+        messages.value = [];
+      }
+      return true;
+    } catch (err) {
+      deleteConversationError.value = normalizeApiError(err, t("messages_page.delete_conversation_error")).message;
+      return false;
+    } finally {
+      isDeletingConversation.value = false;
+    }
+  }
+
   const isConverting = ref(false);
   const convertError = ref(null);
 
@@ -183,6 +210,9 @@ export function useConversations() {
     isConverting,
     convertError,
     convertToIssue,
+    isDeletingConversation,
+    deleteConversationError,
+    deleteConversation,
     currentUserId: authStore.user?.id,
   };
 }

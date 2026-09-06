@@ -10,6 +10,7 @@ use App\Exports\ComplaintsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Complaint\StoreComplaintAttachmentRequest;
 use App\Http\Requests\Complaint\StoreComplaintRequest;
+use App\Http\Requests\Complaint\UpdateComplaintAssignmentRequest;
 use App\Http\Requests\Complaint\UpdateComplaintStatusRequest;
 use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\ComplaintResource;
@@ -40,7 +41,10 @@ class ComplaintController extends Controller
             $request->user(),
             PerPageResolver::resolve($request),
             $request->input('search'),
-            $request->input('status')
+            $request->input('status'),
+            $request->input('channel'),
+            $request->input('priority'),
+            $request->integer('assigned_to') ?: null,
         );
 
         return $this->success(
@@ -59,7 +63,10 @@ class ComplaintController extends Controller
                 $request->input('search'),
                 $request->input('status'),
                 $request->input('date_from'),
-                $request->input('date_to')
+                $request->input('date_to'),
+                $request->input('channel'),
+                $request->input('priority'),
+                $request->integer('assigned_to') ?: null,
             ),
             'complaints-'.now()->format('Y-m-d').'.xlsx'
         );
@@ -85,7 +92,7 @@ class ComplaintController extends Controller
     {
         $this->authorize('view', $complaint);
 
-        $complaint->load(['submitter', 'resolver', 'complainable']);
+        $complaint->load(['submitter', 'resolver', 'assignedTo', 'complainable']);
 
         return $this->success(
             message: 'تفاصيل الشكوى.',
@@ -105,6 +112,18 @@ class ComplaintController extends Controller
 
         return $this->success(
             message: 'تم تحديث حالة الشكوى.',
+            data: new ComplaintResource($updated)
+        );
+    }
+
+    public function assign(UpdateComplaintAssignmentRequest $request, Complaint $complaint): JsonResponse
+    {
+        $this->authorize('assign', Complaint::class);
+
+        $updated = $this->complaintService->assign($complaint, $request->validated('assigned_to'));
+
+        return $this->success(
+            message: 'تم تحديث المسؤول عن الشكوى.',
             data: new ComplaintResource($updated)
         );
     }

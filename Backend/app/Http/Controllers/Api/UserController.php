@@ -129,7 +129,8 @@ class UserController extends Controller
         return Excel::download(
             new SubscribersExport(
                 $request->input('search'),
-                $request->input('status')
+                $request->input('status'),
+                $request->input('subscription_status')
             ),
             'subscribers-'.now()->format('Y-m-d').'.xlsx'
         );

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Complaint;
 
+use App\Enums\ComplaintChannel;
+use App\Enums\ComplaintPriority;
 use App\Enums\Role;
 use App\Models\Complaint;
 use App\Models\Fault;
@@ -13,6 +15,7 @@ use App\Models\User;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreComplaintRequest extends FormRequest
 {
@@ -28,6 +31,8 @@ class StoreComplaintRequest extends FormRequest
             'complainable_id' => ['required_with:complainable_type', 'integer'],
             'subject' => ['required', 'string', 'max:191'],
             'description' => ['required', 'string', 'max:2000'],
+            'channel' => ['nullable', Rule::enum(ComplaintChannel::class)],
+            'priority' => ['nullable', Rule::enum(ComplaintPriority::class)],
         ];
     }
 
@@ -38,6 +43,8 @@ class StoreComplaintRequest extends FormRequest
             'complainable_id.required_with' => 'يجب تحديد الكيان عند اختيار نوعه.',
             'subject.required' => 'عنوان الشكوى مطلوب.',
             'description.required' => 'تفاصيل الشكوى مطلوبة.',
+            'channel.enum' => 'قناة الشكوى غير صالحة.',
+            'priority.enum' => 'أولوية الشكوى غير صالحة.',
         ];
     }
 

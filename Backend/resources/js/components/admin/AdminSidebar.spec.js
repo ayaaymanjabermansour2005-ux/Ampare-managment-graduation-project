@@ -140,14 +140,13 @@ describe('AdminSidebar', () => {
         expect(noUser.text()).toContain('?');
     });
 
-    it('shows the admin role label for an admin and the super-admin label otherwise', () => {
+    // FIX (تدقيق شامل — بند تنظيف): فرع "مدير عام" (super_admin) كان كودًا
+    // ميتًا — هذا المكوّن محمي أصلًا بـ meta: { role: "admin" } بالراوتر، ولا
+    // يوجد دور "super_admin" بالنظام إطلاقًا. roleLabel صارت ثابتة دائمًا.
+    it('always shows the admin role label', () => {
         useAuthStoreMock.mockReturnValue({ user: { name: 'A B' }, hasRole: (r) => r === 'admin', logout: vi.fn() });
         const admin = mountSidebar().wrapper;
         expect(admin.text()).toContain('مدير النظام');
-
-        useAuthStoreMock.mockReturnValue({ user: { name: 'A B' }, hasRole: () => false, logout: vi.fn() });
-        const superAdmin = mountSidebar().wrapper;
-        expect(superAdmin.text()).toContain('مدير عام');
     });
 
     it('logging out: confirms first, and only calls store.logout() + redirects to login when confirmed', async () => {

@@ -8,7 +8,7 @@ import subscriptionService from "@/services/subscriptionService";
 import generatorService from "@/services/generatorService";
 import meterReadingService from "@/services/meterReadingService";
 import { useToastStore } from "@/stores/toast";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Eye, FileDown, FileSpreadsheet, Gauge, LoaderCircle, Pencil, PlugZap, Plus, Printer, Search, SquarePen, Trash2, TriangleAlert, User, UserCheck, X, Zap } from "@lucide/vue";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClockAlert, Eye, FileDown, FileSpreadsheet, Gauge, LoaderCircle, Pencil, PlugZap, Plus, Printer, Search, SquarePen, Trash2, TriangleAlert, User, UserCheck, X, Zap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -21,9 +21,11 @@ const {
   search, statusFilter,
   approvingId, approveError,
   rejectingId, rejectError,
-  isSaving, saveError, deletingId, deleteError,
+  isSaving, saveError, deletingId, deleteError, attachmentError,
   fetchReadings, onSearchInput, onFilterChange,
   approveReading, rejectReading, createReading, updateReading, deleteReading,
+  overdueSubscribers, isLoadingOverdue, loadOverdueSubscribers,
+  subscriberHistory, isLoadingHistory, loadSubscriberHistory,
 } = useAdminMeterReadings();
 
 /* ---------------- حالة القراءة ---------------- */
@@ -318,17 +320,29 @@ const emptyForm = () => ({
 });
 const form = reactive(emptyForm());
 
+/* ---------------- صورة إثبات (اختياري) عند تسجيل قراءة جديدة ----------------
+ * FIX (تدقيق شامل للوحة الأدمن — بند 11): نفس ميزة رفع صورة العداد الموجودة
+ * فعليًا بواجهة المالك، غير مدعومة سابقًا من نموذج التسجيل اليدوي بلوحة الأدمن.
+ */
+const meterImageFile = ref(null);
+function onMeterImageChange(e) {
+  meterImageFile.value = e.target.files?.[0] ?? null;
+}
+
 function resetForm() {
   Object.assign(form, emptyForm());
   Object.keys(formErrors).forEach((k) => delete formErrors[k]);
+  meterImageFile.value = null;
 }
-async function openAddForm() {
+async function openAddForm(prefillSubscriptionId = "") {
   formMode.value = "add";
   editingReading.value = null;
   resetForm();
   saveError.value = null;
+  attachmentError.value = null;
   isFormOpen.value = true;
   await ensureSubscriptionOptionsLoaded();
+  if (prefillSubscriptionId) form.subscriptionId = prefillSubscriptionId;
 }
 function openEditForm(r) {
   if (r.status !== "pending_approval") return;
@@ -365,11 +379,17 @@ async function submitForm() {
         subscription_id: form.subscriptionId,
         reading_date: form.readingDate,
         current_reading: Number(form.currentReading),
-      })
+      }, meterImageFile.value)
     : await updateReading(editingReading.value.id, {
         current_reading: Number(form.currentReading),
       });
-  if (ok) isFormOpen.value = false;
+  if (ok) {
+    isFormOpen.value = false;
+    if (attachmentError.value) toast.show({ type: "danger", title: attachmentError.value });
+    // FIX (تدقيق شامل — الجولة الثالثة): بعد تسجيل قراءة جديدة، الاشتراك
+    // ما بيعود "متأخرًا" — كانت القائمة تبقى بحالتها القديمة لحد ريفرش يدوي.
+    if (formMode.value === "add") loadOverdueSubscribers();
+  }
 }
 
 /* ---------------- تأكيد حذف قراءة (بانتظار الاعتماد فقط) ---------------- */
@@ -388,10 +408,23 @@ async function confirmDelete() {
   if (ok) deletingReading.value = null;
 }
 
-/* ---------------- نافذة عرض تفاصيل القراءة ---------------- */
+/* ---------------- نافذة عرض تفاصيل القراءة (+ سجل الاستهلاك الشهري) ----------------
+ * FIX (تدقيق شامل للوحة الأدمن — بند 12): drill-down تاريخي لاشتراك معيّن،
+ * بنفس نمط واجهة المالك (meterReadingService.history).
+ */
 const viewingReading = ref(null);
 function openView(r) {
   viewingReading.value = r;
+  loadSubscriberHistory(r.subscription_id);
+}
+const detailsHistory = computed(() => subscriberHistory.value ?? []);
+const detailsChartMax = computed(() => {
+  if (!detailsHistory.value.length) return 0;
+  return Math.max(...detailsHistory.value.map((h) => Number(h.consumed_kw) || 0), 1);
+});
+function historyBarHeight(kw) {
+  const max = detailsChartMax.value || 1;
+  return Math.max((Number(kw) / max) * 100, 4);
 }
 
 /* ---------------- تصدير CSV (الصفحة المحمّلة حاليًا) ---------------- */
@@ -447,7 +480,7 @@ function initialsOf(name) {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchReadings(1), fetchGeneratorOptions()]);
+  await Promise.all([fetchReadings(1), fetchGeneratorOptions(), loadOverdueSubscribers()]);
   await nextTick();
   buildCharts();
 });
@@ -497,6 +530,36 @@ onMounted(async () => {
             {{ $t("meter_readings_page.export_readings") }}
           </a>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== تنبيه قراءات متأخرة (كل النظام — بلا تقييد بمولد، بعكس المالك) =====
+         FIX (تدقيق شامل للوحة الأدمن — بند 10): GET /meter-readings/overdue-subscribers
+         جاهز بالكامل بالباك اند ويشمل كل الاشتراكات المتأخرة بالنظام للأدمن،
+         لكن لم يكن معروضًا إطلاقًا بلوحة الأدمن. -->
+    <section
+      v-reveal
+      v-if="overdueSubscribers && overdueSubscribers.length"
+      class="glass-card p-4 !border-[#D9534F]/30 !bg-[#D9534F]/5"
+    >
+      <div class="flex items-center gap-2 mb-2.5">
+        <TriangleAlert class="text-[#D9534F]" aria-hidden="true" />
+        <h3 class="text-[12.5px] font-bold text-[#D9534F]">
+          {{ $t("meter_readings_page.overdue_title", { count: overdueSubscribers.length }) }}
+        </h3>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="sub in overdueSubscribers" :key="sub.id"
+          type="button"
+          @click="openAddForm(sub.id)"
+          :title="$t('meter_readings_page.overdue_record_hint')"
+          class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#D9534F]/10 text-[#D9534F] flex items-center gap-1.5 hover:bg-[#D9534F]/20 transition-colors"
+        >
+          <ClockAlert class="text-[10px]" aria-hidden="true" />
+          {{ sub.name }}
+          <span v-if="sub.generator_name" class="text-[#D9534F]/70">· {{ sub.generator_name }}</span>
+        </button>
       </div>
     </section>
 
@@ -785,6 +848,28 @@ onMounted(async () => {
                     <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("meter_readings_page.consumed_col") }}</div>
                   </div>
                 </div>
+
+                <div class="glass-card p-4">
+                  <p class="text-[11.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] mb-3">
+                    {{ $t("meter_readings_page.monthly_consumption_title") }}
+                  </p>
+                  <div v-if="isLoadingHistory" class="flex items-end gap-2 h-32 px-1">
+                    <div v-for="i in 6" :key="i" class="flex-1 h-full rounded-t-md thumb-loading"></div>
+                  </div>
+                  <div v-else-if="detailsHistory.length" class="flex items-end gap-2 h-32 px-1">
+                    <div v-for="h in detailsHistory" :key="h.month" class="flex-1 flex flex-col items-center justify-end h-full gap-1">
+                      <span class="text-[9.5px] font-bold text-[#52733D] dark:text-[#8cc35a]">{{ h.consumed_kw }}</span>
+                      <div
+                        class="w-full rounded-t-md bg-gradient-to-t from-[#3E582E] to-[#8cc35a]"
+                        :style="{ height: historyBarHeight(h.consumed_kw) + '%' }"
+                      ></div>
+                      <span class="text-[9px] text-[#9a9d97]" dir="ltr">{{ h.month }}</span>
+                    </div>
+                  </div>
+                  <div v-else class="text-center py-6 text-[11.5px] text-[#9a9d97]">
+                    {{ $t("meter_readings_page.no_history_data") }}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -889,6 +974,11 @@ onMounted(async () => {
                   <label>{{ $t("meter_readings_page.reading_date_field_label") }}</label>
                   <input v-model="form.readingDate" type="date" />
                   <span v-if="formErrors.readingDate" class="form-error">{{ formErrors.readingDate }}</span>
+                </div>
+                <div class="form-field sm:col-span-2">
+                  <label>{{ $t("meter_readings_page.meter_image_label") }}</label>
+                  <input type="file" accept="image/*" @change="onMeterImageChange" />
+                  <span class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("meter_readings_page.meter_image_hint") }}</span>
                 </div>
               </template>
               <template v-else>

@@ -14,6 +14,9 @@ export default {
   updateStatus(id, payload) {
     return http.patch(`/complaints/${id}/status`, payload);
   },
+  assign(id, assignedTo) {
+    return http.patch(`/complaints/${id}/assign`, { assigned_to: assignedTo });
+  },
   destroy(id) {
     return http.delete(`/complaints/${id}`);
   },

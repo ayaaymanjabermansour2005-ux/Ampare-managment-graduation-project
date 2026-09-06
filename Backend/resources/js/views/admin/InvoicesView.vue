@@ -6,8 +6,9 @@ import { useAdminInvoices } from "@/composables/useAdminInvoices";
 import { useConfirm } from "@/composables/useConfirm";
 import { vReveal } from "@/directives/reveal";
 import InvoiceCorrectionModal from "@/components/admin/InvoiceCorrectionModal.vue";
+import invoiceService from "@/services/invoiceService";
 import { useToastStore } from "@/stores/toast";
-import { Ban, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Circle, Eye, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
+import { Ban, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Circle, Eye, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, QrCode, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -35,6 +36,22 @@ const {
   reissueError,
   reissueInvoice,
 } = useAdminInvoices();
+
+/* ---------------- نافذة QR للتحقق من الفاتورة ----------------
+ * FIX (تدقيق شامل للوحة الأدمن — بند 9): GET /invoices/{id}/qr جاهز بالكامل
+ * بالباك اند (invoiceService.qrCode) لكنه كان Endpoint ميتًا بلا أي استخدام
+ * بالفرونت. نفس نمط عرض QR المعتمَد فعليًا بواجهة المالك (owner/GeneratorsView.vue).
+ */
+const invoiceQrModal = ref({ open: false, loading: false, src: null, invoiceId: null });
+async function handleShowInvoiceQr(invoice) {
+  invoiceQrModal.value = { open: true, loading: true, src: null, invoiceId: invoice.id };
+  try {
+    const { data } = await invoiceService.qrCode(invoice.id);
+    invoiceQrModal.value.src = data.data.qr;
+  } finally {
+    invoiceQrModal.value.loading = false;
+  }
+}
 
 /* ---------------- حالة الفاتورة ---------------- */
 const STATUS_META = {
@@ -418,6 +435,9 @@ onMounted(() => {
                   <button type="button" @click="openCorrection(invoice)" class="action-btn action-btn--edit" :title="$t('invoices_page.correct_action')" :aria-label="$t('invoices_page.correct_action')">
                     <Pencil aria-hidden="true" />
                   </button>
+                  <button type="button" @click="handleShowInvoiceQr(invoice)" class="action-btn action-btn--view" :title="$t('invoices_page.show_qr')" :aria-label="$t('invoices_page.show_qr')">
+                    <QrCode aria-hidden="true" />
+                  </button>
                   <span class="row-actions-divider"></span>
                   <button
                     v-if="invoice.status === 'cancelled'"
@@ -587,5 +607,30 @@ onMounted(() => {
       @close="correctionModal.open = false"
       @updated="replaceInvoice"
     />
+
+    <!-- ===================== نافذة QR للتحقق من الفاتورة ===================== -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="invoiceQrModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="invoiceQrModal.open = false">
+          <div class="glass-card !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-xs shadow-2xl overflow-hidden">
+            <div class="modal-head-brand modal-head-brand--gold shrink-0">
+              <div class="modal-head-brand__inner">
+                <span class="modal-head-brand__icon"><QrCode aria-hidden="true" /></span>
+                <h3 class="modal-head-brand__title truncate">{{ $t("common.invoice_hash", { id: invoiceQrModal.invoiceId }) }}</h3>
+              </div>
+              <button :aria-label="$t('common.close')" type="button" @click="invoiceQrModal.open = false" class="modal-head-brand__close"><X aria-hidden="true" /></button>
+            </div>
+            <div class="p-5 text-center">
+              <p class="text-[11px] text-[#9a9d97] mb-4">{{ $t("invoices_page.qr_scan_hint") }}</p>
+              <div class="flex items-center justify-center h-44">
+                <LoaderCircle class="text-2xl text-[#8A6D1F] animate-spin" aria-hidden="true" v-if="invoiceQrModal.loading" />
+                <img v-else-if="invoiceQrModal.src" :src="invoiceQrModal.src" :alt="$t('invoices_page.show_qr')" class="w-40 h-40" />
+              </div>
+              <button type="button" class="btn-outline-brand w-full mt-2" @click="invoiceQrModal.open = false">{{ $t("common.close") }}</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>

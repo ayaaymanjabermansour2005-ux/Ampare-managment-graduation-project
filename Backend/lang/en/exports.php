@@ -86,6 +86,8 @@ return [
         'subject' => 'Subject',
         'submitted_by' => 'Submitted By',
         'related_to' => 'Related To',
+        'channel' => 'Channel',
+        'assigned_to' => 'Assigned To',
         'resolved_by' => 'Resolved By',
 
         // Login logs
@@ -178,6 +180,18 @@ return [
             'pending' => 'Pending',
             'in_progress' => 'In Progress',
             'resolved' => 'Resolved',
+        ],
+        'ComplaintChannel' => [
+            'app' => 'App',
+            'phone' => 'Phone',
+            'whatsapp' => 'WhatsApp',
+            'web' => 'Website',
+        ],
+        'ComplaintPriority' => [
+            'low' => 'Low',
+            'medium' => 'Medium',
+            'high' => 'High',
+            'urgent' => 'Urgent',
         ],
         'UserStatus' => [
             'active' => 'Active',

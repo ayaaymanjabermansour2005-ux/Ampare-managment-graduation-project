@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\ComplaintChannel;
+use App\Enums\ComplaintPriority;
 use App\Enums\ComplaintStatus;
 use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -36,7 +38,10 @@ class Complaint extends Model
         'conversation_id',
         'subject',
         'description',
+        'channel',
+        'priority',
         'status',
+        'assigned_to',
         'resolved_by',
         'resolved_at',
         'resolution_note',
@@ -47,6 +52,8 @@ class Complaint extends Model
         return [
             'resolved_at' => 'datetime',
             'status' => ComplaintStatus::class,
+            'channel' => ComplaintChannel::class,
+            'priority' => ComplaintPriority::class,
         ];
     }
 
@@ -68,6 +75,11 @@ class Complaint extends Model
     public function resolver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /**

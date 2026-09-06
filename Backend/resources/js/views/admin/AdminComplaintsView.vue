@@ -4,7 +4,9 @@ import { useI18n } from "vue-i18n";
 import { useAdminComplaints } from "@/composables/useAdminComplaints";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 import complaintService from "@/services/complaintService";
+import userService from "@/services/userService";
 import { useConfirm } from "@/composables/useConfirm";
+import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import ColumnFilterPopover from "@/components/ui/ColumnFilterPopover.vue";
@@ -15,15 +17,37 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 
 const { t, locale } = useI18n();
 const { confirm } = useConfirm();
+const toast = useToastStore();
 
 const {
   complaints, pagination, isLoading, error,
-  search, statusFilter,
+  search, statusFilter, channelFilter, priorityFilter, assignedToFilter,
   isResolving, resolveError,
+  isAssigning, assignError,
   deletingId,
   fetchComplaints, onSearchInput, onFilterChange,
-  resolveComplaint, deleteComplaint,
+  resolveComplaint, assignComplaint, deleteComplaint,
 } = useAdminComplaints();
+
+/* ---------------- قائمة الأدمنز (لفلتر "المسؤول" ولتعيين شكوى لأحدهم) ----------------
+ * FIX (بند 18): channel/priority/assigned_to صارت أعمدة حقيقية بالباك اند
+ * (migration + enums + Resource/Service/Export)، فاستبدلنا الفلترة المحلية
+ * (على الصفحة الحالية فقط) بفلترة حقيقية من السيرفر، وأضفنا فعليًا إمكانية
+ * تعيين شكوى لأدمن معيّن (بدل حقل نص حر كان بلا أي تأثير فعلي بالباك).
+ */
+const adminUsers = ref([]);
+const isLoadingAdmins = ref(false);
+async function fetchAdminUsers() {
+  isLoadingAdmins.value = true;
+  try {
+    const { data } = await userService.list({ role: "admin", per_page: 100 });
+    const payload = data.data;
+    adminUsers.value = payload.data ?? payload;
+  } finally {
+    isLoadingAdmins.value = false;
+  }
+}
+const adminSelectOptions = computed(() => adminUsers.value.map((u) => ({ value: u.id, label: u.name })));
 
 const STATUS_META = {
   pending: { chip: "chip-warning", key: "complaints_page.status_new" },
@@ -63,11 +87,6 @@ const PRIORITY_OPTIONS = computed(() => [
   { value: "low", label: priorityLabel("low") },
 ]);
 
-/* ---------------- إصلاح: كل عنصر بقائمة القنوات لازم يحمل الـ prefix
-   الصحيح لمكتبة FontAwesome جوّاه (fa-solid أو fa-brands)، بدل ما نحط
-   "fa-solid" ثابت بالـ template ونضارب معه لمّا تكون الأيقونة "fa-brands"
-   (حالة واتساب) — كان هاد يخلي العنصر ياخذ الكلاسين مع بعض وما تنعرض
-   الأيقونة صح. ---------------- */
 const CHANNEL_META = {
   app: { icon: "fa-solid fa-mobile-screen-button", key: "complaints_page.channel_app" },
   phone: { icon: "fa-solid fa-phone", key: "complaints_page.channel_phone" },
@@ -184,10 +203,11 @@ const COMPLAINT_CATEGORIES = computed(() => [
 ]);
 const maxCategoryValue = computed(() => Math.max(...COMPLAINT_CATEGORIES.value.map((c) => c.value)));
 
-const priorityFilter = ref("");
+/* ملاحظة: priorityFilter/channelFilter/assignedToFilter الآن من useAdminComplaints
+ * (فلترة حقيقية بالسيرفر — راجع الـ FIX أعلاه). typeFilter/dateFrom/dateTo
+ * تبقى فلترة محلية على الصفحة الحالية فقط — لا نوع كيان ولا مدى تاريخ
+ * مدعومين بـ ComplaintService::list() حاليًا (خارج نطاق بند 18). */
 const typeFilter = ref("");
-const channelFilter = ref("");
-const assigneeFilter = ref("");
 const dateFrom = ref("");
 const dateTo = ref("");
 const showAdvancedFilters = ref(false);
@@ -202,10 +222,7 @@ const openedAtFilter = computed({
 
 const filteredComplaints = computed(() => {
   return complaints.value.filter((c) => {
-    if (priorityFilter.value && c.priority !== priorityFilter.value) return false;
     if (typeFilter.value && complainableType(c) !== typeFilter.value) return false;
-    if (channelFilter.value && c.channel !== channelFilter.value) return false;
-    if (assigneeFilter.value && !(c.assigned_to?.name ?? "").includes(assigneeFilter.value)) return false;
     if (dateFrom.value && new Date(c.created_at) < new Date(dateFrom.value)) return false;
     if (dateTo.value && new Date(c.created_at) > new Date(`${dateTo.value}T23:59:59`)) return false;
     return true;
@@ -214,9 +231,10 @@ const filteredComplaints = computed(() => {
 
 function resetAdvancedFilters() {
   channelFilter.value = "";
-  assigneeFilter.value = "";
+  assignedToFilter.value = "";
   dateFrom.value = "";
   dateTo.value = "";
+  onFilterChange();
 }
 
 function exportRows() {
@@ -247,20 +265,13 @@ function exportHeaders() {
   ];
 }
 
-/* ---------------- \u062A\u0635\u062F\u064A\u0631 Excel \u2014 \u0646\u0641\u0633 \u0646\u0645\u0637 PaymentsView (\u0631\u0627\u0628\u0637 \u0645\u0628\u0627\u0634\u0631 \u0644\u0628\u0627\u0643-\u0625\u0646\u062F
- * ComplaintController::export\u060C \u064A\u0634\u0645\u0644 \u0643\u0644 \u0627\u0644\u0633\u062C\u0644\u0627\u062A \u0627\u0644\u0645\u0637\u0627\u0628\u0642\u0629 \u0644\u0640 search/status/
- * date range \u0648\u0644\u064A\u0633 \u0627\u0644\u0635\u0641\u062D\u0629 \u0627\u0644\u0645\u062D\u0645\u0651\u0644\u0629 \u0641\u0642\u0637).
- * \u0645\u0644\u0627\u062D\u0638\u0629 \u0645\u0647\u0645\u0629: \u0641\u0644\u0627\u062A\u0631 channel/priority/assignee \u0628\u0647\u0630\u0647 \u0627\u0644\u0635\u0641\u062D\u0629 \u063A\u064A\u0631 \u0645\u0631\u0633\u064E\u0644\u0629 \u0647\u0646\u0627
- * \u0639\u0645\u062F\u064B\u0627 \u2014 c.channel/c.priority/c.assigned_to \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629 \u0625\u0637\u0644\u0627\u0642\u064B\u0627 \u0644\u0627 \u0628\u062C\u062F\u0648\u0644
- * complaints \u0648\u0644\u0627 \u0628\u0640 ComplaintResource (\u062A\u062D\u0642\u0651\u0642\u062A\u064F \u0645\u0646 \u0627\u0644\u0627\u062B\u0646\u064A\u0646)\u060C \u0641\u0647\u0630\u0647 \u0627\u0644\u0641\u0644\u0627\u062A\u0631
- * \u0627\u0644\u062B\u0644\u0627\u062B\u0629 \u0645\u0639\u0637\u0648\u0628\u0629 \u062D\u0627\u0644\u064A\u064B\u0627 \u062D\u062A\u0649 \u0639\u0644\u0649 \u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u062C\u062F\u0648\u0644 \u0646\u0641\u0633\u0647 (\u062A\u064F\u0631\u062C\u0639 \u062F\u0627\u0626\u0645\u064B\u0627 \u0635\u0641\u0631\u064B\u0627 \u0639\u0646\u062F
- * \u0627\u0644\u0627\u062E\u062A\u064A\u0627\u0631 \u0644\u0623\u0646 \u0627\u0644\u0642\u064A\u0645\u0629 undefined \u062F\u0648\u0645\u064B\u0627) \u2014 \u0647\u0630\u0627 \u064A\u062A\u062C\u0627\u0648\u0632 \u0646\u0637\u0627\u0642 \u0625\u0635\u0644\u0627\u062D \u0627\u0644\u062A\u0635\u062F\u064A\u0631
- * \u0648\u064A\u062D\u062A\u0627\u062C \u0642\u0631\u0627\u0631\u064B\u0627 \u0645\u0639\u0645\u0627\u0631\u064A\u064B\u0627 (\u0623\u0639\u0645\u062F\u0629 \u062C\u062F\u064A\u062F\u0629 + Resource + Service) \u062E\u0627\u0631\u062C \u0647\u0630\u0647 \u0627\u0644\u0645\u0647\u0645\u0629.
- */
 const exportUrl = computed(() =>
   complaintService.exportUrl({
     search: search.value,
     status: statusFilter.value,
+    channel: channelFilter.value,
+    priority: priorityFilter.value,
+    assigned_to: assignedToFilter.value,
     date_from: dateFrom.value,
     date_to: dateTo.value,
   })
@@ -332,11 +343,17 @@ const isDetailOpen = ref(false);
 const activeComplaint = ref(null);
 const resolutionNote = ref("");
 const newStatus = ref("in_progress");
+const assignDraft = ref("");
 
 function openDetail(c) {
   activeComplaint.value = c;
   resolutionNote.value = c.resolution_note ?? "";
   newStatus.value = c.status === "pending" ? "in_progress" : "resolved";
+  assignDraft.value = c.assigned_to?.id ?? "";
+  // FIX (تدقيق شامل — الجولة الثالثة): بدون هذا، خطأ فشل من شكوى سابقة
+  // (حل/تعيين) كان يظهر لحظيًا عند فتح شكوى تانية قبل أي محاولة جديدة.
+  resolveError.value = null;
+  assignError.value = null;
   isDetailOpen.value = true;
 }
 
@@ -347,6 +364,17 @@ async function handleResolveSubmit() {
     resolution_note: resolutionNote.value.trim() || undefined,
   });
   if (ok) isDetailOpen.value = false;
+}
+
+/* ---------------- تعيين "المسؤول" عن الشكوى (بند 18) ---------------- */
+async function handleAssignSubmit() {
+  const ok = await assignComplaint(activeComplaint.value.id, assignDraft.value || null);
+  if (ok) {
+    activeComplaint.value = complaints.value.find((c) => c.id === activeComplaint.value.id) ?? activeComplaint.value;
+    toast.show({ type: "success", title: t("complaints_page.assign_success") });
+  } else if (assignError.value) {
+    toast.show({ type: "danger", title: assignError.value });
+  }
 }
 
 async function handleDelete(c) {
@@ -365,9 +393,24 @@ const createForm = ref({ subject: "", description: "", priority: "medium", chann
 const isCreatingComplaint = ref(false);
 const createComplaintError = ref(null);
 
+/* ---------------- مرفق (اختياري) عند فتح شكوى جديدة ----------------
+ * FIX (تدقيق شامل للوحة الأدمن — بند 14): complaintService.uploadAttachment
+ * غير مستخدَم بلوحة الأدمن رغم استخدامه فعليًا بواجهة الفني
+ * (technician/QuickComplaintView.vue) — نفس النمط والـ document_type منقولان حرفيًا.
+ */
+const createComplaintFile = ref(null);
+const createComplaintFileInput = ref(null);
+const createComplaintAttachmentWarning = ref(null);
+function onCreateComplaintFileChange(e) {
+  createComplaintFile.value = e.target.files?.[0] ?? null;
+}
+
 function openCreateComplaint() {
   createForm.value = { subject: "", description: "", priority: "medium", channel: "app" };
   createComplaintError.value = null;
+  createComplaintAttachmentWarning.value = null;
+  createComplaintFile.value = null;
+  if (createComplaintFileInput.value) createComplaintFileInput.value.value = "";
   isCreateOpen.value = true;
 }
 
@@ -375,12 +418,37 @@ async function handleCreateComplaint() {
   if (!createForm.value.subject.trim()) return;
   isCreatingComplaint.value = true;
   createComplaintError.value = null;
+  createComplaintAttachmentWarning.value = null;
   try {
     // FIX: كانت الدالة تقفل المودال وتعيد تحميل القائمة بدون ما تستدعي
     // complaintService.create() فعليًا — فبيانات الشكوى المُدخلة كانت
     // تُهمَل بصمت ويبدو للأدمن إنها انحفظت بنجاح.
-    await complaintService.create(createForm.value);
+    const { data } = await complaintService.create(createForm.value);
+    const complaintId = data.data?.id;
+
+    if (createComplaintFile.value && complaintId) {
+      try {
+        const body = new FormData();
+        body.append("file", createComplaintFile.value);
+        body.append(
+          "document_type",
+          createComplaintFile.value.type.startsWith("video/") ? "complaint_video" : "complaint_image",
+        );
+        await complaintService.uploadAttachment(complaintId, body);
+      } catch (attachErr) {
+        // الشكوى نفسها اتسجلت بنجاح — فشل رفع المرفق فقط ما لازم يُقرأ
+        // كفشل بفتح الشكوى، بس لازم يبان للأدمن مش يختفي بصمت.
+        createComplaintAttachmentWarning.value = normalizeApiError(
+          attachErr,
+          t("complaints_page.attachment_upload_error"),
+        ).message;
+      }
+    }
+
     isCreateOpen.value = false;
+    if (createComplaintAttachmentWarning.value) {
+      toast.show({ type: "danger", title: createComplaintAttachmentWarning.value });
+    }
     await fetchComplaints(1);
   } catch (e) {
     createComplaintError.value = normalizeApiError(e, t("complaints_page.failed_create_complaint")).message;
@@ -389,7 +457,10 @@ async function handleCreateComplaint() {
   }
 }
 
-onMounted(() => fetchComplaints(1));
+onMounted(() => {
+  fetchComplaints(1);
+  fetchAdminUsers();
+});
 </script>
 
 <template>
@@ -496,7 +567,7 @@ onMounted(() => fetchComplaints(1));
         />
 
         <AppDropdownSelect
-          v-model="priorityFilter"
+          v-model="priorityFilter" @update:model-value="onFilterChange"
           :options="PRIORITY_OPTIONS" width-class="w-40" :panel-width="180"
         />
 
@@ -530,13 +601,14 @@ onMounted(() => fetchComplaints(1));
       <!-- لوحة الفلاتر المتقدمة -->
       <div v-if="showAdvancedFilters" class="mt-3.5 pt-3.5 border-t border-[#eee8da] dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <AppDropdownSelect
-          v-model="channelFilter"
+          v-model="channelFilter" @update:model-value="onFilterChange"
           :options="CHANNEL_OPTIONS" variant="field" width-class="w-full" match-trigger-width
         />
-        <input
-          v-model="assigneeFilter" type="text"
-          :placeholder="$t('complaints_page.assignee_placeholder')"
-          class="bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2 text-[11.5px] outline-none focus:border-[#8A6D1F]"
+        <AppDropdownSelect
+          v-model="assignedToFilter" @update:model-value="onFilterChange"
+          :options="[{ value: '', label: $t('complaints_page.all_assignees') }, ...adminSelectOptions]"
+          :disabled="isLoadingAdmins"
+          variant="field" width-class="w-full" match-trigger-width
         />
         <input
           v-model="dateFrom" type="date"
@@ -723,6 +795,21 @@ onMounted(() => fetchComplaints(1));
             </div>
             <p class="text-[12.5px] leading-relaxed glass-card p-3.5">{{ activeComplaint.description }}</p>
 
+            <div class="flex items-center gap-2">
+              <label class="text-[11.5px] font-bold shrink-0">{{ $t("complaints_page.col_assignee") }}</label>
+              <AppDropdownSelect
+                v-model="assignDraft"
+                :options="[{ value: '', label: $t('complaints_page.unassigned_label') }, ...adminSelectOptions]"
+                variant="field" width-class="flex-1" match-trigger-width
+              />
+              <button
+                type="button" @click="handleAssignSubmit" :disabled="isAssigning"
+                class="btn-outline-brand !text-[11px] !py-2 !px-3 shrink-0"
+              >
+                <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isAssigning" /><Check aria-hidden="true" v-else />
+              </button>
+            </div>
+
             <template v-if="activeComplaint.status !== 'resolved'">
               <div v-if="resolveError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2">{{ resolveError }}</div>
               <div>
@@ -787,6 +874,14 @@ onMounted(() => fetchComplaints(1));
                 <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.col_channel") }}</label>
                 <AppDropdownSelect v-model="createForm.channel" :options="channelOptions" variant="field" width-class="w-full" match-trigger-width />
               </div>
+            </div>
+            <div>
+              <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.attachment_field_label") }}</label>
+              <input
+                ref="createComplaintFileInput" type="file" accept="image/*,video/*"
+                @change="onCreateComplaintFileChange"
+                class="w-full text-[11.5px] bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#8A6D1F]"
+              />
             </div>
           </div>
           <div class="modal-footer-brand">

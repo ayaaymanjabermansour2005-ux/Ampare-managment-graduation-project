@@ -872,6 +872,13 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
                 ->middleware('permission:complaints.resolve')
                 ->name('update-status');
 
+            // تعيين/إلغاء تعيين "المسؤول" عن الشكوى — إداري بحت (تصنيف
+            // داخلي لتوزيع العمل بين الأدمن)، ComplaintPolicy::assign تتحقق
+            // إضافيًا أن المستخدم أدمن فعليًا.
+            Route::patch('/{complaint}/assign', [ComplaintController::class, 'assign'])
+                ->middleware('permission:complaints.resolve')
+                ->name('assign');
+
             Route::post('/{complaint}/attachments', [ComplaintController::class, 'storeAttachment'])
                 ->middleware('permission:complaints.create')
                 ->name('attachments.store');

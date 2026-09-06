@@ -57,6 +57,17 @@ class ComplaintPolicy
         return $user->isOwner() && $complaint->relatedOwnerId() === $user->id;
     }
 
+    /**
+     * تعيين/إلغاء تعيين "المسؤول" عن الشكوى — إداري بحت (تصنيف داخلي لتوزيع
+     * العمل بين الأدمن)، بعكس resolve() فما بتخضع لقيد "مش محلولة أصلًا"،
+     * ومقتصرة على الأدمن (نفس صلاحية complaints.resolve، بلا حاجة لصلاحية
+     * جديدة منفصلة).
+     */
+    public function assign(User $user): bool
+    {
+        return $user->can('complaints.resolve') && $user->isAdmin();
+    }
+
     public function delete(User $user, Complaint $complaint): bool
     {
         return $user->can('complaints.delete') && $user->isAdmin();
