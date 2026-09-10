@@ -35,6 +35,7 @@ class SidebarBadgeService
             'complaints_open' => Complaint::whereIn('status', [
                 ComplaintStatus::Pending->value,
                 ComplaintStatus::InProgress->value,
+                ComplaintStatus::WaitingSubscriber->value,
             ])->count(),
 
             'faults_pending' => Fault::where('status', FaultStatus::PendingVerification->value)->count(),

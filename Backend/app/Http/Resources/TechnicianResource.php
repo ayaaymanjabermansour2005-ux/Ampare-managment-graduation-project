@@ -18,6 +18,16 @@ class TechnicianResource extends JsonResource
             'is_locked' => (bool) ($this->user?->locked_until && $this->user->locked_until->isFuture()),
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+            // FIX (تدقيق شامل — A1): بطاقتا KPI "متوسط التقييم" و"مشغول"
+            // كانتا تقرآن حقلين لم يكونا موجودين إطلاقًا بهذا الـResource.
+            'rating' => $this->when(
+                $this->rating_avg !== null,
+                fn () => round((float) $this->rating_avg, 1)
+            ),
+            'has_active_task' => $this->when(
+                $this->active_tasks_count !== null,
+                fn () => (bool) $this->active_tasks_count
+            ),
             'notes' => $this->notes,
             'owner_id' => $this->owner_id,
             'owner_name' => $this->whenLoaded('owner', fn () => $this->owner?->name),

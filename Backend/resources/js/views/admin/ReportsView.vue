@@ -132,15 +132,6 @@ onMounted(() => {
             <FileDown class="text-[11px]" aria-hidden="true" />
             {{ $t("reports_page.export_excel") }}
           </a>
-          <a
-            v-if="hasRole('admin')"
-            :href="platformCommissionService.downloadReportPdfUrl()"
-            target="_blank"
-            class="btn-fill relative inline-flex items-center gap-2 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white px-4 py-2.5 rounded-full text-[12.5px] font-bold shadow-md shrink-0"
-          >
-            <FileDown class="text-[11px]" aria-hidden="true" />
-            {{ $t("reports_page.download_full_report") }}
-          </a>
         </div>
       </div>
     </section>

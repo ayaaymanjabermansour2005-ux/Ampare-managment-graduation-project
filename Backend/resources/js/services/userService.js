@@ -1,4 +1,5 @@
 import http from "./http";
+import { buildExportUrl } from "@/utils/exportUrl";
 
 export default {
   list(params = {}) {
@@ -55,22 +56,16 @@ export default {
     return http.get("/users/owners-stats", { params });
   },
   ownersExportUrl(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return `/api/v1/users/owners-export${query ? `?${query}` : ""}`;
+    return buildExportUrl("/api/v1/users/owners-export", params);
   },
   subscribersStats() {
     return http.get("/users/subscribers-stats");
   },
   subscribersExportUrl(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return `/api/v1/users/subscribers-export${query ? `?${query}` : ""}`;
+    return buildExportUrl("/api/v1/users/subscribers-export", params);
   },
   exportUrl(params = {}) {
-    const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""),
-    );
-    const query = new URLSearchParams(cleanParams).toString();
-    return `/api/v1/users/export${query ? `?${query}` : ""}`;
+    return buildExportUrl("/api/v1/users/export", params);
   },
 
   sendBulkPaymentReminder(subscriberIds) {

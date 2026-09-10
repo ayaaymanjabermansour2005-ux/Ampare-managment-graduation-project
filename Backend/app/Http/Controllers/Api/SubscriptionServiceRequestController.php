@@ -35,7 +35,9 @@ class SubscriptionServiceRequestController extends Controller
 
         $requests = $this->service->list(
             $request->user(),
-            PerPageResolver::resolve($request)
+            PerPageResolver::resolve($request),
+            $request->string('status')->toString() ?: null,
+            $request->string('search')->toString() ?: null
         );
 
         return $this->success(

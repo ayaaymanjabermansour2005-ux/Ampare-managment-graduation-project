@@ -8,15 +8,17 @@ import generatorService from "@/services/generatorService";
 import userService from "@/services/userService";
 import { useToastStore } from "@/stores/toast";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 import { printTable } from "@/utils/printTable";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import ColumnFilterPopover from "@/components/ui/ColumnFilterPopover.vue";
 import AdminGeneratorFormModal from "@/components/generators/AdminGeneratorFormModal.vue";
 import GeneratorViewModal from "@/components/generators/GeneratorViewModal.vue";
-import { Check, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, GripVertical, LoaderCircle, Pencil, Plus, Printer, Search, Table2, Trash2, TriangleAlert, X, ZoomOut } from "@lucide/vue";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Eye, FileSpreadsheet, GripVertical, LoaderCircle, Pencil, Plus, Printer, Search, Table2, Trash2, TriangleAlert, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
+import { vReveal } from "@/directives/reveal";
 
 const props = defineProps({
   showKpis: { type: Boolean, default: true },
@@ -26,6 +28,7 @@ const { t, locale } = useI18n();
 const route = useRoute();
 const toast = useToastStore();
 const { confirm: confirmDialog } = useConfirm();
+const { can } = usePermissions();
 
 const {
   generators, pagination, isLoading, error,
@@ -39,11 +42,19 @@ const {
   loadAll,
 } = useAdminGenerators();
 
+/* FIX (تدقيق شامل — الجولة الخامسة): ما كان في catch — فشل هالطلب كان يطلع
+ * Unhandled Promise Rejection بصمت، وفلتر/نموذج "المالك" (لازم لإنشاء مولد
+ * كأدمن) يضل فاضي بدون أي إشارة للأدمن إنو في مشكلة.
+ */
 const owners = ref([]);
 async function fetchOwners() {
-  const { data } = await userService.list({ role: "generator_owner", per_page: 100 });
-  const list = data.data.data ?? data.data;
-  owners.value = [...list].sort((a, b) => a.name.localeCompare(b.name, locale.value === "ar" ? "ar" : "en"));
+  try {
+    const { data } = await userService.list({ role: "generator_owner", per_page: 100 });
+    const list = data.data.data ?? data.data;
+    owners.value = [...list].sort((a, b) => a.name.localeCompare(b.name, locale.value === "ar" ? "ar" : "en"));
+  } catch (err) {
+    toast.show({ type: "danger", title: normalizeApiError(err, t("generators_management_page.owners_load_error")).message });
+  }
 }
 
 const ownerFilterOptions = computed(() => [
@@ -77,6 +88,11 @@ const STATUS_PILLS = computed(() => [
   { value: "rejected", label: t("status.rejected") },
 ]);
 
+/**
+ * يبني كلاس CSS (شفافية + دوران) لأيقونة سهم الفرز الثابتة (ChevronDown) حسب
+ * كون العمود الحالي هو المُفرَّز أم لا واتجاهه — وليس اسم أيقونة، يُستخدَم
+ * حصرًا مع :class على <ChevronDown>، وليس مع :name على <AppIcon>.
+ */
 function sortIconClass(key) {
   const [curKey, curDir] = sortBy.value.split("-");
   if (curKey !== key) return "opacity-40";
@@ -416,7 +432,7 @@ onMounted(async () => {
           >
             <Printer class="text-[11px]" aria-hidden="true" />
           </button>
-          <button type="button" @click="openAddModal" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
+          <button v-if="can('generators.create')" type="button" @click="openAddModal" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
             <Plus aria-hidden="true" /> {{ $t("owner_dashboard.add_generator") }}
           </button>
         </div>
@@ -439,9 +455,11 @@ onMounted(async () => {
         <table class="data-table w-full text-[12px] min-w-[900px]">
           <thead>
             <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
-              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('name')">
-                {{ $t("dashboard.generator_col") }}
-                <AppIcon :name="sortIconClass('name')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3 rounded-s-lg">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('name')">
+                  {{ $t("dashboard.generator_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('name')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("dashboard.city_col") }}</th>
               <th class="py-2.5 px-3">
@@ -453,21 +471,21 @@ onMounted(async () => {
               <th class="py-2.5 px-3">
                 <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('fuel')">
                   {{ $t("dashboard.fuel_label") }}
-                  <AppIcon :name="sortIconClass('fuel')" class="text-[9px] transition-all" />
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('fuel')]" aria-hidden="true" />
                 </span>
                 <ColumnFilterPopover v-model="fuelFilter" type="number" @update:modelValue="onFilterChange" @click.stop class="ms-1" />
               </th>
               <th class="py-2.5 px-3">
                 <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('subs')">
                   {{ $t("dashboard.subscribers_col") }}
-                  <AppIcon :name="sortIconClass('subs')" class="text-[9px] transition-all" />
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('subs')]" aria-hidden="true" />
                 </span>
                 <ColumnFilterPopover v-model="subscribersFilter" type="number" @update:modelValue="onFilterChange" @click.stop class="ms-1" />
               </th>
               <th class="py-2.5 px-3">
                 <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('rev')">
                   {{ $t("generators_management_page.monthly_revenue_col") }}
-                  <AppIcon :name="sortIconClass('rev')" class="text-[9px] transition-all" />
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('rev')]" aria-hidden="true" />
                 </span>
                 <ColumnFilterPopover v-model="revenueFilter" type="number" @update:modelValue="onFilterChange" @click.stop class="ms-1" />
               </th>
@@ -507,9 +525,9 @@ onMounted(async () => {
                     <span class="row-actions-divider"></span>
                   </template>
                   <button type="button" @click="openViewModal(g)" class="action-btn action-btn--view" :title="$t('common.view')" :aria-label="$t('common.view')"><Eye aria-hidden="true" /></button>
-                  <button type="button" @click="openEditModal(g)" class="action-btn action-btn--edit" :title="$t('common.edit')" :aria-label="$t('common.edit')"><Pencil aria-hidden="true" /></button>
+                  <button v-if="can('generators.update')" type="button" @click="openEditModal(g)" class="action-btn action-btn--edit" :title="$t('common.edit')" :aria-label="$t('common.edit')"><Pencil aria-hidden="true" /></button>
                   <span class="row-actions-divider"></span>
-                  <button type="button" @click="openDeleteModal(g)" :disabled="deletingId === g.id" class="action-btn action-btn--delete" :title="$t('common.delete')" :aria-label="$t('common.delete')">
+                  <button v-if="can('generators.delete')" type="button" @click="openDeleteModal(g)" :disabled="deletingId === g.id" class="action-btn action-btn--delete" :title="$t('common.delete')" :aria-label="$t('common.delete')">
                     <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === g.id" /><Trash2 aria-hidden="true" v-else />
                   </button>
                 </div>
@@ -549,9 +567,9 @@ onMounted(async () => {
                 <span class="row-actions-divider"></span>
               </template>
               <button type="button" @click="openViewModal(g)" class="action-btn action-btn--view" :title="$t('common.view')" :aria-label="$t('common.view')"><Eye aria-hidden="true" /></button>
-              <button type="button" @click="openEditModal(g)" class="action-btn action-btn--edit" :title="$t('common.edit')" :aria-label="$t('common.edit')"><Pencil aria-hidden="true" /></button>
+              <button v-if="can('generators.update')" type="button" @click="openEditModal(g)" class="action-btn action-btn--edit" :title="$t('common.edit')" :aria-label="$t('common.edit')"><Pencil aria-hidden="true" /></button>
               <span class="row-actions-divider"></span>
-              <button type="button" @click="openDeleteModal(g)" :disabled="deletingId === g.id" class="action-btn action-btn--delete" :title="$t('common.delete')" :aria-label="$t('common.delete')">
+              <button v-if="can('generators.delete')" type="button" @click="openDeleteModal(g)" :disabled="deletingId === g.id" class="action-btn action-btn--delete" :title="$t('common.delete')" :aria-label="$t('common.delete')">
                 <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === g.id" /><Trash2 aria-hidden="true" v-else />
               </button>
             </div>

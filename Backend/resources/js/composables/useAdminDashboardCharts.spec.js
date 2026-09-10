@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createI18n } from 'vue-i18n';
 
 vi.mock('@/services/adminDashboardService', () => ({
     default: {
@@ -8,6 +9,18 @@ vi.mock('@/services/adminDashboardService', () => ({
         maintenanceChart: vi.fn(),
     },
 }));
+
+// نفس نمط useAdminDashboardFull.spec.js — useI18n() الحقيقي بيرمي خطأ
+// خارج سياق setup()، فلازم mock بسيط يرجّع t() فعلية (لرسائل الخطأ الجديدة).
+const i18n = createI18n({
+    legacy: false,
+    locale: 'ar',
+    messages: { ar: { dashboard: { fuel_chart_load_error: 'تعذّر تحميل مخطط مشتريات الوقود.' } } },
+});
+vi.mock('vue-i18n', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, useI18n: () => ({ t: i18n.global.t, locale: { value: 'ar' } }) };
+});
 
 const { useAdminDashboardCharts } = await import('./useAdminDashboardCharts');
 const adminDashboardService = (await import('@/services/adminDashboardService')).default;
@@ -70,15 +83,21 @@ describe('useAdminDashboardCharts', () => {
         expect(adminDashboardService.revenueChart).not.toHaveBeenCalled();
     });
 
-    it('propagates a rejected chart fetch through loadAllCharts (no catch in the composable) while still clearing that chart\'s loading flag via finally', async () => {
+    // FIX (تدقيق شامل — لوحة التحكم الرئيسية): كانت هالدالة بلا catch، فأي
+    // خطأ بمخطط واحد كان يُسقط loadAllCharts() بالكامل (Promise.all يرفض)،
+    // اللي بيمنع تحميل باقي أقسام onMounted بـ DashboardView.vue التالية له.
+    // هلق كل خطأ محصور بمخططه فقط عبر fuelError/إلخ، وloadAllCharts() ما
+    // بترفض إطلاقًا.
+    it('catches a rejected chart fetch inside loadAllCharts, storing its error and leaving the other charts unaffected', async () => {
         adminDashboardService.subscriberGrowthChart.mockResolvedValue({ data: { data: { a: 1 } } });
         adminDashboardService.fuelChart.mockRejectedValue(new Error('Network Error'));
         adminDashboardService.maintenanceChart.mockResolvedValue({ data: { data: { c: 3 } } });
 
-        const { subscriberGrowth, isLoadingFuel, loadAllCharts } = useAdminDashboardCharts();
-        await expect(loadAllCharts()).rejects.toThrow('Network Error');
+        const { subscriberGrowth, isLoadingFuel, fuelError, loadAllCharts } = useAdminDashboardCharts();
+        await expect(loadAllCharts()).resolves.toBeUndefined();
 
         expect(isLoadingFuel.value).toBe(false);
+        expect(fuelError.value).toBe('تعذّر تحميل مخطط مشتريات الوقود.');
         // sibling promises inside the Promise.all are independent async calls,
         // so a rejection in one does not stop the others from completing.
         expect(subscriberGrowth.value).toEqual({ a: 1 });

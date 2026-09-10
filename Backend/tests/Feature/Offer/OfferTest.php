@@ -83,11 +83,15 @@ class OfferTest extends TestCase
         $this->makeGenerator($owner);
 
         $response = $this->actingAs($owner)
-            ->postJson('/api/v1/offers', $this->validPayload());
+            ->postJson('/api/v1/offers', $this->validPayload(['discount_value' => 12.5]));
 
         $response->assertStatus(201);
         $this->assertSame('all', $response->json('data.target_mode'));
         $this->assertNull($response->json('data.beneficiary_type'));
+        // FIX (تدقيق شامل — C4): discount_value يجب أن يُسلسَل كرقم عشري
+        // حقيقي (12.5) لا كنص ("12.50")، مطابقًا لبقية الحقول المالية بالتطبيق.
+        // قيمة كسرية هنا مقصودة — عدد صحيح لا يكشف الفرق بين string/float بالـ JSON.
+        $this->assertSame(12.5, $response->json('data.discount_value'));
     }
 
     public function test_beneficiary_type_required_when_target_mode_is_beneficiary(): void

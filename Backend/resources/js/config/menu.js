@@ -170,6 +170,7 @@ export default [
     icon: "fa-solid fa-newspaper",
     route: "admin.articles",
     roles: ["admin"],
+    permission: "articles.view",
     group: "النظام",
     groupKey: "menu_groups.system",
   },

@@ -52,7 +52,8 @@ class UserSessionsTest extends TestCase
         $response = $this->actingAs($user)->getJson('/api/v1/auth/sessions');
 
         $response->assertOk();
-        $this->assertCount(2, $response->json('data'));
+        $this->assertCount(2, $response->json('data.sessions'));
+        $this->assertTrue($response->json('data.is_supported'));
     }
 
     public function test_sessions_are_scoped_to_current_user_only(): void
@@ -65,8 +66,25 @@ class UserSessionsTest extends TestCase
         $response = $this->actingAs($user)->getJson('/api/v1/auth/sessions');
 
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
-        $this->assertSame('session-mine', $response->json('data.0.id'));
+        $this->assertCount(1, $response->json('data.sessions'));
+        $this->assertSame('session-mine', $response->json('data.sessions.0.id'));
+    }
+
+    /**
+     * FIX (تدقيق شامل — E5): is_supported يميّز الآن "لا جلسات أخرى" الحقيقية
+     * عن "الميزة غير مدعومة بهذه البيئة" (SESSION_DRIVER != database) —
+     * كانت الحالتان تُعادان كمصفوفة فارغة بلا أي تمييز.
+     */
+    public function test_sessions_endpoint_reports_unsupported_when_session_driver_is_not_database(): void
+    {
+        config(['session.driver' => 'file']);
+        $user = $this->makeUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/auth/sessions');
+
+        $response->assertOk();
+        $this->assertSame([], $response->json('data.sessions'));
+        $this->assertFalse($response->json('data.is_supported'));
     }
 
     public function test_user_can_revoke_own_session(): void

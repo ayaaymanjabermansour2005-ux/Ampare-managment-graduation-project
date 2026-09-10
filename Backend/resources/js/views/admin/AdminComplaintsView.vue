@@ -2,15 +2,17 @@
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAdminComplaints } from "@/composables/useAdminComplaints";
-import { normalizeApiError } from "@/utils/normalizeApiError";
 import complaintService from "@/services/complaintService";
 import userService from "@/services/userService";
 import { useConfirm } from "@/composables/useConfirm";
 import { useToastStore } from "@/stores/toast";
+import { useAuthStore } from "@/stores/auth";
+import { normalizeApiError } from "@/utils/normalizeApiError";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import ColumnFilterPopover from "@/components/ui/ColumnFilterPopover.vue";
-import { ChartColumn, Check, ChevronLeft, ChevronRight, CircleCheck, Eye, FileSpreadsheet, FileText, LoaderCircle, MessageCircleMore, Plus, Search, SlidersHorizontal, Trash2, User, X } from "@lucide/vue";
+import AttachmentPreviewModal from "@/components/ui/AttachmentPreviewModal.vue";
+import { ChartColumn, Check, ChevronLeft, ChevronRight, CircleCheck, Eye, File, FileSpreadsheet, FileText, LoaderCircle, MessageCircleMore, Paperclip, Search, SlidersHorizontal, Trash2, User, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -18,13 +20,15 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 const { t, locale } = useI18n();
 const { confirm } = useConfirm();
 const toast = useToastStore();
+const authStore = useAuthStore();
 
 const {
   complaints, pagination, isLoading, error,
   search, statusFilter, channelFilter, priorityFilter, assignedToFilter,
   isResolving, resolveError,
   isAssigning, assignError,
-  deletingId,
+  deletingId, deleteError,
+  typeCounts, fetchTypeCounts,
   fetchComplaints, onSearchInput, onFilterChange,
   resolveComplaint, assignComplaint, deleteComplaint,
 } = useAdminComplaints();
@@ -34,15 +38,25 @@ const {
  * (migration + enums + Resource/Service/Export)، فاستبدلنا الفلترة المحلية
  * (على الصفحة الحالية فقط) بفلترة حقيقية من السيرفر، وأضفنا فعليًا إمكانية
  * تعيين شكوى لأدمن معيّن (بدل حقل نص حر كان بلا أي تأثير فعلي بالباك).
+ *
+ * FIX (تدقيق شامل — الجولة الرابعة): GET /users يتطلب صلاحية users.view
+ * منفصلة عن complaints.*، وما كان في أي معالجة لفشلها (403 لأدمن فرعي ما
+ * معه هاي الصلاحية، أو خطأ شبكة) — الطلب كان يفشل بصمت (Unhandled Promise
+ * Rejection). صرنا نتحقق من الصلاحية قبل المحاولة، ونخفي ميزة "تعيين
+ * مسؤول" كليًا لمن لا يملكها بدل ما تنكسر بصمت.
  */
+const canAssignComplaints = computed(() => authStore.can("users.view"));
 const adminUsers = ref([]);
 const isLoadingAdmins = ref(false);
 async function fetchAdminUsers() {
+  if (!canAssignComplaints.value) return;
   isLoadingAdmins.value = true;
   try {
     const { data } = await userService.list({ role: "admin", per_page: 100 });
     const payload = data.data;
     adminUsers.value = payload.data ?? payload;
+  } catch (err) {
+    toast.show({ type: "danger", title: normalizeApiError(err, t("complaints_page.admins_load_error")).message });
   } finally {
     isLoadingAdmins.value = false;
   }
@@ -104,18 +118,6 @@ const resolveStatusOptions = computed(() => [
   { value: "waiting_subscriber", label: statusLabel("waiting_subscriber") },
   { value: "resolved", label: statusLabel("resolved") },
 ]);
-const priorityOptions = computed(() => [
-  { value: "low", label: priorityLabel("low") },
-  { value: "medium", label: priorityLabel("medium") },
-  { value: "high", label: priorityLabel("high") },
-  { value: "urgent", label: priorityLabel("urgent") },
-]);
-const channelOptions = computed(() => [
-  { value: "app", label: channelLabel("app") },
-  { value: "phone", label: channelLabel("phone") },
-  { value: "whatsapp", label: channelLabel("whatsapp") },
-  { value: "web", label: channelLabel("web") },
-]);
 const CHANNEL_OPTIONS = computed(() => [
   { value: "", label: t("complaints_page.all_channels") },
   { value: "app", label: channelLabel("app") },
@@ -130,6 +132,7 @@ const COMPLAINABLE_TYPE_KEYS = {
   Subscription: "complaints_page.complainable_subscription",
   Invoice: "complaints_page.complainable_invoice",
   Payment: "complaints_page.complainable_payment",
+  User: "complaints_page.complainable_user",
 };
 function complainableLabel(c) {
   if (!c.complainable) return t("complaints_page.complainable_general");
@@ -146,6 +149,7 @@ const TYPE_OPTIONS = computed(() => [
   { value: "Subscription", label: t("complaints_page.complainable_subscription") },
   { value: "Invoice", label: t("complaints_page.complainable_invoice") },
   { value: "Payment", label: t("complaints_page.complainable_payment") },
+  { value: "User", label: t("complaints_page.complainable_user") },
   { value: "General", label: t("complaints_page.complainable_general") },
 ]);
 
@@ -192,16 +196,17 @@ const KPI_CARDS = computed(() => [
   { icon: "fa-triangle-exclamation", label: t("complaints_page.sla_breached_kpi"), value: countSlaBreached.value, tone: "danger" },
 ]);
 
-const COMPLAINT_CATEGORIES = computed(() => [
-  { label: t("complaints_page.category_power_outage"), value: 3 },
-  { label: t("complaints_page.category_low_voltage"), value: 3 },
-  { label: t("complaints_page.category_billing_error"), value: 3 },
-  { label: t("complaints_page.category_technician_misconduct"), value: 3 },
-  { label: t("complaints_page.category_meter_fault"), value: 2 },
-  { label: t("complaints_page.category_delayed_response"), value: 2 },
-  { label: t("complaints_page.category_customer_service"), value: 2 },
-]);
-const maxCategoryValue = computed(() => Math.max(...COMPLAINT_CATEGORIES.value.map((c) => c.value)));
+/* FIX (تدقيق شامل — D6): توزيع حقيقي حسب complainable_type (آخر 30 يومًا)
+ * بدل قيم وهمية ثابتة — يعتمد نفس تسميات COMPLAINABLE_TYPE_KEYS أعلاه. */
+const COMPLAINT_CATEGORIES = computed(() =>
+  Object.entries(typeCounts.value)
+    .map(([type, value]) => ({
+      label: COMPLAINABLE_TYPE_KEYS[type] ? t(COMPLAINABLE_TYPE_KEYS[type]) : type,
+      value,
+    }))
+    .sort((a, b) => b.value - a.value)
+);
+const maxCategoryValue = computed(() => Math.max(1, ...COMPLAINT_CATEGORIES.value.map((c) => c.value)));
 
 /* ملاحظة: priorityFilter/channelFilter/assignedToFilter الآن من useAdminComplaints
  * (فلترة حقيقية بالسيرفر — راجع الـ FIX أعلاه). typeFilter/dateFrom/dateTo
@@ -345,6 +350,36 @@ const resolutionNote = ref("");
 const newStatus = ref("in_progress");
 const assignDraft = ref("");
 
+/* ---------------- مرفقات الشكوى (عرض فقط) ----------------
+ * FIX (تدقيق شامل للوحة الأدمن): كانت GET /complaints/{id}/attachments غير
+ * موجودة إطلاقًا بالباك اند، فمرفقات أي شكوى (المرفوعة من المشترك/المالك/الفني
+ * وقت تقديمها) ما كان لها أي مكان تنعرض فيه بلوحة الأدمن رغم توفر الرفع.
+ */
+const complaintAttachments = ref([]);
+const isLoadingAttachments = ref(false);
+const attachmentsError = ref(null);
+const previewingAttachment = ref(null);
+
+async function fetchComplaintAttachments(complaintId) {
+  isLoadingAttachments.value = true;
+  attachmentsError.value = null;
+  try {
+    const { data } = await complaintService.attachments(complaintId);
+    complaintAttachments.value = data.data;
+  } catch {
+    attachmentsError.value = t("complaints_page.attachments_load_error");
+  } finally {
+    isLoadingAttachments.value = false;
+  }
+}
+
+function fmtFileSize(bytes) {
+  if (!bytes) return "-";
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 function openDetail(c) {
   activeComplaint.value = c;
   resolutionNote.value = c.resolution_note ?? "";
@@ -355,6 +390,8 @@ function openDetail(c) {
   resolveError.value = null;
   assignError.value = null;
   isDetailOpen.value = true;
+  complaintAttachments.value = [];
+  fetchComplaintAttachments(c.id);
 }
 
 async function handleResolveSubmit() {
@@ -385,81 +422,14 @@ async function handleDelete(c) {
     variant: "danger",
   });
   if (!confirmed) return;
-  await deleteComplaint(c.id);
-}
-
-const isCreateOpen = ref(false);
-const createForm = ref({ subject: "", description: "", priority: "medium", channel: "app" });
-const isCreatingComplaint = ref(false);
-const createComplaintError = ref(null);
-
-/* ---------------- مرفق (اختياري) عند فتح شكوى جديدة ----------------
- * FIX (تدقيق شامل للوحة الأدمن — بند 14): complaintService.uploadAttachment
- * غير مستخدَم بلوحة الأدمن رغم استخدامه فعليًا بواجهة الفني
- * (technician/QuickComplaintView.vue) — نفس النمط والـ document_type منقولان حرفيًا.
- */
-const createComplaintFile = ref(null);
-const createComplaintFileInput = ref(null);
-const createComplaintAttachmentWarning = ref(null);
-function onCreateComplaintFileChange(e) {
-  createComplaintFile.value = e.target.files?.[0] ?? null;
-}
-
-function openCreateComplaint() {
-  createForm.value = { subject: "", description: "", priority: "medium", channel: "app" };
-  createComplaintError.value = null;
-  createComplaintAttachmentWarning.value = null;
-  createComplaintFile.value = null;
-  if (createComplaintFileInput.value) createComplaintFileInput.value.value = "";
-  isCreateOpen.value = true;
-}
-
-async function handleCreateComplaint() {
-  if (!createForm.value.subject.trim()) return;
-  isCreatingComplaint.value = true;
-  createComplaintError.value = null;
-  createComplaintAttachmentWarning.value = null;
-  try {
-    // FIX: كانت الدالة تقفل المودال وتعيد تحميل القائمة بدون ما تستدعي
-    // complaintService.create() فعليًا — فبيانات الشكوى المُدخلة كانت
-    // تُهمَل بصمت ويبدو للأدمن إنها انحفظت بنجاح.
-    const { data } = await complaintService.create(createForm.value);
-    const complaintId = data.data?.id;
-
-    if (createComplaintFile.value && complaintId) {
-      try {
-        const body = new FormData();
-        body.append("file", createComplaintFile.value);
-        body.append(
-          "document_type",
-          createComplaintFile.value.type.startsWith("video/") ? "complaint_video" : "complaint_image",
-        );
-        await complaintService.uploadAttachment(complaintId, body);
-      } catch (attachErr) {
-        // الشكوى نفسها اتسجلت بنجاح — فشل رفع المرفق فقط ما لازم يُقرأ
-        // كفشل بفتح الشكوى، بس لازم يبان للأدمن مش يختفي بصمت.
-        createComplaintAttachmentWarning.value = normalizeApiError(
-          attachErr,
-          t("complaints_page.attachment_upload_error"),
-        ).message;
-      }
-    }
-
-    isCreateOpen.value = false;
-    if (createComplaintAttachmentWarning.value) {
-      toast.show({ type: "danger", title: createComplaintAttachmentWarning.value });
-    }
-    await fetchComplaints(1);
-  } catch (e) {
-    createComplaintError.value = normalizeApiError(e, t("complaints_page.failed_create_complaint")).message;
-  } finally {
-    isCreatingComplaint.value = false;
-  }
+  const ok = await deleteComplaint(c.id);
+  if (!ok) toast.show({ type: "danger", title: deleteError.value });
 }
 
 onMounted(() => {
   fetchComplaints(1);
   fetchAdminUsers();
+  fetchTypeCounts();
 });
 </script>
 
@@ -504,14 +474,6 @@ onMounted(() => {
             <FileText class="text-[#D9534F]" aria-hidden="true" />
             {{ $t("subscriptions_page.export_pdf") }}
           </button>
-          <button
-            type="button"
-            @click="openCreateComplaint"
-            class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2"
-          >
-            <Plus aria-hidden="true" />
-            {{ $t("complaints_page.new_complaint") }}
-          </button>
         </div>
       </div>
     </section>
@@ -535,7 +497,10 @@ onMounted(() => {
         </h3>
         <span class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("complaints_page.last_30_days") }}</span>
       </div>
-      <div class="space-y-2.5">
+      <div v-if="COMPLAINT_CATEGORIES.length === 0" class="text-center py-6 text-[11.5px] text-[#9a9d97] dark:text-[#8f938a]">
+        {{ $t("complaints_page.no_category_data") }}
+      </div>
+      <div v-else class="space-y-2.5">
         <div v-for="cat in COMPLAINT_CATEGORIES" :key="cat.label" class="flex items-center gap-3">
           <span class="text-[11.5px] w-48 shrink-0 truncate">{{ cat.label }}</span>
           <div class="flex-1 h-2 rounded-full bg-[#f4efe5]/70 dark:bg-white/5 overflow-hidden">
@@ -605,6 +570,7 @@ onMounted(() => {
           :options="CHANNEL_OPTIONS" variant="field" width-class="w-full" match-trigger-width
         />
         <AppDropdownSelect
+          v-if="canAssignComplaints"
           v-model="assignedToFilter" @update:model-value="onFilterChange"
           :options="[{ value: '', label: $t('complaints_page.all_assignees') }, ...adminSelectOptions]"
           :disabled="isLoadingAdmins"
@@ -795,7 +761,29 @@ onMounted(() => {
             </div>
             <p class="text-[12.5px] leading-relaxed glass-card p-3.5">{{ activeComplaint.description }}</p>
 
-            <div class="flex items-center gap-2">
+            <div class="glass-card p-3.5">
+              <h4 class="text-[11.5px] font-bold mb-2.5 flex items-center gap-1.5">
+                <Paperclip class="text-[10px]" aria-hidden="true" /> {{ $t("complaints_page.attachments_title") }}
+              </h4>
+              <div v-if="isLoadingAttachments" class="space-y-2">
+                <div v-for="i in 2" :key="i" class="h-9 rounded-lg thumb-loading"></div>
+              </div>
+              <p v-else-if="attachmentsError" class="text-[11px] text-[#D9534F]">{{ attachmentsError }}</p>
+              <p v-else-if="complaintAttachments.length === 0" class="text-[11px] text-[#9a9d97] dark:text-[#8f938a]">
+                {{ $t("complaints_page.no_attachments") }}
+              </p>
+              <div v-else class="space-y-2">
+                <div v-for="a in complaintAttachments" :key="a.id" class="flex items-center gap-2.5 p-2 rounded-lg bg-[#f4efe5]/50 dark:bg-white/5">
+                  <File class="text-[#8A6D1F] text-[13px] shrink-0" aria-hidden="true" />
+                  <div class="min-w-0 flex-1">
+                    <button type="button" @click="previewingAttachment = a" class="text-[11.5px] font-semibold hover:underline truncate block text-start">{{ a.original_name }}</button>
+                    <p class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ a.uploaded_by?.name ?? "—" }} · {{ fmtFileSize(a.file_size) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="canAssignComplaints" class="flex items-center gap-2">
               <label class="text-[11.5px] font-bold shrink-0">{{ $t("complaints_page.col_assignee") }}</label>
               <AppDropdownSelect
                 v-model="assignDraft"
@@ -840,59 +828,6 @@ onMounted(() => {
       </div>
     </Teleport>
 
-    <!-- ===== نافذة شكوى جديدة ===== -->
-    <Teleport to="body">
-      <div v-if="isCreateOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="isCreateOpen = false">
-        <div class="glass-card modal-panel-pop !bg-white/98 dark:!bg-[#1c1e20]/98 w-full max-w-md shadow-2xl overflow-hidden rounded-2xl">
-          <div class="modal-head-brand modal-head-brand--green">
-            <div class="modal-head-brand__inner">
-              <span class="modal-head-brand__icon"><Plus aria-hidden="true" /></span>
-              <div class="min-w-0">
-                <h3 class="modal-head-brand__title">{{ $t("complaints_page.new_complaint") }}</h3>
-              </div>
-            </div>
-            <button :aria-label="$t('common.close')" type="button" @click="isCreateOpen = false" class="modal-head-brand__close">
-              <X aria-hidden="true" />
-            </button>
-          </div>
-          <div class="p-5 space-y-3.5">
-            <div v-if="createComplaintError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2">{{ createComplaintError }}</div>
-            <div>
-              <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.subject_field_label") }}</label>
-              <input v-model="createForm.subject" type="text" class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F]" />
-            </div>
-            <div>
-              <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.description_field_label") }}</label>
-              <textarea v-model="createForm.description" rows="3" class="w-full bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[#8A6D1F] resize-none"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.col_priority") }}</label>
-                <AppDropdownSelect v-model="createForm.priority" :options="priorityOptions" variant="field" width-class="w-full" match-trigger-width />
-              </div>
-              <div>
-                <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.col_channel") }}</label>
-                <AppDropdownSelect v-model="createForm.channel" :options="channelOptions" variant="field" width-class="w-full" match-trigger-width />
-              </div>
-            </div>
-            <div>
-              <label class="text-[11.5px] font-bold block mb-1.5">{{ $t("complaints_page.attachment_field_label") }}</label>
-              <input
-                ref="createComplaintFileInput" type="file" accept="image/*,video/*"
-                @change="onCreateComplaintFileChange"
-                class="w-full text-[11.5px] bg-[#f4efe5]/70 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#8A6D1F]"
-              />
-            </div>
-          </div>
-          <div class="modal-footer-brand">
-            <button type="button" @click="isCreateOpen = false" class="btn-outline-brand">{{ $t("dashboard.cancel") }}</button>
-            <button type="button" @click="handleCreateComplaint" :disabled="isCreatingComplaint" class="btn-fill-brand">
-              <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isCreatingComplaint" /><Check aria-hidden="true" v-else />
-              {{ $t("users_page.save_action") }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <AttachmentPreviewModal :attachment="previewingAttachment" @close="previewingAttachment = null" />
   </div>
 </template>

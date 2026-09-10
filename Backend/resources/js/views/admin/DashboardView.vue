@@ -8,6 +8,7 @@ import { useAdminDashboardFull } from "@/composables/useAdminDashboardFull";
 import { useAdminDashboardCharts } from "@/composables/useAdminDashboardCharts";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
+import { usePermissions } from "@/composables/usePermissions";
 import { vReveal } from "@/directives/reveal";
 import { vCountUp } from "@/directives/countUp";
 import AdminAnnouncementModal from "@/components/admin/AdminAnnouncementModal.vue";
@@ -28,18 +29,21 @@ const authStore = useAuthStore();
 const generatorsPanelRef = ref(null);
 const toast = useToastStore();
 const { t, locale } = useI18n();
+const { can } = usePermissions();
 
 const {
-  stats, isLoadingStats,
-  invoicePercentages, isLoadingBreakdown,
-  alerts, isLoadingAlerts,
+  stats, isLoadingStats, statsError,
+  invoicePercentages, isLoadingBreakdown, breakdownError,
+  alerts, isLoadingAlerts, alertsError,
   generators,
   loadAll,
+  fetchStats, fetchInvoiceBreakdown, fetchAlerts,
 } = useAdminDashboardFull();
 
 const {
   timeline,
   isLoadingTimeline,
+  timelineError,
   fetchTimeline,
   allGeneratorsForSelect,
   ensureGeneratorsForSelectLoaded,
@@ -53,14 +57,14 @@ const maintenanceGeneratorOptions = computed(() =>
 );
 
 const {
-  revenue, isLoadingRevenue, fetchRevenue,
-  subscriberGrowth, isLoadingSubscriberGrowth,
-  fuel, isLoadingFuel,
-  maintenance, isLoadingMaintenance,
+  revenue, isLoadingRevenue, revenueError, fetchRevenue,
+  subscriberGrowth, isLoadingSubscriberGrowth, subscriberGrowthError,
+  fuel, isLoadingFuel, fuelError,
+  maintenance, isLoadingMaintenance, maintenanceChartError,
   loadAllCharts,
 } = useAdminDashboardCharts();
 
-/* ---------------- بطاقات KPI (بيانات حقيقية فقط - لا نسب نمو وهمية) ---------------- */
+/** يبني تعريف بطاقات KPI (الأيقونة والألوان) من مفاتيح stats الحقيقية — بلا أي نسب نمو وهمية. */
 const KPI_CARDS = computed(() => {
   if (!stats.value) return [];
   return [
@@ -71,31 +75,21 @@ const KPI_CARDS = computed(() => {
     { key: "invoices_overdue_count", icon: "fa-file-invoice-dollar", c1: "#D9534F", c2: "#b8352f" },
     { key: "payments_pending_count", icon: "fa-wallet", c1: "#17A2B8", c2: "#0f6c7d" },
     { key: "open_faults_count", icon: "fa-triangle-exclamation", c1: "#D9534F", c2: "#b8352f" },
-    // --- إضافة: بطاقة عدد طلبات/عمليات الصيانة (مستقلة عن عدد الأعطال المفتوحة) ---
     { key: "maintenance_count", icon: "fa-screwdriver-wrench", c1: "#FFC107", c2: "#a3760a" },
     { key: "complaints_open_count", icon: "fa-comment-dots", c1: "#D9534F", c2: "#8A6D1F" },
     { key: "technicians_count", icon: "fa-screwdriver-wrench", c1: "#52733D", c2: "#3E582E" },
     { key: "new_service_requests_count", icon: "fa-hand-holding-hand", c1: "#FFC107", c2: "#a3760a" },
-    // FIX: إضافة (item 11) — هذين الحقلين كانا موجودين أصلًا بنفس رد
-    // /admin/dashboard/stats المستخدَم هون (stats.value يحتوي كامل الرد
-    // بدون تصفية)، بس ما كانا معروضين بأي مكان بلوحة التحكم الرئيسية —
-    // كانا معروضين فقط بمكوّن AdminStatsGrid.vue المعزول (زيرو استخدام).
-    // دمجناهم هون بدل إعادة استخدام AdminStatsGrid نفسه لنتفادى نداء API
-    // مكرر لنفس الـ endpoint بنفس الصفحة.
     { key: "invoices_issued_count", icon: "fa-file-invoice", c1: "#17A2B8", c2: "#0f6c7d" },
     { key: "invoices_paid_count", icon: "fa-circle-check", c1: "#28A745", c2: "#1f7a37" },
   ];
 });
 
-// FIX: (item 11) stats.total_revenue_ils — نفس الملاحظة أعلاه: كان موجود
-// بالرد أصلًا وغير معروض إلا بـ AdminStatsGrid.vue المعزول. عرض عملة
-// بصيغة مختلفة عن بطاقات KPI الرقمية العادية (v-count-up)، فمنعرضه ببطاقة
-// مميّزة منفصلة بدل إقحامه بنفس شبكة KPI_CARDS.
+/** ينسّق إجمالي الإيرادات (stats.total_revenue_ils) كعملة، لبطاقة منفصلة عن شبكة KPI_CARDS الرقمية العادية. */
 const totalRevenueDisplay = computed(() =>
   stats.value ? Number(stats.value.total_revenue_ils ?? 0).toFixed(2) : "0.00",
 );
 
-/* ---------------- أولويات اليوم (مبنية على stats الحقيقية) ---------------- */
+/** يبني قائمة "أولويات اليوم" (فواتير متأخرة، دفعات معلّقة...) من stats، مرتّبة تنازليًا وبدون العناصر الصفرية. */
 const TODAY_PRIORITIES = computed(() => {
   if (!stats.value) return [];
   return [
@@ -110,14 +104,10 @@ const TODAY_PRIORITIES = computed(() => {
     .sort((a, b) => b.count - a.count);
 });
 
-/**
- * تنسيق موحّد لعرض المبالغ المالية (₪).
- * تم استخراجها كدالة واحدة بدل تكرارها 3 مرات داخل القالب (DRY).
- */
+/** ينسّق مبلغًا ماليًا كعملة موحّدة (₪) حسب اللغة الحالية — دالة واحدة بدل تكرار المنطق بالقالب. */
 function fmtMoney(amount) {
   return "₪ " + Number(amount ?? 0).toLocaleString(locale.value === "ar" ? "ar-EG" : "en-US");
 }
-
 
 const ALERT_ICONS = {
   fuel_low: { icon: "fa-gas-pump", color: "#D9534F" },
@@ -126,10 +116,13 @@ const ALERT_ICONS = {
   complaint_open: { icon: "fa-comment-dots", color: "#17A2B8" },
 };
 const ALERT_CHIPS = { critical: "chip-danger", warning: "chip-warning", info: "chip-info" };
+
+/** يترجم نوع خطورة التنبيه (critical/warning/info) إلى نص شارة معروض، مع "info" كقيمة افتراضية. */
 function alertTag(severity) {
   return t(`alert.${severity}`, t("alert.info"));
 }
 
+/** يحوّل تاريخ/وقت إلى نص نسبي مقروء ("قبل 5 دقائق"، "قبل ساعتين"...) لبطاقة الخط الزمني. */
 function timeAgo(str) {
   if (!str) return "-";
   const diffMs = Date.now() - new Date(str.replace(" ", "T")).getTime();
@@ -141,21 +134,18 @@ function timeAgo(str) {
   return t("subscribers_page.time_days_ago", { days: Math.floor(hours / 24) });
 }
 
-/* ---------------- تنسيق التاريخ الحالي (حقيقي، ثنائي اللغة) ---------------- */
+/** تاريخ اليوم الحالي منسّقًا بالكامل (اسم اليوم + الشهر)، بالعربي أو الإنجليزي حسب اللغة الحالية. */
 const todayLabel = computed(() =>
   new Date().toLocaleDateString(locale.value === "ar" ? "ar-EG-u-ca-gregory" : "en-US", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   }),
 );
 
-/* ---------------- إعدادات مخطط الإيرادات مقابل المستحقات (مع تبديل الفترة) ----------------
-   نفس نمط تبديل الفترة (6/12 شهر أو سنة محدَّدة) المستخدَم بمخطط "الإيرادات
-   الموزّعة على المالكين" بصفحة أصحاب المولدات — لتوحيد سلوك عناصر التحكّم
-   بالفترة بين الواجهتين. */
 const revenuePeriod = ref("6"); // '6' | '12' | 'year'
 const revenueYear = ref(null);
 const availableRevenueYears = ref([]);
 
+/** يجلب مخطط الإيرادات مقابل المستحقات حسب الفترة/السنة الحاليّة، ويحدّث قائمة السنوات المتاحة من أول استجابة. */
 async function fetchRevenueData() {
   const params =
     revenuePeriod.value === "year" && revenueYear.value
@@ -168,11 +158,13 @@ async function fetchRevenueData() {
   }
 }
 
+/** يبدّل فترة مخطط الإيرادات (6/12 شهر) ويعيد جلب بياناته. */
 function setRevenuePeriod(period) {
   revenuePeriod.value = period;
   fetchRevenueData();
 }
 
+/** يبدّل مخطط الإيرادات لعرض سنة محدَّدة بالكامل، ويعيد جلب بياناته. */
 function setRevenueYear(year) {
   revenueYear.value = year;
   revenuePeriod.value = "year";
@@ -239,6 +231,7 @@ const stackedBarOptions = {
 const isMaintenanceModalOpen = ref(false);
 const maintenanceForm = ref({ generator_id: "", starts_at: "", ends_at: "", note: "" });
 
+/** يفتح نافذة جدولة الصيانة بفورم فارغ، بعد التأكد من تحميل قائمة المولدات. */
 async function openMaintenanceModal() {
   maintenanceForm.value = { generator_id: "", starts_at: "", ends_at: "", note: "" };
   maintenanceError.value = null;
@@ -246,6 +239,7 @@ async function openMaintenanceModal() {
   isMaintenanceModalOpen.value = true;
 }
 
+/** يرسل فورم جدولة الصيانة للمولد المحدَّد، ويغلق النافذة عند النجاح. */
 async function handleScheduleMaintenance() {
   if (!maintenanceForm.value.generator_id || !maintenanceForm.value.starts_at || !maintenanceForm.value.ends_at) return;
   const ok = await scheduleMaintenance(maintenanceForm.value.generator_id, {
@@ -259,8 +253,8 @@ async function handleScheduleMaintenance() {
   }
 }
 
-/* ---------------- مالك/مشترك/فني جديد + النسخة الاحتياطية (FE-01: منقولة
-   إلى useAdminQuickCreate composable بدل نداء الخدمات مباشرة من الـ view) ---------------- */
+/* ---------------- مالك/مشترك/فني جديد + النسخة الاحتياطية (منطق ونداءات
+   API كاملة داخل useAdminQuickCreate composable) ---------------- */
 const {
   isOwnerModalOpen,
   isSavingOwner,
@@ -294,7 +288,7 @@ const showSubscriberPasswordConfirmation = ref(false);
 const showTechnicianPassword = ref(false);
 const showTechnicianPasswordConfirmation = ref(false);
 
-/* ---------------- إضافة: تصدير تقرير اليوم (زر الهيرو) — يعتمد على بيانات KPI الحقيقية المحمّلة أصلًا ---------------- */
+/** يصدّر تقرير KPI اليوم كملف CSV، من بيانات stats المحمَّلة أصلًا (بلا نداء API إضافي). */
 function exportTodayReport() {
   if (!stats.value) return;
   const rows = [
@@ -308,10 +302,13 @@ function exportTodayReport() {
 }
 
 const announcementModalRef = ref(null);
+
+/** يفتح نافذة إرسال إعلان (المكوّن AdminAnnouncementModal) عبر مرجعه. */
 function openAnnouncementModal() {
   announcementModalRef.value?.open();
 }
 
+/** يبني قائمة "رؤى الذكاء الاصطناعي" (مخاطر وقود/تحصيل، شكاوى، أفضل مولد إيرادًا) من stats/alerts/generators الحقيقية. */
 const aiInsights = computed(() => {
   if (!stats.value) return [];
   const list = [];
@@ -375,8 +372,13 @@ const aiInsights = computed(() => {
 });
 const AI_SEVERITY_CHIP = { critical: "chip-danger", warning: "chip-warning", info: "chip-info", positive: "chip-success" };
 
-onMounted(async () => {
-  await loadAll();
+/**
+ * يشغّل تحميل كل أقسام الصفحة عند الدخول إليها. الاستدعاءات الأربعة مستقلة
+ * عمدًا عن بعضها (بلا await متسلسل) — فشل قسم واحد لا يمنع تحميل الباقي،
+ * لأن كل composable يلتقط خطأه بنفسه (statsError وأخواتها بالقالب تحت).
+ */
+onMounted(() => {
+  loadAll();
   fetchTimeline();
   loadAllCharts();
   fetchRevenueData();
@@ -411,6 +413,7 @@ onMounted(async () => {
               {{ t("dashboard.export_report") }}
             </button>
             <button
+              v-if="can('users.create')"
               type="button"
               @click="openNewSubscriberModal"
               class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2"
@@ -433,6 +436,11 @@ onMounted(async () => {
       </div>
       <div v-if="isLoadingStats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
         <div v-for="i in 8" :key="i" class="h-28 rounded-2xl thumb-loading"></div>
+      </div>
+      <div v-else-if="statsError" class="glass-card p-6 flex flex-col items-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+        <CircleAlert aria-hidden="true" />
+        {{ statsError }}
+        <button type="button" @click="fetchStats" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
       </div>
       <div v-else class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
         <div
@@ -504,12 +512,22 @@ onMounted(async () => {
           </div>
         </div>
         <div v-if="isLoadingRevenue" class="flex-1 min-h-[16rem] thumb-loading rounded-lg"></div>
+        <div v-else-if="revenueError" class="flex-1 min-h-[16rem] flex flex-col items-center justify-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ revenueError }}
+          <button type="button" @click="fetchRevenueData" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
+        </div>
         <div v-else class="flex-1 min-h-[16rem]"><Line :data="revenueChartData" :options="lineChartOptions" /></div>
       </div>
 
       <div class="glass-card p-4">
         <h3 class="text-[13.5px] font-bold mb-3">{{ t("dashboard.invoice_status_title") }}</h3>
         <div v-if="isLoadingBreakdown" class="h-44 thumb-loading rounded-lg"></div>
+        <div v-else-if="breakdownError" class="h-44 flex flex-col items-center justify-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ breakdownError }}
+          <button type="button" @click="fetchInvoiceBreakdown" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
+        </div>
         <template v-else>
           <div class="h-44"><Doughnut :data="invoiceDoughnutData" :options="doughnutOptions" /></div>
           <div class="grid grid-cols-3 gap-2 mt-3 text-center">
@@ -523,12 +541,22 @@ onMounted(async () => {
       <div class="glass-card p-4">
         <h3 class="text-[13.5px] font-bold mb-3">{{ t("dashboard.subscriber_growth_title") }}</h3>
         <div v-if="isLoadingSubscriberGrowth" class="h-44 thumb-loading rounded-lg"></div>
+        <div v-else-if="subscriberGrowthError" class="h-44 flex flex-col items-center justify-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ subscriberGrowthError }}
+          <button type="button" @click="loadAllCharts" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
+        </div>
         <div v-else class="h-44"><Bar :data="subscriberGrowthData" :options="barNoLegendOptions" /></div>
       </div>
 
       <div class="glass-card p-4">
         <h3 class="text-[13.5px] font-bold mb-3">{{ t("dashboard.fuel_chart_title") }}</h3>
         <div v-if="isLoadingFuel" class="h-44 thumb-loading rounded-lg"></div>
+        <div v-else-if="fuelError" class="h-44 flex flex-col items-center justify-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ fuelError }}
+          <button type="button" @click="loadAllCharts" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
+        </div>
         <div v-else class="h-44"><Line :data="fuelChartData" :options="barNoLegendOptions" /></div>
       </div>
 
@@ -536,6 +564,11 @@ onMounted(async () => {
       <div class="glass-card p-4">
         <h3 class="text-[13.5px] font-bold mb-3">{{ t("dashboard.maintenance_chart_title") }}</h3>
         <div v-if="isLoadingMaintenance" class="h-44 thumb-loading rounded-lg"></div>
+        <div v-else-if="maintenanceChartError" class="h-44 flex flex-col items-center justify-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ maintenanceChartError }}
+          <button type="button" @click="loadAllCharts" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
+        </div>
         <div v-else-if="!maintenance?.labels?.length" class="h-44 flex items-center justify-center text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("dashboard.no_enough_data") }}</div>
         <div v-else class="h-44"><Bar :data="maintenanceChartData" :options="stackedBarOptions" /></div>
       </div>
@@ -564,6 +597,11 @@ onMounted(async () => {
         <div v-if="isLoadingAlerts" class="space-y-2">
           <div v-for="i in 3" :key="i" class="h-12 rounded-lg thumb-loading"></div>
         </div>
+        <div v-else-if="alertsError" class="py-6 flex flex-col items-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ alertsError }}
+          <button type="button" @click="fetchAlerts" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
+        </div>
         <div v-else-if="alerts.length === 0" class="dropdown-empty py-8">{{ t("dashboard.no_alerts") }}</div>
         <div v-else class="space-y-2.5">
           <div v-for="(a, i) in alerts" :key="i" class="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 transition-colors">
@@ -585,6 +623,11 @@ onMounted(async () => {
         <h3 class="text-[13.5px] font-bold mb-3">{{ t("dashboard.recent_activity") }}</h3>
         <div v-if="isLoadingTimeline" class="space-y-2">
           <div v-for="i in 3" :key="i" class="h-10 rounded-lg thumb-loading"></div>
+        </div>
+        <div v-else-if="timelineError" class="py-6 flex flex-col items-center gap-2.5 text-center text-[12px] text-[#D9534F]">
+          <CircleAlert aria-hidden="true" />
+          {{ timelineError }}
+          <button type="button" @click="fetchTimeline" class="text-[11.5px] font-bold underline hover:no-underline">{{ t("common.retry") }}</button>
         </div>
         <div v-else-if="timeline.length === 0" class="dropdown-empty py-8">{{ t("dashboard.no_activity") }}</div>
         <div v-else class="mt-1">
@@ -672,15 +715,15 @@ onMounted(async () => {
     <section v-reveal class="glass-card p-4 lg:p-5">
       <h3 class="text-[13.5px] font-bold mb-3.5">{{ t("dashboard.quick_actions") }}</h3>
       <div class="flex items-stretch gap-1 sm:gap-2 lg:gap-2.5">
-        <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openOwnerModal">
+        <button v-if="can('users.create')" type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openOwnerModal">
           <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#52733D,#3E582E)"><UserRound aria-hidden="true" /></span>
           <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("menu.generator_owners") }}</span>
         </button>
-        <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openNewSubscriberModal">
+        <button v-if="can('users.create')" type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openNewSubscriberModal">
           <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#17A2B8,#0f6c7d)"><UsersRound aria-hidden="true" /></span>
           <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("menu.subscribers") }}</span>
         </button>
-        <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openTechnicianModal">
+        <button v-if="can('users.create')" type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openTechnicianModal">
           <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#FFC107,#a3760a)"><Wrench aria-hidden="true" /></span>
           <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("menu.technicians") }}</span>
         </button>
@@ -694,7 +737,7 @@ onMounted(async () => {
           </span>
           <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("dashboard.backup_label") }}</span>
         </button>
-        <button type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openMaintenanceModal">
+        <button v-if="can('generator-schedules.create')" type="button" class="qw-btn flex-1 min-w-0 basis-0 hover:bg-[#f4efe5]/60 dark:hover:bg-white/5" @click="openMaintenanceModal">
           <span class="qw-icon !w-7 !h-7 sm:!w-8 sm:!h-8 lg:!w-9 lg:!h-9 !text-[10px] sm:!text-[11px]" style="background:linear-gradient(135deg,#FFC107,#a3760a)"><Wrench aria-hidden="true" /></span>
           <span class="block w-full truncate text-center text-[8.5px] sm:text-[9.5px] lg:text-[10.5px] font-semibold">{{ t("dashboard.schedule_maintenance_label") }}</span>
         </button>

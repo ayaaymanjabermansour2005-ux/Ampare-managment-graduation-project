@@ -11,6 +11,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ArticleTest extends TestCase
@@ -64,6 +65,43 @@ class ArticleTest extends TestCase
         ])->assertStatus(403);
     }
 
+    /**
+     * تدقيق شامل — الجولة السابعة: قبل هالإصلاح، ميزة المقالات كانت محمية
+     * بـ isAdmin() فقط (بدون أي صلاحية articles.* دقيقة)، فمستحيل تقييد
+     * أدمن فرعي عنها. صار فيه صلاحيات مستقلة الآن — هاد الاختبار يتحقق أن
+     * أدمن بدون صلاحية articles.create تحديدًا (رغم دوره admin) يُرفض فعليًا.
+     */
+    public function test_admin_without_articles_create_permission_cannot_create_article(): void
+    {
+        $admin = $this->makeAdmin();
+        Role::findByName(RoleEnum::ADMIN->value, 'sanctum')->revokePermissionTo('articles.create');
+
+        $this->actingAs($admin)->postJson('/api/v1/admin/articles', [
+            'title' => 'محاولة',
+            'content' => 'محتوى.',
+            'title_en' => 'Attempt',
+            'content_en' => 'Content.',
+        ])->assertStatus(403);
+    }
+
+    public function test_admin_without_articles_delete_permission_cannot_delete_article(): void
+    {
+        $admin = $this->makeAdmin();
+        $article = Article::create([
+            'title' => 'خبر',
+            'slug' => Article::generateUniqueSlug('خبر'),
+            'content' => 'تفاصيل.',
+            'author_id' => $admin->id,
+        ]);
+        Role::findByName(RoleEnum::ADMIN->value, 'sanctum')->revokePermissionTo('articles.delete');
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/v1/admin/articles/{$article->id}")
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('articles', ['id' => $article->id]);
+    }
+
     public function test_admin_can_upload_image_to_article(): void
     {
         $admin = $this->makeAdmin();
@@ -86,6 +124,13 @@ class ArticleTest extends TestCase
             'attachable_id' => $article->id,
             'document_type' => 'article_image',
         ]);
+
+        // FIX (تدقيق شامل — D7): attachments لم تكن تُحمَّل مسبقًا بقائمة
+        // الأدمن، فحقل images كان دائمًا فارغًا رغم رفع صورة فعليًا.
+        $listResponse = $this->actingAs($admin)->getJson('/api/v1/admin/articles');
+        $listResponse->assertOk();
+        $listed = collect($listResponse->json('data.data'))->firstWhere('id', $article->id);
+        $this->assertCount(1, $listed['images']);
     }
 
     public function test_non_admin_cannot_upload_image_to_article(): void

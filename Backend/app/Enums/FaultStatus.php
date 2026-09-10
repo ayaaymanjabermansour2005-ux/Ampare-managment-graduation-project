@@ -27,4 +27,17 @@ enum FaultStatus: string
     {
         return in_array($this, [self::Rejected, self::Closed], true);
     }
+
+    /**
+     * Statuses considered "open" (still requiring action) across the platform.
+     * Single source of truth so dashboards/reports never disagree on this definition.
+     */
+    public static function openValues(): array
+    {
+        return [
+            self::PendingVerification->value,
+            self::Verified->value,
+            self::InRepair->value,
+        ];
+    }
 }

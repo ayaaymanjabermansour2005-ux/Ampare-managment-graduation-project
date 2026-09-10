@@ -28,6 +28,22 @@ export function useAdminComplaints() {
   const deletingId = ref(null);
   const deleteError = ref(null);
 
+  // FIX (تدقيق شامل — D6): توزيع الشكاوى حسب النوع كان بيانات وهمية ثابتة
+  // بالواجهة — الآن يُجلب فعليًا من الباك اند.
+  const typeCounts = ref({});
+  const isLoadingTypeCounts = ref(false);
+  async function fetchTypeCounts() {
+    isLoadingTypeCounts.value = true;
+    try {
+      const { data } = await complaintService.typeCounts();
+      typeCounts.value = data.data ?? {};
+    } catch {
+      typeCounts.value = {};
+    } finally {
+      isLoadingTypeCounts.value = false;
+    }
+  }
+
   async function fetchComplaints(page = 1) {
     isLoading.value = true;
     error.value = null;
@@ -128,6 +144,9 @@ export function useAdminComplaints() {
     assignError,
     deletingId,
     deleteError,
+    typeCounts,
+    isLoadingTypeCounts,
+    fetchTypeCounts,
     fetchComplaints,
     onSearchInput,
     onFilterChange,

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 
 vi.mock('@/services/generatorService', () => ({
@@ -22,6 +23,9 @@ const i18n = createI18n({
                 update_error: 'تعذر تعديل المولد',
                 delete_error: 'تعذر حذف المولد',
             },
+            generators_management_page: {
+                cities_load_error: 'تعذّر تحميل قائمة المناطق.',
+            },
         },
     },
 });
@@ -35,6 +39,7 @@ const generatorService = (await import('@/services/generatorService')).default;
 
 describe('useGeneratorsTable', () => {
     beforeEach(() => {
+        setActivePinia(createPinia());
         vi.clearAllMocks();
     });
 
@@ -45,6 +50,24 @@ describe('useGeneratorsTable', () => {
         await fetchGenerators();
 
         expect(error.value).toBe('تعذر تحميل المولدات');
+    });
+
+    it('fetchCities populates cities on success', async () => {
+        generatorService.cities.mockResolvedValue({ data: { data: ['Ramallah', 'Nablus'] } });
+
+        const { fetchCities, cities } = useGeneratorsTable();
+        await fetchCities();
+
+        expect(cities.value).toEqual(['Ramallah', 'Nablus']);
+    });
+
+    it('fetchCities does not throw on failure (regression: used to reject unhandled)', async () => {
+        generatorService.cities.mockRejectedValue({ message: 'Network Error' });
+
+        const { fetchCities, cities } = useGeneratorsTable();
+
+        await expect(fetchCities()).resolves.toBeUndefined();
+        expect(cities.value).toEqual([]);
     });
 
     describe('createGenerator — reshaped to { message, errors }', () => {

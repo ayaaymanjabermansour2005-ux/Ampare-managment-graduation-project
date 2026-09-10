@@ -5,6 +5,8 @@ import { useI18n } from "vue-i18n";
 import { useArticles } from "@/composables/useArticles";
 import { useAdminArticleComments } from "@/composables/useAdminArticleComments";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
+import { useToastStore } from "@/stores/toast";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 import articleService from "@/services/articleService";
 import { vReveal } from "@/directives/reveal";
@@ -16,13 +18,15 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 const { t, locale } = useI18n();
 const route = useRoute();
 const { confirm } = useConfirm();
+const { can } = usePermissions();
+const toast = useToastStore();
 
 /* ==========================================================================
  * ========================  التابات (المقالات / التعليقات)  ================
  * ========================================================================== */
 const TABS = computed(() => [
   { key: "articles", label: t("articles_page.title"), icon: "fa-newspaper" },
-  { key: "comments", label: t("article_comments_page.title"), icon: "fa-comments" },
+  ...(can("article-comments.view") ? [{ key: "comments", label: t("article_comments_page.title"), icon: "fa-comments" }] : []),
 ]);
 const activeTab = ref("articles");
 
@@ -35,6 +39,8 @@ const {
   isLoading,
   error,
   isSaving,
+  saveError,
+  deleteError,
   fetchArticles,
   createArticle,
   updateArticle,
@@ -73,6 +79,7 @@ function openCreate() {
     cover_image_url: "",
     is_published: false,
   };
+  saveError.value = null;
   isFormOpen.value = true;
 }
 
@@ -80,6 +87,7 @@ function openEdit(article) {
   editingArticle.value = article;
   form.value = { ...article };
   coverUploadError.value = null;
+  saveError.value = null;
   isFormOpen.value = true;
 }
 
@@ -126,7 +134,9 @@ async function handleDelete(article) {
     confirmLabel: t("common.delete"),
     variant: "danger",
   });
-  if (confirmed) await deleteArticle(article.id);
+  if (!confirmed) return;
+  const ok = await deleteArticle(article.id);
+  if (!ok) toast.show({ type: "danger", title: deleteError.value });
 }
 
 /* ==========================================================================
@@ -141,12 +151,28 @@ const {
   fetchComments,
   onFilterChange,
   isActing,
+  actionError,
   approve,
   reject,
   destroy,
   reply,
   deleteReply,
 } = useAdminArticleComments();
+
+/* FIX (تدقيق شامل — الجولة السابعة): approve/reject/destroy ما كان عندها أي
+ * تغذية راجعة عند الفشل. صرنا نعرض actionError كـ Toast. */
+async function handleApprove(id) {
+  const ok = await approve(id);
+  if (!ok) toast.show({ type: "danger", title: actionError.value });
+}
+async function handleReject(id) {
+  const ok = await reject(id);
+  if (!ok) toast.show({ type: "danger", title: actionError.value });
+}
+async function handleDestroyComment(id) {
+  const ok = await destroy(id);
+  if (!ok) toast.show({ type: "danger", title: actionError.value });
+}
 
 const STATUS_PILLS = [
   { value: "pending", key: "owner_applications_page.status_pending" },
@@ -183,11 +209,13 @@ async function submitReply(c) {
   if (!text) return;
   const ok = await reply(c.id, text);
   if (ok) openReplyIds.delete(c.id);
+  else toast.show({ type: "danger", title: actionError.value });
 }
 
 async function removeReply(c) {
-  await deleteReply(c.id);
-  openReplyIds.delete(c.id);
+  const ok = await deleteReply(c.id);
+  if (ok) openReplyIds.delete(c.id);
+  else toast.show({ type: "danger", title: actionError.value });
 }
 
 onMounted(() => {
@@ -243,7 +271,7 @@ onMounted(() => {
           </div>
 
           <button
-            v-if="activeTab === 'articles'"
+            v-if="activeTab === 'articles' && can('articles.create')"
             type="button"
             @click="openCreate"
             class="btn-fill relative inline-flex items-center gap-2 bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white px-4 py-2.5 rounded-full text-[12.5px] font-bold shadow-md shrink-0"
@@ -313,6 +341,7 @@ onMounted(() => {
 
             <div class="flex items-center gap-1 shrink-0">
               <button
+                v-if="can('articles.update')"
                 type="button"
                 @click="openEdit(article)"
                 class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#3E582E] hover:bg-[#EBF1E7] dark:hover:bg-white/5 transition"
@@ -322,6 +351,7 @@ onMounted(() => {
                 <Pencil class="text-[12px]" aria-hidden="true" />
               </button>
               <button
+                v-if="can('articles.delete')"
                 type="button"
                 @click="handleDelete(article)"
                 class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-danger hover:bg-danger/10 transition"
@@ -485,6 +515,8 @@ onMounted(() => {
                   {{ $t("articles_page.publish_immediately") }}
                 </label>
               </div>
+
+              <p v-if="saveError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2">{{ saveError }}</p>
             </div>
 
             <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-[#eee8da] dark:border-white/10 shrink-0">
@@ -576,7 +608,7 @@ onMounted(() => {
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-1.5 shrink-0">
+              <div v-if="can('article-comments.moderate')" class="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button" :disabled="isActing" @click="toggleReplyBox(c)"
                   class="w-8 h-8 rounded-lg flex items-center justify-center text-[#8A6D1F] hover:bg-[#8A6D1F]/10 disabled:opacity-40"
@@ -585,20 +617,20 @@ onMounted(() => {
                 ><Pencil aria-hidden="true" v-if="c.admin_reply" style="font-size:11px" /><Reply aria-hidden="true" v-else style="font-size:11px" /></button>
                 <button
                   v-if="statusFilter !== 'approved'"
-                  type="button" :disabled="isActing" @click="approve(c.id)"
+                  type="button" :disabled="isActing" @click="handleApprove(c.id)"
                   class="w-8 h-8 rounded-lg flex items-center justify-center text-[#28A745] hover:bg-[#28A745]/10 disabled:opacity-40"
                   :title="$t('generators_management_page.approve_action')"
                   :aria-label="$t('generators_management_page.approve_action')"
                 ><Check class="text-[12px]" aria-hidden="true" /></button>
                 <button
                   v-if="statusFilter !== 'rejected'"
-                  type="button" :disabled="isActing" @click="reject(c.id)"
+                  type="button" :disabled="isActing" @click="handleReject(c.id)"
                   class="w-8 h-8 rounded-lg flex items-center justify-center text-[#D9534F] hover:bg-[#D9534F]/10 disabled:opacity-40"
                   :title="$t('owner_applications_page.reject_action')"
                   :aria-label="$t('owner_applications_page.reject_action')"
                 ><X class="text-[12px]" aria-hidden="true" /></button>
                 <button
-                  type="button" :disabled="isActing" @click="destroy(c.id)"
+                  type="button" :disabled="isActing" @click="handleDestroyComment(c.id)"
                   class="w-8 h-8 rounded-lg flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:bg-[#D9534F]/10 hover:text-[#D9534F] disabled:opacity-40"
                   :title="$t('article_comments_page.delete_permanently_title')"
                   :aria-label="$t('article_comments_page.delete_permanently_title')"

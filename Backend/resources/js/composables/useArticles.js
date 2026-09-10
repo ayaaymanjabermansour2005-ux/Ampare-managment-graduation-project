@@ -10,6 +10,13 @@ export function useArticles() {
   const isLoading = ref(true);
   const error = ref(null);
   const isSaving = ref(false);
+  /* FIX (تدقيق شامل — الجولة السابعة): create/update/delete كانت بتكتب
+   * بنفس error المستخدم لفشل تحميل القائمة — فشل الحفظ بالمودال كان يظهر
+   * (لو ظهر أصلًا) وكأن القائمة نفسها فشل تحميلها، ونافذة الإضافة/التعديل
+   * ما كانت تعرض أي خطأ إطلاقًا. صرنا نفصل saveError/deleteError عن error.
+   */
+  const saveError = ref(null);
+  const deleteError = ref(null);
 
   async function fetchArticles(page = 1) {
     isLoading.value = true;
@@ -34,12 +41,13 @@ export function useArticles() {
 
   async function createArticle(payload) {
     isSaving.value = true;
+    saveError.value = null;
     try {
       await articleService.create(payload);
       await fetchArticles();
       return true;
     } catch (err) {
-      error.value = normalizeApiError(err, t("articles_page.create_error")).message;
+      saveError.value = normalizeApiError(err, t("articles_page.create_error")).message;
       return false;
     } finally {
       isSaving.value = false;
@@ -48,12 +56,13 @@ export function useArticles() {
 
   async function updateArticle(id, payload) {
     isSaving.value = true;
+    saveError.value = null;
     try {
       await articleService.update(id, payload);
       await fetchArticles(pagination.value.current_page);
       return true;
     } catch (err) {
-      error.value = normalizeApiError(err, t("articles_page.update_error")).message;
+      saveError.value = normalizeApiError(err, t("articles_page.update_error")).message;
       return false;
     } finally {
       isSaving.value = false;
@@ -61,11 +70,14 @@ export function useArticles() {
   }
 
   async function deleteArticle(id) {
+    deleteError.value = null;
     try {
       await articleService.destroy(id);
       await fetchArticles(pagination.value.current_page);
+      return true;
     } catch (err) {
-      error.value = normalizeApiError(err, t("articles_page.delete_error")).message;
+      deleteError.value = normalizeApiError(err, t("articles_page.delete_error")).message;
+      return false;
     }
   }
 
@@ -75,6 +87,8 @@ export function useArticles() {
     isLoading,
     error,
     isSaving,
+    saveError,
+    deleteError,
     fetchArticles,
     createArticle,
     updateArticle,

@@ -19,6 +19,7 @@ const i18n = createI18n({
         ar: {
             article_comments_page: {
                 load_error: 'تعذر تحميل التعليقات',
+                action_error: 'تعذر تنفيذ العملية',
             },
         },
     },
@@ -100,10 +101,25 @@ describe('useAdminArticleComments', () => {
         const { approve, comments, isActing } = useAdminArticleComments();
         comments.value = [{ id: 1 }, { id: 2 }];
 
-        await approve(1);
+        const result = await approve(1);
 
+        expect(result).toBe(true);
         expect(comments.value).toEqual([{ id: 2 }]);
         expect(isActing.value).toBe(false);
+    });
+
+    // Regression (تدقيق شامل — الجولة السابعة): approve/reject/destroy/deleteReply
+    // كانت بلا catch إطلاقًا — أي فشل كان يطلع Unhandled Promise Rejection صامت.
+    it('approve does not throw on failure and sets actionError', async () => {
+        articleCommentService.approve.mockRejectedValue({ message: 'Network Error' });
+        const { approve, actionError, comments } = useAdminArticleComments();
+        comments.value = [{ id: 1 }];
+
+        const result = await approve(1);
+
+        expect(result).toBe(false);
+        expect(actionError.value).toBe('تعذر تنفيذ العملية');
+        expect(comments.value).toEqual([{ id: 1 }]);
     });
 
     it('reject removes the comment from the list on success', async () => {
@@ -116,6 +132,16 @@ describe('useAdminArticleComments', () => {
         expect(comments.value).toEqual([{ id: 1 }]);
     });
 
+    it('reject does not throw on failure and sets actionError', async () => {
+        articleCommentService.reject.mockRejectedValue({ message: 'Network Error' });
+        const { reject, actionError } = useAdminArticleComments();
+
+        const result = await reject(1);
+
+        expect(result).toBe(false);
+        expect(actionError.value).toBe('تعذر تنفيذ العملية');
+    });
+
     it('destroy removes the comment from the list on success', async () => {
         articleCommentService.destroy.mockResolvedValue({});
         const { destroy, comments } = useAdminArticleComments();
@@ -124,6 +150,16 @@ describe('useAdminArticleComments', () => {
         await destroy(1);
 
         expect(comments.value).toEqual([]);
+    });
+
+    it('destroy does not throw on failure and sets actionError', async () => {
+        articleCommentService.destroy.mockRejectedValue({ message: 'Network Error' });
+        const { destroy, actionError } = useAdminArticleComments();
+
+        const result = await destroy(1);
+
+        expect(result).toBe(false);
+        expect(actionError.value).toBe('تعذر تنفيذ العملية');
     });
 
     it('reply replaces the comment with the server response on success and returns true', async () => {
@@ -137,17 +173,15 @@ describe('useAdminArticleComments', () => {
         expect(comments.value[0]).toEqual({ id: 1, admin_reply: 'شكرًا' });
     });
 
-    // Note: the source's reply() catch block swallows the error entirely (no error
-    // ref is set) and only returns false — this is the composable's actual behavior,
-    // not a gap in this test, so we only assert what it does, not an error message.
-    it('reply returns false on failure without throwing and resets isActing', async () => {
+    it('reply returns false and sets actionError on failure (regression: used to swallow the error silently)', async () => {
         articleCommentService.reply.mockRejectedValue({ message: 'Network Error' });
-        const { reply, isActing } = useAdminArticleComments();
+        const { reply, isActing, actionError } = useAdminArticleComments();
 
         const result = await reply(1, 'x');
 
         expect(result).toBe(false);
         expect(isActing.value).toBe(false);
+        expect(actionError.value).toBe('تعذر تنفيذ العملية');
     });
 
     it('deleteReply replaces the comment with the server response on success', async () => {
@@ -155,8 +189,19 @@ describe('useAdminArticleComments', () => {
         const { deleteReply, comments } = useAdminArticleComments();
         comments.value = [{ id: 1, admin_reply: 'قديم' }];
 
-        await deleteReply(1);
+        const result = await deleteReply(1);
 
+        expect(result).toBe(true);
         expect(comments.value[0]).toEqual({ id: 1, admin_reply: null });
+    });
+
+    it('deleteReply does not throw on failure and sets actionError', async () => {
+        articleCommentService.deleteReply.mockRejectedValue({ message: 'Network Error' });
+        const { deleteReply, actionError } = useAdminArticleComments();
+
+        const result = await deleteReply(1);
+
+        expect(result).toBe(false);
+        expect(actionError.value).toBe('تعذر تنفيذ العملية');
     });
 });

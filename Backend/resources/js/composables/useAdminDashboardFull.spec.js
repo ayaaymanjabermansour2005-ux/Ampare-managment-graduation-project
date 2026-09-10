@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 
 vi.mock('@/services/adminDashboardService', () => ({
@@ -37,6 +38,11 @@ const generatorService = (await import('@/services/generatorService')).default;
 describe('useAdminDashboardFull', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // useGeneratorsTable() (composed internally via ...generatorsTable)
+        // now calls useToastStore() for its own fetchCities() error handling —
+        // needs an active Pinia instance even though this file never asserts
+        // on the toast store directly.
+        setActivePinia(createPinia());
     });
 
     it('starts loading with null stats/breakdown, an empty alerts list, and 0% invoicePercentages', () => {
@@ -115,12 +121,17 @@ describe('useAdminDashboardFull', () => {
         expect(generatorService.list).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
     });
 
-    it('propagates a rejected fetchStats (no catch in the composable) while still clearing isLoadingStats', async () => {
+    // FIX (تدقيق شامل — لوحة التحكم الرئيسية): كانت fetchStats بلا catch،
+    // فكل فشل بيرفض loadAll() بالكامل (Promise.all)، اللي كان يمنع تحميل
+    // باقي أقسام onMounted بـ DashboardView.vue (الخط الزمني/المخططات).
+    // هلق الخطأ محصور بـ statsError، وfetchStats() ما بترفض إطلاقًا.
+    it('catches a rejected fetchStats, storing statsError and leaving isLoadingStats cleared', async () => {
         adminDashboardService.stats.mockRejectedValue(new Error('Network Error'));
 
-        const { isLoadingStats, fetchStats } = useAdminDashboardFull();
-        await expect(fetchStats()).rejects.toThrow('Network Error');
+        const { isLoadingStats, statsError, fetchStats } = useAdminDashboardFull();
+        await expect(fetchStats()).resolves.toBeUndefined();
 
         expect(isLoadingStats.value).toBe(false);
+        expect(statsError.value).toBeTruthy();
     });
 });

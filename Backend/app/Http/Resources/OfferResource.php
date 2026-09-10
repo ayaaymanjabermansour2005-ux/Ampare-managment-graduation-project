@@ -15,7 +15,9 @@ class OfferResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'discount_type' => $this->discount_type,
-            'discount_value' => $this->discount_value,
+            // FIX (تدقيق شامل — C4): بلا (float) يُسلسَل كنص ("10.00") بسبب
+            // cast decimal:2 بالموديل، خلافًا لكل الحقول المالية الأخرى بالتطبيق.
+            'discount_value' => (float) $this->discount_value,
             'target_mode' => $this->target_mode,
             'beneficiary_type' => $this->beneficiary_type,
             'start_date' => $this->start_date?->toDateString(),

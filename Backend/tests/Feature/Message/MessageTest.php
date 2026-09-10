@@ -56,7 +56,7 @@ class MessageTest extends TestCase
         return [$owner, $subscriberUser, $conversation];
     }
 
-    public function test_participant_can_list_messages_in_chronological_order(): void
+    public function test_participant_can_list_messages_newest_first(): void
     {
         [$owner, $subscriberUser, $conversation] = $this->makeConversation();
 
@@ -74,9 +74,14 @@ class MessageTest extends TestCase
         $response = $this->actingAs($owner)
             ->getJson("/api/v1/conversations/{$conversation->id}/messages");
 
+        // FIX (تدقيق شامل — D1): الصفحة الأولى (بلا page بالطلب) يجب أن
+        // تُرجع أحدث الرسائل أولًا حتى لا تُصبح آخر رسالة في محادثة تتجاوز
+        // حجم الصفحة الافتراضي غير قابلة للوصول أبدًا من الواجهة. الاستجابة
+        // أيضًا مُغلَّفة الآن بـ meta/links (باجيناشن حقيقية) بدل مصفوفة مسطّحة.
         $response->assertOk();
-        $ids = collect($response->json('data'))->pluck('id');
-        $this->assertSame([$first->id, $second->id], $ids->all());
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertSame([$second->id, $first->id], $ids->all());
+        $this->assertSame(1, $response->json('data.meta.current_page'));
     }
 
     public function test_non_participant_cannot_list_messages(): void

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 
 vi.mock('@/services/generatorService', () => ({
@@ -23,6 +24,9 @@ const i18n = createI18n({
                 update_error: 'تعذر تعديل المولد',
                 delete_error: 'تعذر حذف المولد',
             },
+            generators_management_page: {
+                stats_load_error: 'تعذّر تحديث إحصائيات المولدات.',
+            },
         },
     },
 });
@@ -42,6 +46,7 @@ function samplePage(items, meta = {}) {
 
 describe('useAdminGenerators', () => {
     beforeEach(() => {
+        setActivePinia(createPinia());
         vi.clearAllMocks();
     });
 
@@ -63,6 +68,28 @@ describe('useAdminGenerators', () => {
 
         expect(stats.value).toEqual({ total: 10, active: 8 });
         expect(isLoadingStats.value).toBe(false);
+    });
+
+    it('fetchStats does not throw on failure (regression: used to reject unhandled)', async () => {
+        generatorService.stats.mockRejectedValue({ message: 'Network Error' });
+        const { fetchStats, stats, isLoadingStats } = useAdminGenerators();
+
+        await expect(fetchStats()).resolves.toBeUndefined();
+
+        expect(stats.value).toBeNull();
+        expect(isLoadingStats.value).toBe(false);
+    });
+
+    it('createGenerator still resolves true when the post-success stats refresh fails (regression)', async () => {
+        generatorService.create.mockResolvedValue({});
+        generatorService.list.mockResolvedValue(samplePage([{ id: 1, name: 'New' }]));
+        generatorService.stats.mockRejectedValue({ message: 'Network Error' });
+
+        const { createGenerator, generators } = useAdminGenerators();
+        const result = await createGenerator({ name: 'New' });
+
+        expect(result).toBe(true);
+        expect(generators.value).toEqual([{ id: 1, name: 'New' }]);
     });
 
     it('fetchGenerators sorts by fuel_percentage ascending by default, treating a missing value as -1 (sorts first)', async () => {

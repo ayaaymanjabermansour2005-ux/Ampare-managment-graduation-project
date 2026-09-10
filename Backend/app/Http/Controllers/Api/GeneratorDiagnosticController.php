@@ -38,6 +38,8 @@ class GeneratorDiagnosticController extends Controller
 
     public function store(StoreGeneratorDiagnosticReadingRequest $request, Generator $generator): JsonResponse
     {
+        $this->authorize('record', $generator);
+
         $reading = $this->diagnosticService->record($generator, $request->validated(), $request->user());
 
         return $this->success(

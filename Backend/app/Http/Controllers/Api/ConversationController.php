@@ -38,7 +38,7 @@ class ConversationController extends Controller
 
         return $this->success(
             message: 'قائمة المحادثات.',
-            data: ConversationResource::collection($conversations)
+            data: ConversationResource::collection($conversations)->response()->getData(true)
         );
     }
 

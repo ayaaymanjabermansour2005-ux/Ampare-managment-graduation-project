@@ -53,6 +53,20 @@ class ComplaintController extends Controller
         );
     }
 
+    /**
+     * FIX (تدقيق شامل — D6): توزيع الشكاوى حسب نوع الكيان المرتبط بها،
+     * لمخطط "توزيع الشكاوى حسب النوع" بلوحة الأدمن (كان بيانات وهمية ثابتة).
+     */
+    public function typeCounts(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Complaint::class);
+
+        return $this->success(
+            message: 'توزيع الشكاوى حسب النوع.',
+            data: $this->complaintService->typeCounts($request->user())
+        );
+    }
+
     public function export(Request $request): BinaryFileResponse
     {
         $this->authorize('viewAny', Complaint::class);
@@ -135,6 +149,18 @@ class ComplaintController extends Controller
         $complaint->delete();
 
         return $this->success(message: 'تم حذف الشكوى بنجاح.');
+    }
+
+    public function attachments(Complaint $complaint): JsonResponse
+    {
+        $this->authorize('view', $complaint);
+
+        return $this->success(
+            message: 'مرفقات الشكوى.',
+            data: AttachmentResource::collection(
+                $complaint->attachments()->with('uploader')->latest()->get()
+            )
+        );
     }
 
     public function storeAttachment(

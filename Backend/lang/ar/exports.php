@@ -178,6 +178,7 @@ return [
         'ComplaintStatus' => [
             'pending' => 'قيد الانتظار',
             'in_progress' => 'قيد المعالجة',
+            'waiting_subscriber' => 'بانتظار رد المشترك',
             'resolved' => 'تم الحل',
         ],
         'ComplaintChannel' => [

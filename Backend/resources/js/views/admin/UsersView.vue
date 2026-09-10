@@ -3,6 +3,7 @@ import { onMounted, ref, reactive, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/stores/user";
+import { useAuthStore } from "@/stores/auth";
 import { usePermissions } from "@/composables/usePermissions";
 import { useConfirm } from "@/composables/useConfirm";
 import { useToastStore } from "@/stores/toast";
@@ -12,8 +13,9 @@ import activityLogService from "@/services/activityLogService";
 import userService from "@/services/userService";
 import neighborhoodService from "@/services/neighborhoodService";
 import { useRolePermissions } from "@/composables/useRolePermissions";
+import { useAdminPasswordTools, generateRandomPassword } from "@/composables/useAdminPasswordTools";
 import { normalizeApiError } from "@/utils/normalizeApiError";
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, Eye, EyeOff, FileSpreadsheet, Info, Key, LoaderCircle, Lock, LockOpen, Pencil, Save, Search, Shuffle, Trash2, UserPlus, UserX, X } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, Eye, EyeOff, FileSpreadsheet, Info, Key, LoaderCircle, Lock, LockOpen, Pencil, Save, Search, Shuffle, Trash2, UserPlus, UserX, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -21,9 +23,19 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 const { t, locale } = useI18n();
 const route = useRoute();
 const userStore = useUserStore();
+const authStore = useAuthStore();
 const { can } = usePermissions();
 const { confirm } = useConfirm();
 const toast = useToastStore();
+
+/* ---------------- منع إجراءات الحذف/فك القفل الذاتية من الواجهة ----------------
+ * الباك اند يمنع أصلًا حذف/فك قفل الأدمن لحسابه هو نفسه (UserPolicy::delete/unlock
+ * — user.id !== model.id)، لكنه كان يرفض الطلب بعد خطوة تأكيد كاملة (403 بعد
+ * confirm). هون منع استباقي بنفس نمط قفل دور admin بتبويب الأدوار والصلاحيات.
+ */
+function isCurrentAdmin(user) {
+  return user.id === authStore.user?.id;
+}
 
 /* ================================================================
  * التبويبات: المستخدمون | الأدوار والصلاحيات
@@ -154,6 +166,7 @@ function toggleSort(key) {
   const newDir = curKey === key && curDir === "desc" ? "asc" : "desc";
   sortBy.value = `${key}-${newDir}`;
 }
+/** يبني كلاس CSS (شفافية + دوران) لأيقونة سهم الفرز الثابتة (ChevronDown)؛ يُستخدَم مع :class على <ChevronDown> وليس :name على <AppIcon>. */
 function sortIconClass(key) {
   const [curKey, curDir] = sortBy.value.split("-");
   if (curKey !== key) return "opacity-30";
@@ -305,36 +318,10 @@ async function handleUnlock(user) {
   }
 }
 
-/* ---------------- إرسال رابط إعادة تعيين كلمة المرور (بمبادرة من الأدمن) ---------------- */
-const isSendingResetLink = ref(false);
-
-async function handleSendResetLink(user) {
-  const confirmed = await confirm({
-    title: t("users_page.send_reset_link_title"),
-    message: t("users_page.send_reset_link_message", { email: user.email }),
-    confirmLabel: t("users_page.send_action"),
-    variant: "default",
-  });
-  if (!confirmed) return;
-
-  isSendingResetLink.value = true;
-  try {
-    await userService.sendPasswordResetLink(user.id);
-    toast.show({
-      type: "success",
-      title: t("users_page.sent_toast_title"),
-      message: t("users_page.sent_message", { email: user.email }),
-    });
-  } catch (err) {
-    toast.show({
-      type: "danger",
-      title: t("users_page.send_failed_title"),
-      message: normalizeApiError(err, t("users_page.try_again_later")).message,
-    });
-  } finally {
-    isSendingResetLink.value = false;
-  }
-}
+/* ---------------- إرسال رابط إعادة تعيين كلمة المرور (بمبادرة من الأدمن) ----------------
+ * FIX (تدقيق شامل — A3): كانت هذه الدالة مكرَّرة حرفيًا هنا بدل استخدام
+ * composables/useAdminPasswordTools.js الموجود أصلًا لهذا الغرض بالضبط. */
+const { isSendingResetLink, handleSendResetLink } = useAdminPasswordTools();
 
 /* ---------------- تعيين كلمة سر مؤقتة مباشرة (بديل احتياطي لو البريد معطّل) ---------------- */
 const setPasswordModal = ref(null); // user object أو null
@@ -350,17 +337,6 @@ function openSetPassword(user) {
   setPasswordSuccess.value = false;
   showSetPassword.value = true;
   generatePassword();
-}
-
-function generateRandomPassword() {
-  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const lower = "abcdefghijkmnpqrstuvwxyz";
-  const digits = "23456789";
-  const symbols = "!@#$%&*";
-  const all = upper + lower + digits + symbols;
-  let pwd = upper[Math.floor(Math.random() * upper.length)] + lower[Math.floor(Math.random() * lower.length)] + digits[Math.floor(Math.random() * digits.length)] + symbols[Math.floor(Math.random() * symbols.length)];
-  for (let i = 0; i < 8; i++) pwd += all[Math.floor(Math.random() * all.length)];
-  return pwd.split("").sort(() => Math.random() - 0.5).join("");
 }
 
 function generatePassword() {
@@ -774,10 +750,10 @@ onMounted(() => {
         <div class="flex items-center gap-1">
           <span class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a] me-1">{{ $t("users_page.sort_label") }}</span>
           <button type="button" @click="toggleSort('name')" class="px-2.5 py-1 rounded-full text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 flex items-center gap-1">
-            {{ $t("dashboard.name") }} <AppIcon :name="sortIconClass('name')" class="text-[9px] transition-all" />
+            {{ $t("dashboard.name") }} <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('name')]" aria-hidden="true" />
           </button>
           <button type="button" @click="toggleSort('created')" class="px-2.5 py-1 rounded-full text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-[#f4efe5]/60 dark:hover:bg-white/5 flex items-center gap-1">
-            {{ $t("users_page.joined_label") }} <AppIcon :name="sortIconClass('created')" class="text-[9px] transition-all" />
+            {{ $t("users_page.joined_label") }} <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('created')]" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -855,7 +831,7 @@ onMounted(() => {
               <Pencil class="text-[11px]" aria-hidden="true" />
             </button>
             <button
-              v-if="can('users.unlock') && user.is_locked"
+              v-if="can('users.unlock') && user.is_locked && !isCurrentAdmin(user)"
               type="button"
               @click="handleUnlock(user)"
               class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#17A2B8] hover:bg-[#17A2B8]/10 transition"
@@ -865,7 +841,7 @@ onMounted(() => {
               <LockOpen class="text-[12px]" aria-hidden="true" />
             </button>
             <button
-              v-if="can('users.delete')"
+              v-if="can('users.delete') && !isCurrentAdmin(user)"
               type="button"
               @click="handleDelete(user)"
               class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-[#D9534F] hover:bg-[#D9534F]/10 transition"

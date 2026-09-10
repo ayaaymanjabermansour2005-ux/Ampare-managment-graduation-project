@@ -32,7 +32,7 @@ final class ResolveComplaintAction
                 'resolved_at' => $isResolved ? now() : $complaint->resolved_at,
             ]);
 
-            $resolved = $complaint->fresh(['submitter', 'resolver', 'complainable']);
+            $resolved = $complaint->fresh(['submitter', 'resolver', 'assignedTo', 'complainable']);
 
             if ($isResolved) {
                 ComplaintResolved::dispatch($resolved);

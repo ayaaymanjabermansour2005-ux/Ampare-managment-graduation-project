@@ -2,6 +2,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import generatorService from "@/services/generatorService";
 import { normalizeApiError } from "@/utils/normalizeApiError";
+import { useToastStore } from "@/stores/toast";
 
 const SORT_MAP = {
   "name-asc": { key: "name", dir: "asc" },
@@ -19,6 +20,7 @@ const SORT_MAP = {
  */
 export function useGeneratorsTable(options = {}) {
   const { t } = useI18n();
+  const toast = useToastStore();
   const perPage = options.perPage ?? 12;
 
   const generators = ref([]);
@@ -45,9 +47,17 @@ export function useGeneratorsTable(options = {}) {
   const deletingId = ref(null);
   const deleteError = ref(null);
 
+  /* FIX (تدقيق شامل — الجولة الخامسة): ما كان في catch — فشل هالطلب (مثلاً
+   * أثناء onMounted عبر Promise.all) كان يطلع Unhandled Promise Rejection
+   * بصمت، وفلتر "المنطقة" يضل فاضي بدون أي إشارة للأدمن.
+   */
   async function fetchCities() {
-    const { data } = await generatorService.cities();
-    cities.value = data.data;
+    try {
+      const { data } = await generatorService.cities();
+      cities.value = data.data;
+    } catch (err) {
+      toast.show({ type: "danger", title: normalizeApiError(err, t("generators_management_page.cities_load_error")).message });
+    }
   }
 
   async function fetchGenerators(page = 1) {

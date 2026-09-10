@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionStatus;
 use App\Enums\TechnicianTaskStatus;
 use App\Enums\UserStatus;
 use App\Models\Generator;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
 use Carbon\Carbon;
@@ -68,6 +70,13 @@ class UserService
                         InvoiceStatus::Overdue->value,
                         InvoiceStatus::PartiallyPaid->value,
                     ]);
+                },
+                // FIX (تدقيق شامل — C1): بدون هذا، outstanding_balance_ils
+                // بالأسفل يجمع final_amount_ils الكامل للفواتير حتى المدفوعة
+                // جزئيًا، فيُظهر مديونية أعلى من الحقيقة — بعكس صفحة الفواتير
+                // التي تطرح المدفوع فعليًا (InvoiceResource::remaining_balance_ils).
+                'subscriber.subscriptions.invoices.payments' => function ($q) {
+                    $q->where('status', PaymentStatus::Paid->value);
                 },
             ]);
 
@@ -193,11 +202,17 @@ class UserService
         }
 
         $activeSubscriptionsCount = Subscription::where('status', SubscriptionStatus::Active)->count();
-        $totalOutstanding = (float) Invoice::whereIn('status', [
+        // FIX (تدقيق شامل — C1): كان يجمع final_amount_ils الكامل حتى
+        // للفواتير المدفوعة جزئيًا بدل طرح المدفوع فعليًا منها.
+        $outstandingInvoiceStatuses = [
             InvoiceStatus::Pending->value,
             InvoiceStatus::Overdue->value,
             InvoiceStatus::PartiallyPaid->value,
-        ])->sum('final_amount_ils');
+        ];
+        $totalOutstanding = (float) Invoice::whereIn('status', $outstandingInvoiceStatuses)->sum('final_amount_ils')
+            - (float) Payment::where('status', PaymentStatus::Paid->value)
+                ->whereHas('invoice', fn ($q) => $q->whereIn('status', $outstandingInvoiceStatuses))
+                ->sum('amount_ils');
 
         $alerts = [];
 
@@ -250,13 +265,18 @@ class UserService
                     InvoiceStatus::Overdue->value,
                     InvoiceStatus::PartiallyPaid->value,
                 ]),
+                // FIX (تدقيق شامل — C1): بدون هذا كان "الرصيد المستحق" هون
+                // أيضًا يجمع القيمة الكاملة بدل المتبقي فعليًا.
+                'subscriber.subscriptions.invoices.payments' => fn ($q) => $q->where('status', PaymentStatus::Paid->value),
             ])
             ->get()
             ->map(fn ($u) => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'generators_count' => $u->subscriber?->subscriptions->pluck('generator_id')->unique()->count() ?? 0,
-                'outstanding_balance_ils' => (float) ($u->subscriber?->subscriptions->flatMap->invoices->sum('final_amount_ils') ?? 0),
+                'outstanding_balance_ils' => (float) ($u->subscriber?->subscriptions->flatMap->invoices->sum(
+                    fn ($invoice) => $invoice->final_amount_ils - $invoice->payments->sum('amount_ils')
+                ) ?? 0),
             ])
             ->sortByDesc('outstanding_balance_ils')
             ->take(5)

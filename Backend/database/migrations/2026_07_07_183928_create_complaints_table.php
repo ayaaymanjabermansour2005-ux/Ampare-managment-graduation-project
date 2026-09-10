@@ -31,6 +31,7 @@ return new class extends Migration
             $table->string('channel', 20)->default('app');
             $table->string('priority', 20)->default('medium');
             $table->string('status', 20)->default('pending');
+            $table->timestamp('sla_due_at')->nullable();
 
             $table->foreignId('assigned_to')
                 ->nullable()
@@ -53,7 +54,7 @@ return new class extends Migration
         DB::statement("
             ALTER TABLE complaints
             ADD CONSTRAINT chk_complaints_status CHECK (
-                status IN ('pending', 'in_progress', 'resolved')
+                status IN ('pending', 'in_progress', 'waiting_subscriber', 'resolved')
             )
         ");
 

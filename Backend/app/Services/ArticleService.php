@@ -10,7 +10,9 @@ class ArticleService
 {
     public function listForAdmin(int $perPage = 15): LengthAwarePaginator
     {
-        return Article::with('author')->latest()->paginate($perPage);
+        // FIX (تدقيق شامل — D7): attachments لم تكن تُحمَّل مسبقًا، فحقل
+        // images بالـResource لم يكن يظهر أبدًا رغم وجود Slot مخصَّص له.
+        return Article::with(['author', 'attachments'])->latest()->paginate($perPage);
     }
 
     public function listPublished(int $perPage = 12): LengthAwarePaginator

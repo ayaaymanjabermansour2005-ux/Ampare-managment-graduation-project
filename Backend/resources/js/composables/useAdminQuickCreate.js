@@ -8,14 +8,11 @@ import { useOwnerOptions } from "@/composables/useOwnerOptions";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 
 /**
- * Owner/subscriber/technician quick-create and backup-run orchestration for
- * the admin dashboard's "Quick Admin Actions" panel — extracted out of
- * DashboardView.vue (FE-01) so this API/state logic is reusable and
- * testable independent of the view.
+ * يدير نوافذ ومنطق "الإجراءات الإدارية السريعة" بلوحة تحكم الأدمن: إنشاء
+ * مالك مولد/مشترك/فني سريعًا، وتشغيل نسخة احتياطية — دون مغادرة الصفحة.
  *
  * @param {{ onSubscriberCreated?: () => void|Promise<void> }} [options]
- *   onSubscriberCreated lets the caller refresh dashboard data after a
- *   subscriber is added, mirroring the view's previous `await loadAll()`.
+ *   onSubscriberCreated لتحديث بيانات لوحة التحكم بعد إضافة مشترك جديد.
  */
 export function useAdminQuickCreate(options = {}) {
   const { t } = useI18n();
@@ -28,16 +25,19 @@ export function useAdminQuickCreate(options = {}) {
   const ownerError = ref(null);
   const ownerForm = ref(emptyOwnerForm());
 
+  /** يرجع فورم فارغ لإنشاء مالك مولد جديد. */
   function emptyOwnerForm() {
     return { name: "", email: "", phone: "", password: "", password_confirmation: "" };
   }
 
+  /** يفتح نافذة إنشاء مالك مولد بفورم فارغ. */
   function openOwnerModal() {
     ownerForm.value = emptyOwnerForm();
     ownerError.value = null;
     isOwnerModalOpen.value = true;
   }
 
+  /** يرسل فورم إنشاء مالك المولد الجديد للباك اند، ويغلق النافذة عند النجاح. */
   async function handleCreateOwner() {
     isSavingOwner.value = true;
     ownerError.value = null;
@@ -63,16 +63,19 @@ export function useAdminQuickCreate(options = {}) {
   const subscriberError = ref(null);
   const subscriberForm = ref(emptySubscriberForm());
 
+  /** يرجع فورم فارغ لإنشاء مشترك جديد. */
   function emptySubscriberForm() {
     return { name: "", email: "", phone: "", password: "", password_confirmation: "", address: "" };
   }
 
+  /** يفتح نافذة إنشاء مشترك بفورم فارغ. */
   async function openNewSubscriberModal() {
     subscriberForm.value = emptySubscriberForm();
     subscriberError.value = null;
     isNewSubscriberModalOpen.value = true;
   }
 
+  /** يرسل فورم إنشاء المشترك الجديد للباك اند، يحدّث بيانات لوحة التحكم عبر onSubscriberCreated عند النجاح. */
   async function handleCreateSubscriber() {
     isSavingSubscriber.value = true;
     subscriberError.value = null;
@@ -106,10 +109,12 @@ export function useAdminQuickCreate(options = {}) {
   const technicianForm = ref(emptyTechnicianForm());
   const { owners, isLoadingOwners, ownerSelectOptions, fetchOwners } = useOwnerOptions();
 
+  /** يرجع فورم فارغ لإنشاء فني جديد تابع لمالك مولد. */
   function emptyTechnicianForm() {
     return { owner_id: "", name: "", email: "", password: "", password_confirmation: "", notes: "" };
   }
 
+  /** يفتح نافذة إنشاء فني بفورم فارغ، ويحمّل قائمة الملّاك إذا لم تكن محمَّلة أصلًا. */
   function openTechnicianModal() {
     technicianForm.value = emptyTechnicianForm();
     technicianError.value = null;
@@ -117,6 +122,7 @@ export function useAdminQuickCreate(options = {}) {
     if (owners.value.length === 0) fetchOwners();
   }
 
+  /** يرسل فورم إنشاء الفني الجديد للباك اند، بعد التأكد من اختيار مالك واسم. */
   async function handleCreateTechnician() {
     if (!technicianForm.value.owner_id || !technicianForm.value.name) return;
     isSavingTechnician.value = true;
@@ -136,6 +142,7 @@ export function useAdminQuickCreate(options = {}) {
   /* ---------------- النسخة الاحتياطية ---------------- */
   const isRunningBackup = ref(false);
 
+  /** يطلب تأكيد الأدمن ثم يشغّل نسخة احتياطية فورية للنظام. */
   async function handleRunBackup() {
     const confirmed = await confirm({
       title: t("dashboard.backup_confirm_title"),

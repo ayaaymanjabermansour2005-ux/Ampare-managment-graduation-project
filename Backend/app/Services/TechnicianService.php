@@ -15,7 +15,15 @@ class TechnicianService
 {
     public function list(User $user, int $perPage = 15, ?string $search = null): LengthAwarePaginator
     {
-        $query = Technician::query()->with(['user', 'owner']);
+        $activeTaskStatuses = array_map(
+            fn (TechnicianTaskStatus $s) => $s->value,
+            array_filter(TechnicianTaskStatus::cases(), fn ($s) => $s->isActive())
+        );
+
+        $query = Technician::query()
+            ->with(['user', 'owner'])
+            ->withAvg('ratings as rating_avg', 'rating')
+            ->withCount(['tasks as active_tasks_count' => fn ($q) => $q->whereIn('status', $activeTaskStatuses)]);
 
         if (! $user->isAdmin()) {
             $query->where('owner_id', $user->id);

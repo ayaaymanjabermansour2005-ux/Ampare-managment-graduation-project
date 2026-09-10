@@ -10,6 +10,7 @@ import { useAdminGenerators } from "@/composables/useAdminGenerators";
 import { useAdminOwnerActions } from "@/composables/useAdminOwnerActions";
 import { useOwnersAnalytics } from "@/composables/useOwnersAnalytics";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
 import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import { vCountUp } from "@/directives/countUp";
@@ -19,7 +20,8 @@ import { printTable } from "@/utils/printTable";
 import AdminGeneratorFormModal from "@/components/generators/AdminGeneratorFormModal.vue";
 import { useAdminOwnerApplications } from "@/composables/useAdminOwnerApplications";
 import { useOwnerApplicationsUI } from "@/composables/useOwnerApplicationsUI";
-import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock, Copy, Crown, Download, Eye, FileSpreadsheet, FileText, GripVertical, Inbox, Info, Key, LoaderCircle, LockOpen, Mail, Paperclip, Pencil, Percent, Phone, PlugZap, Plus, Printer, RotateCcwClock, Save, Search, StickyNote, Table2, Trash2, TriangleAlert, User, UserCheck, UserPlus, UserRound, X, ZoomOut } from "@lucide/vue";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Clock, Copy, Crown, Download, Eye, FileSpreadsheet, FileText, GripVertical, Inbox, Info, Key, LoaderCircle, LockOpen, Mail, Paperclip, Pencil, Percent, Phone, PlugZap, Plus, Printer, RotateCcwClock, Save, Search, Star, StickyNote, Table2, Trash2, TriangleAlert, User, UserCheck, UserPlus, UserRound, X, ZoomOut } from "@lucide/vue";
+import { useOwnerRatings } from "@/composables/useOwnerRatings";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 import LightningCanvas from "@/components/ui/LightningCanvas.vue";
@@ -138,6 +140,7 @@ const {
 });
 
 const { confirm } = useConfirm();
+const { can } = usePermissions();
 const toast = useToastStore();
 
 const TABS = computed(() => [
@@ -285,9 +288,24 @@ async function handleCreateGenerator(payload) {
 
 const isViewOpen = ref(false);
 const viewingOwner = ref(null);
+
+// FIX (تدقيق شامل — F1): GET /owners/{id}/ratings كان جاهزًا بالكامل
+// بالباك اند (Controller + Policy + Resource) وموجودًا حتى بالـComposable
+// الجاهز useOwnerRatings.js، لكن الأدمن لم يكن يملك أي شاشة لعرض تقييمات
+// أي مالك رغم امتلاكه الصلاحية owner-ratings.view.
+const {
+  ratings: ownerRatingsList,
+  averageRating: ownerRatingsAverage,
+  ratingsCount: ownerRatingsCount,
+  isLoading: isLoadingOwnerRatings,
+  error: ownerRatingsError,
+  fetchRatings: fetchOwnerRatingsFor,
+} = useOwnerRatings();
+
 function openView(owner) {
   viewingOwner.value = owner;
   isViewOpen.value = true;
+  fetchOwnerRatingsFor(owner.id);
 }
 function switchToEditFromView() {
   isViewOpen.value = false;
@@ -619,13 +637,13 @@ onMounted(() => fetchApplications());
 
         <div class="flex flex-wrap gap-2.5 mt-1">
           <template v-if="activeTab === 'owners'">
-            <button type="button" @click="openCreateForm" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
+            <button v-if="can('users.create')" type="button" @click="openCreateForm" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
               <UserPlus aria-hidden="true" /> {{ t("owners_page.add_owner") }}
             </button>
-            <button type="button" @click="openTransferGeneratorModal" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
+            <button v-if="can('generators.update')" type="button" @click="openTransferGeneratorModal" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
               <PlugZap aria-hidden="true" /> {{ t("owners_page.link_generator_to_owner") }}
             </button>
-            <button type="button" @click="openAddGeneratorModal" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
+            <button v-if="can('generators.create')" type="button" @click="openAddGeneratorModal" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
               <Plus aria-hidden="true" /> {{ t("owners_page.add_new_generator") }}
             </button>
           </template>
@@ -820,25 +838,31 @@ onMounted(() => fetchApplications());
         <table class="data-table w-full text-[12px] min-w-[980px]">
           <thead>
             <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
-              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('name')">
-                {{ t("dashboard.owner") }}
-                <AppIcon :name="sortIconClass('name')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3 rounded-s-lg">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('name')">
+                  {{ t("dashboard.owner") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('name')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ t("owners_page.phone_col") }}</th>
               <th class="py-2.5 px-3">
                 <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('generators')">
                   {{ t("owners_page.generators_count_col") }}
-                  <AppIcon :name="sortIconClass('generators')" class="text-[9px] transition-all" />
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('generators')]" aria-hidden="true" />
                 </span>
                 <ColumnFilterPopover v-model="generatorsCountFilter" type="number" @update:modelValue="onFilterChange" @click.stop class="ms-1" />
               </th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('subs')">
-                {{ t("owners_page.total_subscribers_col") }}
-                <AppIcon :name="sortIconClass('subs')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('subs')">
+                  {{ t("owners_page.total_subscribers_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('subs')]" aria-hidden="true" />
+                </span>
               </th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('rev')">
-                {{ t("dashboard.monthly_revenue_col") }}
-                <AppIcon :name="sortIconClass('rev')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('rev')">
+                  {{ t("dashboard.monthly_revenue_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('rev')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">
                 <span class="inline-flex items-center gap-1">
@@ -887,17 +911,17 @@ onMounted(() => fetchApplications());
                   <button type="button" @click="openView(owner)" class="action-btn action-btn--view" :title="t('common.view')">
                     <Eye aria-hidden="true" />
                   </button>
-                  <button v-if="owner.is_locked" type="button" @click="handleUnlock(owner)" class="action-btn action-btn--unlock" :title="t('common.unlock')">
+                  <button v-if="owner.is_locked && can('users.unlock')" type="button" @click="handleUnlock(owner)" class="action-btn action-btn--unlock" :title="t('common.unlock')">
                     <LockOpen aria-hidden="true" />
                   </button>
                   <button type="button" @click="openPlanModal(owner)" class="action-btn action-btn--plan" :title="t('owners_page.plan_title')">
                     <Crown aria-hidden="true" />
                   </button>
                   <span class="row-actions-divider"></span>
-                  <button type="button" @click="openEdit(owner)" class="action-btn action-btn--edit" :title="t('common.edit')">
+                  <button v-if="can('users.update')" type="button" @click="openEdit(owner)" class="action-btn action-btn--edit" :title="t('common.edit')">
                     <Pencil aria-hidden="true" />
                   </button>
-                  <button type="button" @click="openDeleteModal(owner)" :disabled="deletingId === owner.id" class="action-btn action-btn--delete" :title="t('common.delete')">
+                  <button v-if="can('users.delete')" type="button" @click="openDeleteModal(owner)" :disabled="deletingId === owner.id" class="action-btn action-btn--delete" :title="t('common.delete')">
                     <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === owner.id" /><Trash2 aria-hidden="true" v-else />
                   </button>
                 </div>
@@ -935,11 +959,11 @@ onMounted(() => fetchApplications());
           <div class="flex items-center justify-end">
             <div class="row-actions">
               <button type="button" @click="openView(owner)" class="action-btn action-btn--view" :title="t('common.view')"><Eye aria-hidden="true" /></button>
-              <button v-if="owner.is_locked" type="button" @click="handleUnlock(owner)" class="action-btn action-btn--unlock" :title="t('common.unlock')"><LockOpen aria-hidden="true" /></button>
+              <button v-if="owner.is_locked && can('users.unlock')" type="button" @click="handleUnlock(owner)" class="action-btn action-btn--unlock" :title="t('common.unlock')"><LockOpen aria-hidden="true" /></button>
               <button type="button" @click="openPlanModal(owner)" class="action-btn action-btn--plan" :title="t('owners_page.plan_title')"><Crown aria-hidden="true" /></button>
               <span class="row-actions-divider"></span>
-              <button type="button" @click="openEdit(owner)" class="action-btn action-btn--edit" :title="t('common.edit')"><Pencil aria-hidden="true" /></button>
-              <button type="button" @click="openDeleteModal(owner)" :disabled="deletingId === owner.id" class="action-btn action-btn--delete" :title="t('common.delete')">
+              <button v-if="can('users.update')" type="button" @click="openEdit(owner)" class="action-btn action-btn--edit" :title="t('common.edit')"><Pencil aria-hidden="true" /></button>
+              <button v-if="can('users.delete')" type="button" @click="openDeleteModal(owner)" :disabled="deletingId === owner.id" class="action-btn action-btn--delete" :title="t('common.delete')">
                 <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === owner.id" /><Trash2 aria-hidden="true" v-else />
               </button>
             </div>
@@ -1371,7 +1395,7 @@ onMounted(() => fetchApplications());
                     {{ $t("owner_applications_page.internal_note_label") }}
                   </span>
                   <button
-                    v-if="hasUnsavedInternalNote(app)"
+                    v-if="hasUnsavedInternalNote(app) && can('users.create')"
                     type="button"
                     class="text-[10px] font-bold text-[#52733D] disabled:opacity-50"
                     :disabled="savingInternalNoteId === app.id"
@@ -1384,6 +1408,7 @@ onMounted(() => fetchApplications());
                 <textarea
                   :value="internalNoteDraft(app)"
                   @input="setInternalNoteDraft(app, $event.target.value)"
+                  :readonly="!can('users.create')"
                   rows="1"
                   maxlength="500"
                   class="w-full bg-transparent text-[11px] outline-none resize-none placeholder:text-[#9a9d97] dark:placeholder:text-[#8f938a]"
@@ -1424,7 +1449,7 @@ onMounted(() => fetchApplications());
               <i class="fa-brands fa-whatsapp"></i>
             </a>
 
-            <template v-if="app.status === 'pending'">
+            <template v-if="app.status === 'pending' && can('users.create')">
               <button
                 type="button"
                 class="text-[12px] font-bold px-3.5 py-2 rounded-full border border-[#D9534F]/30 text-[#D9534F] hover:bg-[#D9534F]/10 transition-colors disabled:opacity-50"
@@ -1551,21 +1576,50 @@ onMounted(() => fetchApplications());
                   </div>
                 </div>
               </div>
+
+              <!-- ===== تقييمات المشتركين لهذا المالك ===== -->
+              <div class="glass-card p-4">
+                <div class="flex items-center justify-between mb-2.5">
+                  <h5 class="text-[12px] font-bold flex items-center gap-1.5">
+                    <Star class="text-[#D4AF37] text-[11px]" aria-hidden="true" />
+                    {{ t("owner_dashboard.ratings_title") }}
+                  </h5>
+                  <div v-if="ownerRatingsCount > 0" class="flex items-center gap-1 shrink-0">
+                    <span class="font-extrabold text-[13px]">{{ Number(ownerRatingsAverage).toFixed(1) }}</span>
+                    <Star class="text-[#D4AF37] text-[11px]" fill="currentColor" aria-hidden="true" />
+                    <span class="text-[10.5px] text-[#9a9d97] dark:text-[#8f938a]">({{ t("owner_dashboard.ratings_count", { count: ownerRatingsCount }) }})</span>
+                  </div>
+                </div>
+                <div v-if="isLoadingOwnerRatings" class="text-center py-4 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("common.loading") }}</div>
+                <div v-else-if="ownerRatingsError" class="text-center py-4 text-[11px] text-[#D9534F]">{{ ownerRatingsError }}</div>
+                <div v-else-if="ownerRatingsCount === 0" class="text-center py-4 text-[11px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("owners_page.no_ratings_yet") }}</div>
+                <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+                  <div v-for="r in ownerRatingsList" :key="r.id" class="p-2.5 rounded-xl border border-[#eee8da] dark:border-white/10">
+                    <div class="flex items-center justify-between gap-2 mb-0.5">
+                      <span class="text-[11px] font-bold">{{ r.rated_by?.name ?? "-" }}</span>
+                      <div class="flex items-center gap-0.5 shrink-0">
+                        <Star v-for="n in 5" :key="n" class="text-[10px]" :class="n <= r.rating ? 'text-[#D4AF37]' : 'text-[#e7e2d6] dark:text-white/15'" :fill="n <= r.rating ? 'currentColor' : 'none'" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <p v-if="r.comment" class="text-[11px] text-[#6B6B6B] dark:text-[#a8aaa5]">{{ r.comment }}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="modal-footer-brand !justify-between flex-wrap shrink-0">
             <div class="flex items-center gap-1.5">
-              <button type="button" :disabled="isSendingResetLink" @click="handleSendResetLink(viewingOwner)" class="w-9 h-9 rounded-full flex items-center justify-center text-[#8A6D1F] dark:text-[#D4AF37] border border-[#8A6D1F]/40 hover:bg-[#8A6D1F]/10 disabled:opacity-50" :title="t('owners_page.send_reset_link_title')">
+              <button v-if="can('users.update')" type="button" :disabled="isSendingResetLink" @click="handleSendResetLink(viewingOwner)" class="w-9 h-9 rounded-full flex items-center justify-center text-[#8A6D1F] dark:text-[#D4AF37] border border-[#8A6D1F]/40 hover:bg-[#8A6D1F]/10 disabled:opacity-50" :title="t('owners_page.send_reset_link_title')">
                 <LoaderCircle class="text-[13px] animate-spin" aria-hidden="true" v-if="isSendingResetLink" /><Key class="text-[13px]" aria-hidden="true" v-else />
               </button>
-              <button type="button" @click="openCommissionModal(viewingOwner)" class="w-9 h-9 rounded-full flex items-center justify-center text-[#17A2B8] border border-[#17A2B8]/40 hover:bg-[#17A2B8]/10" :title="t('owners_page.edit_commission_title')">
+              <button v-if="can('platform-commissions.manage-settings')" type="button" @click="openCommissionModal(viewingOwner)" class="w-9 h-9 rounded-full flex items-center justify-center text-[#17A2B8] border border-[#17A2B8]/40 hover:bg-[#17A2B8]/10" :title="t('owners_page.edit_commission_title')">
                 <Percent class="text-[13px]" aria-hidden="true" />
               </button>
             </div>
             <div class="flex items-center gap-2.5">
               <button type="button" @click="isViewOpen = false" class="btn-outline-brand">{{ t("common.close") }}</button>
-              <button type="button" @click="switchToEditFromView" class="btn-fill-brand">
+              <button v-if="can('users.update')" type="button" @click="switchToEditFromView" class="btn-fill-brand">
                 <Pencil aria-hidden="true" /> {{ t("common.edit") }}
               </button>
             </div>

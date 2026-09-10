@@ -6,7 +6,7 @@ import { usePermissions } from "@/composables/usePermissions";
 import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { CalendarClock, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, LoaderCircle, Pencil, Save, Zap } from "@lucide/vue";
+import { CalendarClock, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, LoaderCircle, Pencil, Save, Search, Zap } from "@lucide/vue";
 
 const { can } = usePermissions();
 const toast = useToastStore();
@@ -19,6 +19,10 @@ const {
   error,
   hasRequests,
   fetchRequests,
+  statusFilter,
+  search,
+  onFilterChange,
+  onSearchInput,
 
   reviewingId,
   isReviewing,
@@ -37,6 +41,11 @@ const STATUS_META = {
 function statusLabel(status) {
   return t(`owner_service_requests.status.${status}`, status);
 }
+
+const STATUS_PILLS = computed(() => [
+  { value: "", label: t("owner_service_requests.status_all") },
+  ...Object.keys(STATUS_META).map((value) => ({ value, label: statusLabel(value) })),
+]);
 
 const REQUEST_TYPE_KEYS = {
   event: "owner_service_requests.type_event",
@@ -107,6 +116,28 @@ onMounted(() => fetchRequests());
           {{ t("menu.service_requests") }}
         </h1>
         <p class="text-[12.5px] text-[#6B6B6B] dark:text-[#aeb1ab] max-w-lg">{{ t("owner_service_requests.subtitle") }}</p>
+      </div>
+    </section>
+
+    <!-- ===== FILTERS ===== -->
+    <section v-reveal class="glass-card p-3.5 flex flex-wrap items-center gap-2.5">
+      <div class="relative flex-1 min-w-[200px]">
+        <Search class="absolute start-3 top-1/2 -translate-y-1/2 text-[12px] text-[#9a9d97] dark:text-[#8f938a]" aria-hidden="true" />
+        <input
+          v-model="search"
+          @input="onSearchInput"
+          type="text"
+          :placeholder="t('owner_service_requests.search_placeholder')"
+          class="w-full bg-[#f4efe5]/60 dark:bg-white/5 border border-[#e7e2d6] dark:border-white/10 rounded-full ps-9 pe-4 py-2 text-[12px] outline-none focus:border-[#8A6D1F] transition"
+        />
+      </div>
+      <div class="flex items-center gap-1 bg-[#f4efe5]/70 dark:bg-white/5 rounded-full p-1 flex-wrap">
+        <button
+          v-for="pill in STATUS_PILLS" :key="pill.value" type="button"
+          @click="statusFilter = pill.value; onFilterChange()"
+          class="px-3.5 py-1.5 rounded-full text-[11.5px] font-bold transition-colors"
+          :class="statusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white shadow-sm' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
+        >{{ pill.label }}</button>
       </div>
     </section>
 

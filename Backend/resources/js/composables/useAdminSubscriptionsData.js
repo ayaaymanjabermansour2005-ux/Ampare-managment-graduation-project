@@ -272,19 +272,13 @@ export function useAdminSubscriptionsData() {
     };
   }
 
+  /**
+   * FIX (تدقيق شامل — C5): كانت تستدعي subscriptionService.monthlyStats()
+   * غير الموجودة أصلًا بالـservice (لا يوجد Endpoint خلفي لهذه الإحصائية
+   * بعد) — الفرع كان ميتًا دائمًا. الحساب التقريبي المحلي (isEstimate:true)
+   * هو السلوك الفعلي الوحيد حاليًا، ومعروض للأدمن بوضوح كتقدير لا رقم دقيق.
+   */
   async function fetchMonthlyGrowth() {
-    try {
-      if (typeof subscriptionService.monthlyStats === "function") {
-        const { data } = await subscriptionService.monthlyStats();
-        const payload = data?.data ?? data;
-        if (payload?.labels?.length) {
-          monthlyGrowth.value = { ...payload, isEstimate: false };
-          return;
-        }
-      }
-    } catch {
-      /* تجاهل بصمت وارجع للحساب التقريبي المحلي */
-    }
     computeMonthlyGrowthFromPage();
   }
 
@@ -299,16 +293,13 @@ export function useAdminSubscriptionsData() {
     activityLog.value = [{ at: new Date().toISOString(), ...entry }, ...activityLog.value].slice(0, 20);
   }
 
+  /**
+   * FIX (تدقيق شامل — C5): كانت تستدعي subscriptionService.activityLog()
+   * غير الموجودة أصلًا — الفرع كان ميتًا دائمًا. السجل المحلي بهذه الجلسة
+   * (عبر pushActivity عند كل إجراء) هو السلوك الفعلي الوحيد حاليًا.
+   */
   async function fetchActivityLog() {
-    try {
-      if (typeof subscriptionService.activityLog === "function") {
-        const { data } = await subscriptionService.activityLog({ per_page: 8 });
-        const list = data?.data?.data ?? data?.data ?? [];
-        if (list.length) activityLog.value = list;
-      }
-    } catch {
-      /* تجاهل بصمت - بنعتمد على السجل المحلي بهذه الجلسة */
-    }
+    // لا مصدر خلفي بعد لهذا السجل — يبقى محليًا فقط لهذه الجلسة.
   }
 
   return {

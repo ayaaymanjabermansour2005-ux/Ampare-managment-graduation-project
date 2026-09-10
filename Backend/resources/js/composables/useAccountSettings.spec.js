@@ -101,4 +101,30 @@ describe('useAccountSettings — profileError/passwordError reshaping (migrated 
 
         expect(avatarError.value).toBe('تعذر رفع الصورة');
     });
+
+    // FIX (تدقيق شامل — E5): fetchSessions يجب أن يميّز "لا جلسات أخرى" عن
+    // "الميزة غير مدعومة بهذه البيئة" بدل معاملتهما كحالة فارغة واحدة.
+    it('fetchSessions unwraps {sessions, is_supported} and sets sessionsSupported accordingly', async () => {
+        authService.sessions.mockResolvedValue({
+            data: { data: { sessions: [{ id: 's1' }], is_supported: true } },
+        });
+
+        const { fetchSessions, sessions, sessionsSupported } = useAccountSettings();
+        await fetchSessions();
+
+        expect(sessions.value).toEqual([{ id: 's1' }]);
+        expect(sessionsSupported.value).toBe(true);
+    });
+
+    it('fetchSessions sets sessionsSupported to false when the session driver is unsupported', async () => {
+        authService.sessions.mockResolvedValue({
+            data: { data: { sessions: [], is_supported: false } },
+        });
+
+        const { fetchSessions, sessions, sessionsSupported } = useAccountSettings();
+        await fetchSessions();
+
+        expect(sessions.value).toEqual([]);
+        expect(sessionsSupported.value).toBe(false);
+    });
 });

@@ -164,6 +164,15 @@ class PermissionSeeder extends Seeder
         'subscription-meter-transfers.approve',
         'subscription-meter-transfers.reject',
 
+        // Articles (CMS)
+        'articles.view',
+        'articles.create',
+        'articles.update',
+        'articles.delete',
+
+        // Article Comments (moderation)
+        'article-comments.view',
+        'article-comments.moderate',
     ];
 
     public function run(): void

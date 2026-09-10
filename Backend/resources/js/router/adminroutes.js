@@ -119,6 +119,7 @@ export default [
         path: "articles",
         name: "admin.articles",
         component: () => import("@/views/admin/ArticlesView.vue"),
+        meta: { permission: "articles.view" },
       },
             {
         path: "neighborhoods",

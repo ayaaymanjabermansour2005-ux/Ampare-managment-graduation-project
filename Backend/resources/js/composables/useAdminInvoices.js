@@ -3,6 +3,11 @@ import { useI18n } from "vue-i18n";
 import invoiceService from "@/services/invoiceService";
 import { normalizeApiError } from "@/utils/normalizeApiError";
 
+/**
+ * يدير قائمة الفواتير بلوحة تحكم الأدمن: الجلب المُصفَّح (حالة/بحث)، والإلغاء
+ * وإعادة الإصدار. التصحيح (correct) يبقى خارج هذا composable لأنه منطق
+ * نافذة منفصلة (InvoiceCorrectionModal.vue) لها حالتها الخاصة.
+ */
 export function useAdminInvoices() {
   const { t } = useI18n();
   const invoices = ref([]);
@@ -12,6 +17,7 @@ export function useAdminInvoices() {
   const statusFilter = ref("all");
   const search = ref("");
 
+  /** يجلب صفحة من الفواتير مطبَّقًا عليها فلتر الحالة والبحث الحاليين. */
   async function fetchInvoices(page = 1) {
     isLoading.value = true;
     error.value = null;
@@ -36,16 +42,19 @@ export function useAdminInvoices() {
   }
 
   let searchDebounce = null;
+  /** يعيد جلب الصفحة الأولى بعد توقّف الكتابة بـ350ms (بحث حي بدون إغراق الباك اند بالطلبات). */
   function onSearchInput() {
     clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => fetchInvoices(1), 350);
   }
 
+  /** يبدّل فلتر الحالة ويعيد جلب الصفحة الأولى بالفلتر الجديد. */
   function applyFilter(status) {
     statusFilter.value = status;
     fetchInvoices(1);
   }
 
+  /** يستبدل فاتورة واحدة بنسختها المحدَّثة داخل القائمة المحمَّلة، دون إعادة جلب الصفحة كاملة. */
   function replaceInvoice(updated) {
     const index = invoices.value.findIndex((i) => i.id === updated.id);
     if (index !== -1) invoices.value[index] = updated;
@@ -54,6 +63,7 @@ export function useAdminInvoices() {
   const cancellingId = ref(null);
   const cancelError = ref(null);
 
+  /** يلغي فاتورة، ويحدّث نسختها بالقائمة فور نجاح الإلغاء. */
   async function cancelInvoice(id) {
     cancellingId.value = id;
     cancelError.value = null;
@@ -73,6 +83,7 @@ export function useAdminInvoices() {
   const reissuingId = ref(null);
   const reissueError = ref(null);
 
+  /** يعيد إصدار فاتورة ملغاة كفاتورة جديدة، ويضيفها بأعلى القائمة المحمَّلة. */
   async function reissueInvoice(id) {
     reissuingId.value = id;
     reissueError.value = null;

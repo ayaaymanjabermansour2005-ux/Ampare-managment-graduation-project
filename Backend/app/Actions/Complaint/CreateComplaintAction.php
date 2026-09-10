@@ -23,6 +23,7 @@ final class CreateComplaintAction
             'channel' => $data->channel,
             'priority' => $data->priority,
             'status' => ComplaintStatus::Pending,
+            'sla_due_at' => now()->addHours($data->priority->slaHours()),
         ]);
 
         $complaint = $complaint->fresh(['submitter', 'complainable']);

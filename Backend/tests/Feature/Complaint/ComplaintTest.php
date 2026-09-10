@@ -9,6 +9,8 @@ use App\Models\Generator;
 use App\Models\Subscriber;
 use App\Models\SubscriberMeter;
 use App\Models\Subscription;
+use App\Models\Technician;
+use App\Models\TechnicianTask;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -85,6 +87,30 @@ class ComplaintTest extends TestCase
         $response->assertStatus(201);
         $this->assertSame('pending', $response->json('data.status'));
         $this->assertDatabaseHas('complaints', ['subject' => 'شكوى عامة', 'submitted_by' => $subscriberUser->id]);
+    }
+
+    public function test_sla_due_at_is_computed_from_priority(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id]);
+        [, $subscriberUser] = $this->makeConnectedSubscriber($generator);
+
+        $response = $this->actingAs($subscriberUser)
+            ->postJson('/api/v1/complaints', [
+                'subject' => 'انقطاع كامل عن الكهرباء',
+                'description' => 'تفاصيل.',
+                'priority' => 'urgent',
+            ]);
+
+        $response->assertStatus(201);
+        $complaint = Complaint::findOrFail($response->json('data.id'));
+
+        $this->assertNotNull($complaint->sla_due_at);
+        $this->assertEqualsWithDelta(
+            $complaint->created_at->addHours(4)->timestamp,
+            $complaint->sla_due_at->timestamp,
+            1
+        );
     }
 
     public function test_owner_can_submit_complaint_about_own_generator(): void
@@ -196,6 +222,106 @@ class ComplaintTest extends TestCase
                 'description' => 'تفاصيل.',
             ])
             ->assertStatus(403);
+    }
+
+    /* ---------------------------------------------------------------
+     | "user" complainable type — علاقة خدمة فعلية مطلوبة (تدقيق شامل — الجولة الرابعة)
+     |--------------------------------------------------------------- */
+
+    public function test_subscriber_can_submit_complaint_about_technician_who_serviced_their_generator(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id]);
+        [, $subscriberUser] = $this->makeConnectedSubscriber($generator);
+
+        $technicianUser = $this->makeTechnicianUser();
+        $technician = Technician::factory()->create([
+            'user_id' => $technicianUser->id,
+            'owner_id' => $owner->id,
+        ]);
+        TechnicianTask::factory()->assigned()->create([
+            'generator_id' => $generator->id,
+            'technician_id' => $technician->id,
+        ]);
+
+        $this->actingAs($subscriberUser)
+            ->postJson('/api/v1/complaints', [
+                'complainable_type' => 'user',
+                'complainable_id' => $technicianUser->id,
+                'subject' => 'شكوى عن تعامل الفني',
+                'description' => 'تفاصيل.',
+            ])
+            ->assertStatus(201);
+    }
+
+    public function test_subscriber_cannot_submit_complaint_about_unrelated_user(): void
+    {
+        $owner = $this->makeOwner();
+        [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
+        $unrelatedUser = User::factory()->create();
+
+        $this->actingAs($subscriberUser)
+            ->postJson('/api/v1/complaints', [
+                'complainable_type' => 'user',
+                'complainable_id' => $unrelatedUser->id,
+                'subject' => 'شكوى',
+                'description' => 'تفاصيل.',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('complainable_id');
+    }
+
+    public function test_owner_can_submit_complaint_about_their_own_technician(): void
+    {
+        $owner = $this->makeOwner();
+        $technicianUser = $this->makeTechnicianUser();
+        Technician::factory()->create([
+            'user_id' => $technicianUser->id,
+            'owner_id' => $owner->id,
+        ]);
+
+        $this->actingAs($owner)
+            ->postJson('/api/v1/complaints', [
+                'complainable_type' => 'user',
+                'complainable_id' => $technicianUser->id,
+                'subject' => 'شكوى عن فني',
+                'description' => 'تفاصيل.',
+            ])
+            ->assertStatus(201);
+    }
+
+    public function test_technician_can_submit_complaint_about_their_assigned_owner(): void
+    {
+        $owner = $this->makeOwner();
+        $technicianUser = $this->makeTechnicianUser();
+        Technician::factory()->create([
+            'user_id' => $technicianUser->id,
+            'owner_id' => $owner->id,
+        ]);
+
+        $this->actingAs($technicianUser)
+            ->postJson('/api/v1/complaints', [
+                'complainable_type' => 'user',
+                'complainable_id' => $owner->id,
+                'subject' => 'شكوى عن مالك',
+                'description' => 'تفاصيل.',
+            ])
+            ->assertStatus(201);
+    }
+
+    public function test_user_cannot_submit_complaint_about_self(): void
+    {
+        $owner = $this->makeOwner();
+
+        $this->actingAs($owner)
+            ->postJson('/api/v1/complaints', [
+                'complainable_type' => 'user',
+                'complainable_id' => $owner->id,
+                'subject' => 'شكوى',
+                'description' => 'تفاصيل.',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('complainable_id');
     }
 
     public function test_owner_can_move_own_related_complaint_to_in_progress(): void
@@ -489,6 +615,232 @@ class ComplaintTest extends TestCase
     public function test_unauthenticated_user_cannot_access_complaints(): void
     {
         $this->getJson('/api/v1/complaints')->assertStatus(401);
+    }
+
+    /* ---------------------------------------------------------------
+     | Type counts (تدقيق شامل — D6: توزيع حقيقي بدل بيانات وهمية ثابتة)
+     |--------------------------------------------------------------- */
+
+    public function test_admin_can_view_complaint_type_counts(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id]);
+        [, $subscriberUser] = $this->makeConnectedSubscriber($generator);
+
+        Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => 'App\\Models\\Generator',
+            'complainable_id' => $generator->id,
+            'subject' => 'شكوى 1', 'description' => 'تفاصيل', 'status' => 'pending',
+        ]);
+        Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => 'App\\Models\\Generator',
+            'complainable_id' => $generator->id,
+            'subject' => 'شكوى 2', 'description' => 'تفاصيل', 'status' => 'pending',
+        ]);
+        Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى عامة', 'description' => 'تفاصيل', 'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/complaints/type-counts');
+
+        $response->assertOk();
+        $this->assertSame(2, $response->json('data.Generator'));
+        $this->assertSame(['Generator' => 2], $response->json('data'));
+    }
+
+    public function test_complaint_type_counts_excludes_complaints_older_than_30_days(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id]);
+        [, $subscriberUser] = $this->makeConnectedSubscriber($generator);
+
+        $old = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => 'App\\Models\\Generator',
+            'complainable_id' => $generator->id,
+            'subject' => 'شكوى قديمة', 'description' => 'تفاصيل', 'status' => 'pending',
+        ]);
+        $old->created_at = now()->subDays(45);
+        $old->save();
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/complaints/type-counts');
+
+        $response->assertOk();
+        $this->assertArrayNotHasKey('Generator', $response->json('data'));
+    }
+
+    public function test_owner_only_sees_type_counts_scoped_to_own_generators(): void
+    {
+        $owner = $this->makeOwner();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id]);
+        [, $subscriberUser] = $this->makeConnectedSubscriber($generator);
+
+        $otherOwner = $this->makeOwner();
+        $otherGenerator = Generator::factory()->create(['owner_id' => $otherOwner->id]);
+        [, $otherSubscriberUser] = $this->makeConnectedSubscriber($otherGenerator);
+
+        Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => 'App\\Models\\Generator',
+            'complainable_id' => $generator->id,
+            'subject' => 'شكوى مولد المالك', 'description' => 'تفاصيل', 'status' => 'pending',
+        ]);
+        Complaint::create([
+            'submitted_by' => $otherSubscriberUser->id,
+            'complainable_type' => 'App\\Models\\Generator',
+            'complainable_id' => $otherGenerator->id,
+            'subject' => 'شكوى مولد مالك آخر', 'description' => 'تفاصيل', 'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($owner)->getJson('/api/v1/complaints/type-counts');
+
+        $response->assertOk();
+        $this->assertSame(1, $response->json('data.Generator'));
+    }
+
+    public function test_user_without_any_role_cannot_view_type_counts(): void
+    {
+        $roleless = User::factory()->create();
+
+        $this->actingAs($roleless)
+            ->getJson('/api/v1/complaints/type-counts')
+            ->assertStatus(403);
+    }
+
+    /* ---------------------------------------------------------------
+     | Assignment (بند 18 — تعيين "المسؤول" عن الشكوى)
+     |--------------------------------------------------------------- */
+
+    public function test_admin_can_assign_complaint_to_another_admin(): void
+    {
+        $admin = $this->makeAdmin();
+        $otherAdmin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/complaints/{$complaint->id}/assign", ['assigned_to' => $otherAdmin->id])
+            ->assertOk()
+            ->assertJsonPath('data.assigned_to.id', $otherAdmin->id);
+
+        $this->assertSame($otherAdmin->id, $complaint->fresh()->assigned_to);
+    }
+
+    public function test_admin_can_unassign_complaint(): void
+    {
+        $admin = $this->makeAdmin();
+        $otherAdmin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+            'assigned_to' => $otherAdmin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/complaints/{$complaint->id}/assign", ['assigned_to' => null])
+            ->assertOk();
+
+        $this->assertNull($complaint->fresh()->assigned_to);
+    }
+
+    public function test_non_admin_cannot_assign_complaint(): void
+    {
+        $owner = $this->makeOwner();
+        $admin = $this->makeAdmin();
+        [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/complaints/{$complaint->id}/assign", ['assigned_to' => $admin->id])
+            ->assertStatus(403);
+    }
+
+    public function test_assign_rejects_non_admin_target(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/complaints/{$complaint->id}/assign", ['assigned_to' => $owner->id])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('assigned_to');
+    }
+
+    /* ---------------------------------------------------------------
+     | Index filters (channel / priority / assigned_to)
+     |--------------------------------------------------------------- */
+
+    public function test_index_filters_by_channel_priority_and_assigned_to(): void
+    {
+        $admin = $this->makeAdmin();
+        $otherAdmin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [, $subscriberUser] = $this->makeConnectedSubscriber(Generator::factory()->create(['owner_id' => $owner->id]));
+
+        $target = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى واتساب عاجلة',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+            'channel' => 'whatsapp',
+            'priority' => 'urgent',
+            'assigned_to' => $otherAdmin->id,
+        ]);
+
+        Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'complainable_type' => null,
+            'subject' => 'شكوى أخرى',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+            'channel' => 'app',
+            'priority' => 'low',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(
+            '/api/v1/complaints?channel=whatsapp&priority=urgent&assigned_to='.$otherAdmin->id
+        );
+
+        $response->assertOk();
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertSame([$target->id], $ids->all());
     }
 
     /* ---------------------------------------------------------------

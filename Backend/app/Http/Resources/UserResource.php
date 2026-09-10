@@ -118,9 +118,15 @@ class UserResource extends JsonResource
                     ])
                     ->values()
             ),
+            // FIX (تدقيق شامل — C1): كان يجمع final_amount_ils الكامل حتى
+            // للفواتير المدفوعة جزئيًا، فيُظهر مديونية أعلى من الحقيقة —
+            // الآن يطرح المدفوع فعليًا لكل فاتورة (نفس منطق
+            // InvoiceResource::remaining_balance_ils).
             'outstanding_balance_ils' => $this->when(
                 $this->relationLoaded('subscriber') && $this->subscriber?->relationLoaded('subscriptions'),
-                fn () => (float) $this->subscriber->subscriptions->flatMap->invoices->sum('final_amount_ils')
+                fn () => (float) $this->subscriber->subscriptions->flatMap->invoices->sum(
+                    fn ($invoice) => $invoice->final_amount_ils - $invoice->payments->sum('amount_ils')
+                )
             ),
             'payment_status' => $this->when(
                 $this->relationLoaded('subscriber') && $this->subscriber?->relationLoaded('subscriptions'),

@@ -75,6 +75,7 @@ class AccountLockoutService
     public function lockedAccounts(): Collection
     {
         return User::query()
+            ->with('roles', 'permissions', 'plan')
             ->whereNotNull('locked_until')
             ->where('locked_until', '>', now())
             ->orderByDesc('last_locked_at')

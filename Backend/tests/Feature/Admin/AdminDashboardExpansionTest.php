@@ -8,6 +8,8 @@ use App\Models\Complaint;
 use App\Models\Generator;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\AdminDashboardService;
+use Illuminate\Support\Facades\Cache;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -125,5 +127,28 @@ class AdminDashboardExpansionTest extends TestCase
         $items = $response->json('data.data');
         $this->assertCount(1, $items);
         $this->assertSame('مولد النور الخاص', $items[0]['name']);
+    }
+
+    /**
+     * FIX (تدقيق شامل — A5): clearCache() كانت تستخدم مفاتيح لا تطابق
+     * المفاتيح الفعلية المحفوظة (stats بدل stats_v2 مثلًا) فتفشل بصمت.
+     */
+    public function test_clear_cache_forgets_every_key_actually_used_by_this_service(): void
+    {
+        $service = app(AdminDashboardService::class);
+
+        $service->stats();
+        $service->generatorsMapPoints();
+        $service->revenueVsOutstandingDistribution();
+
+        $this->assertTrue(Cache::has('admin.dashboard.stats_v2'));
+        $this->assertTrue(Cache::has('admin.dashboard.generators_map_v2'));
+        $this->assertTrue(Cache::has('admin.dashboard.revenue_vs_outstanding.p6'));
+
+        $service->clearCache();
+
+        $this->assertFalse(Cache::has('admin.dashboard.stats_v2'));
+        $this->assertFalse(Cache::has('admin.dashboard.generators_map_v2'));
+        $this->assertFalse(Cache::has('admin.dashboard.revenue_vs_outstanding.p6'));
     }
 }

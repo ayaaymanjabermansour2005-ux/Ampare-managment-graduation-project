@@ -23,7 +23,13 @@ export default {
   uploadAttachment(id, formData) {
     return http.post(`/complaints/${id}/attachments`, formData);
   },
+  attachments(id) {
+    return http.get(`/complaints/${id}/attachments`);
+  },
   exportUrl(params = {}) {
     return buildExportUrl("/api/v1/complaints/export", params);
+  },
+  typeCounts() {
+    return http.get("/complaints/type-counts");
   },
 };

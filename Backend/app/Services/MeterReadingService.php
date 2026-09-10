@@ -25,7 +25,9 @@ class MeterReadingService
 
     public function list(User $user, int $perPage = 15, ?string $search = null, ?string $status = null, ?int $technicianId = null): LengthAwarePaginator
     {
-        $query = MeterReading::query()->with(['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator']);
+        // FIX (تدقيق شامل — B4): approver لم يكن يُحمَّل مسبقًا، فحقل "تمت
+        // الموافقة من" (approved_by) لم يكن يظهر أبدًا رغم وجود عنصر واجهة له.
+        $query = MeterReading::query()->with(['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator', 'approver']);
 
         if ($user->isAdmin()) {
         } elseif ($user->isOwner()) {
@@ -129,7 +131,7 @@ class MeterReadingService
                 $this->invoiceService->createFromMeterReading(FreshOrFail::reload($meterReading), $subscription);
             }
 
-            $fresh = FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice']);
+            $fresh = FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice', 'approver']);
 
             if ($isEarly) {
                 $daysEarly = $readingDate->diffInDays($dueDate);
@@ -196,7 +198,7 @@ class MeterReadingService
                 $meterReading->subscription
             );
 
-            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice']);
+            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'invoice', 'approver']);
         });
     }
 
@@ -218,7 +220,7 @@ class MeterReadingService
                 'rejection_reason' => $reason,
             ])->save();
 
-            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator']);
+            return FreshOrFail::reload($meterReading, ['subscription.generator', 'subscription.subscriberMeter.subscriber.user', 'creator', 'approver']);
         });
     }
 

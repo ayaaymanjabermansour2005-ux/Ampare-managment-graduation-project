@@ -25,10 +25,20 @@ export default {
   messages(conversationId, params = {}) {
     return http.get(`/conversations/${conversationId}/messages`, { params });
   },
-  sendMessage(conversationId, messageText) {
-    return http.post(`/conversations/${conversationId}/messages`, {
-      message_text: messageText,
-    });
+  /**
+   * FIX (تدقيق شامل — D4): الباك يدعم إرفاق حتى 5 ملفات بالرسالة أصلًا
+   * (StoreMessageRequest) لكن لم تكن هناك وسيلة لإرسالها من الواجهة إطلاقًا.
+   */
+  sendMessage(conversationId, messageText, files = []) {
+    if (!files.length) {
+      return http.post(`/conversations/${conversationId}/messages`, {
+        message_text: messageText,
+      });
+    }
+    const formData = new FormData();
+    if (messageText) formData.append("message_text", messageText);
+    files.forEach((file) => formData.append("attachments[]", file));
+    return http.post(`/conversations/${conversationId}/messages`, formData);
   },
   convertToIssue(conversationId, payload) {
     return http.post(`/conversations/${conversationId}/convert-to-issue`, payload);

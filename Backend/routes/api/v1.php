@@ -158,24 +158,35 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
         Route::post('admin/neighborhoods', [NeighborhoodController::class, 'store']);
         Route::patch('admin/neighborhoods/{neighborhood}', [NeighborhoodController::class, 'update']);
         Route::delete('admin/neighborhoods/{neighborhood}', [NeighborhoodController::class, 'destroy']);
-        Route::get('admin/articles', [ArticleController::class, 'index']);
-        Route::post('admin/articles', [ArticleController::class, 'store']);
-        Route::patch('admin/articles/{article}', [ArticleController::class, 'update']);
-        Route::delete('admin/articles/{article}', [ArticleController::class, 'destroy']);
+        Route::get('admin/articles', [ArticleController::class, 'index'])
+            ->middleware('permission:articles.view');
+        Route::post('admin/articles', [ArticleController::class, 'store'])
+            ->middleware('permission:articles.create');
+        Route::patch('admin/articles/{article}', [ArticleController::class, 'update'])
+            ->middleware('permission:articles.update');
+        Route::delete('admin/articles/{article}', [ArticleController::class, 'destroy'])
+            ->middleware('permission:articles.delete');
 
-        Route::post('admin/articles/{article}/attachments', [ArticleController::class, 'storeAttachment']);
+        Route::post('admin/articles/{article}/attachments', [ArticleController::class, 'storeAttachment'])
+            ->middleware('permission:articles.update');
 
         /*
         |------------------------------------------------------------------
         | مراجعة تعليقات المقالات (الأدمن)
         |------------------------------------------------------------------
         */
-        Route::get('admin/article-comments', [ArticleCommentController::class, 'adminIndex']);
-        Route::post('admin/article-comments/{comment}/approve', [ArticleCommentController::class, 'approve']);
-        Route::post('admin/article-comments/{comment}/reject', [ArticleCommentController::class, 'reject']);
-        Route::post('admin/article-comments/{comment}/reply', [ArticleCommentController::class, 'reply']);
-        Route::delete('admin/article-comments/{comment}/reply', [ArticleCommentController::class, 'deleteReply']);
-        Route::delete('admin/article-comments/{comment}', [ArticleCommentController::class, 'destroy']);
+        Route::get('admin/article-comments', [ArticleCommentController::class, 'adminIndex'])
+            ->middleware('permission:article-comments.view');
+        Route::post('admin/article-comments/{comment}/approve', [ArticleCommentController::class, 'approve'])
+            ->middleware('permission:article-comments.moderate');
+        Route::post('admin/article-comments/{comment}/reject', [ArticleCommentController::class, 'reject'])
+            ->middleware('permission:article-comments.moderate');
+        Route::post('admin/article-comments/{comment}/reply', [ArticleCommentController::class, 'reply'])
+            ->middleware('permission:article-comments.moderate');
+        Route::delete('admin/article-comments/{comment}/reply', [ArticleCommentController::class, 'deleteReply'])
+            ->middleware('permission:article-comments.moderate');
+        Route::delete('admin/article-comments/{comment}', [ArticleCommentController::class, 'destroy'])
+            ->middleware('permission:article-comments.moderate');
     });
 
     Route::get('preferences', [UserPreferenceController::class, 'index']);
@@ -860,6 +871,11 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
                 ->middleware('permission:complaints.view')
                 ->name('export');
 
+            // نفس ملاحظة export أعلاه: لازم تُسجَّل قبل /{complaint}.
+            Route::get('/type-counts', [ComplaintController::class, 'typeCounts'])
+                ->middleware('permission:complaints.view')
+                ->name('type-counts');
+
             Route::post('/', [ComplaintController::class, 'store'])
                 ->middleware('permission:complaints.create')
                 ->name('store');
@@ -878,6 +894,10 @@ Route::middleware(['auth:sanctum', 'active', 'maintenance', 'prevent-guest-mutat
             Route::patch('/{complaint}/assign', [ComplaintController::class, 'assign'])
                 ->middleware('permission:complaints.resolve')
                 ->name('assign');
+
+            Route::get('/{complaint}/attachments', [ComplaintController::class, 'attachments'])
+                ->middleware('permission:complaints.view')
+                ->name('attachments.index');
 
             Route::post('/{complaint}/attachments', [ComplaintController::class, 'storeAttachment'])
                 ->middleware('permission:complaints.create')

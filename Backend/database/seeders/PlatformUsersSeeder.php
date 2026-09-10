@@ -594,7 +594,7 @@ class PlatformUsersSeeder extends Seeder
                     ['submitted_by' => $subUser->id, 'subject' => "استفسار بخصوص فاتورة {$data['name']}"],
                     [
                         'description' => 'الفاتورة الأخيرة أعلى من المعتاد، بحاجة توضيح.',
-                        'status' => [ComplaintStatus::Pending, ComplaintStatus::InProgress, ComplaintStatus::Resolved][($i / 3) % 3],
+                        'status' => [ComplaintStatus::Pending, ComplaintStatus::InProgress, ComplaintStatus::WaitingSubscriber, ComplaintStatus::Resolved][($i / 3) % 4],
                     ]
                 );
             }

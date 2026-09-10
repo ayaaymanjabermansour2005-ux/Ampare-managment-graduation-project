@@ -241,6 +241,15 @@ describe('AdminTopbar', () => {
         expect(routes).not.toContain('admin.payments');
         expect(routes).toContain('admin.articles');
         expect(routes).toHaveLength(5);
+
+        // FIX (تدقيق شامل للوحة الأدمن): كانت أزرار الإضافة السريعة تعرض
+        // أيقونة بدون أي نص إطلاقًا (q.label غير موجود بـ adminQuickActions.js،
+        // والقائمة فيها labelKey فقط بدون ترجمة بالـ template).
+        const links = wrapper.findAll('a[data-to]').filter((a) => {
+            const to = JSON.parse(a.attributes('data-to') ?? 'null');
+            return to?.name?.startsWith('admin.');
+        });
+        links.forEach((link) => expect(link.text().trim()).not.toBe(''));
     });
 
     it('shows the fetched notifications with an unread dot, and marking all as read clears it', async () => {

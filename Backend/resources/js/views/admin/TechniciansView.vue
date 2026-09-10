@@ -102,7 +102,13 @@ const filteredTechnicians = computed(() => {
   return technicians.value;
 });
 
-const availabilityOf = (t) => t.availability_status ?? (t.is_locked ? "unavailable" : "available");
+/* FIX (تدقيق شامل — A1): "مشغول" الآن مبني على وجود أمر شغل نشط فعليًا
+ * لهذا الفني (has_active_task من الباك)، بدل حقل availability_status
+ * غير الموجود أصلًا. */
+const availabilityOf = (t) => {
+  if (t.is_locked) return "unavailable";
+  return t.has_active_task ? "busy" : "available";
+};
 const countByAvailability = (status) => technicians.value.filter((t) => availabilityOf(t) === status).length;
 const avgRating = computed(() => {
   const rated = technicians.value.filter((t) => typeof t.rating === "number");
@@ -884,7 +890,7 @@ onMounted(() => {
                 <td class="py-3 px-1.5 whitespace-nowrap">
                   <div class="row-actions">
                     <button
-                      v-if="request.status === 'pending'"
+                      v-if="request.status === 'pending' && can('technician-tasks.assign')"
                       type="button" @click="openAssignRequest(request)"
                       class="action-btn action-btn--edit" :title="$t('admin_technicians_page.assign_technician_title')"
                       :aria-label="$t('admin_technicians_page.assign_technician_title')"
@@ -892,7 +898,7 @@ onMounted(() => {
                       <UserCog aria-hidden="true" />
                     </button>
                     <button
-                      v-if="request.status === 'submitted'"
+                      v-if="request.status === 'submitted' && can('technician-tasks.review')"
                       type="button" @click="openReviewRequest(request)"
                       class="action-btn action-btn--approve" :title="$t('admin_technicians_page.review_task_title')"
                       :aria-label="$t('admin_technicians_page.review_task_title')"
@@ -900,7 +906,7 @@ onMounted(() => {
                       <ClipboardCheck aria-hidden="true" />
                     </button>
                     <button
-                      v-if="ACTIVE_TASK_STATUSES.includes(request.status)"
+                      v-if="ACTIVE_TASK_STATUSES.includes(request.status) && can('technician-tasks.cancel')"
                       type="button" :disabled="cancellingRequestId === request.id" @click="handleCancelRequest(request)"
                       class="action-btn action-btn--delete" :title="$t('admin_technicians_page.cancel_task_title')"
                       :aria-label="$t('admin_technicians_page.cancel_task_title')"

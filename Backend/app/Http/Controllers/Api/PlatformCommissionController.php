@@ -71,6 +71,8 @@ class PlatformCommissionController extends Controller
         Request $request,
         PlatformCommissionReportPdfService $pdfService
     ): Response {
+        $this->authorize('viewAny', PlatformCommission::class);
+
         $user = $request->user();
         $ownerId = $user->isAdmin() ? $request->integer('owner_id') : $user->id;
 

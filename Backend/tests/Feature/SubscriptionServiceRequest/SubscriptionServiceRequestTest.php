@@ -578,4 +578,47 @@ class SubscriptionServiceRequestTest extends TestCase
     {
         $this->getJson('/api/v1/subscription-service-requests')->assertStatus(401);
     }
+
+    /**
+     * FIX (تدقيق شامل — B7): index() لم يكن يدعم فلترة بالحالة أو البحث
+     * إطلاقًا، خلافًا لكل الواجهات الشقيقة (المولدات/الأعطال/قراءات العدادات).
+     */
+    public function test_admin_can_filter_service_requests_by_status(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [, $subscription] = $this->makeActiveSubscription($owner);
+
+        SubscriptionServiceRequest::factory()->create(['subscription_id' => $subscription->id, 'status' => 'pending']);
+        SubscriptionServiceRequest::factory()->approved()->create(['subscription_id' => $subscription->id]);
+        SubscriptionServiceRequest::factory()->rejected()->create(['subscription_id' => $subscription->id]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/subscription-service-requests?status=approved');
+
+        $response->assertOk();
+        $items = $response->json('data.data');
+        $this->assertCount(1, $items);
+        $this->assertSame('approved', $items[0]['status']);
+    }
+
+    public function test_admin_can_search_service_requests_by_generator_name(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        $matchingGenerator = Generator::factory()->create(['owner_id' => $owner->id, 'name' => 'مولد النور الخاص']);
+        $otherGenerator = Generator::factory()->create(['owner_id' => $owner->id, 'name' => 'مولد الأمل']);
+
+        [, $matchingSubscription] = $this->makeActiveSubscription($owner, $matchingGenerator);
+        [, $otherSubscription] = $this->makeActiveSubscription($owner, $otherGenerator);
+
+        SubscriptionServiceRequest::factory()->create(['subscription_id' => $matchingSubscription->id]);
+        SubscriptionServiceRequest::factory()->create(['subscription_id' => $otherSubscription->id]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/subscription-service-requests?search='.urlencode('النور'));
+
+        $response->assertOk();
+        $items = $response->json('data.data');
+        $this->assertCount(1, $items);
+        $this->assertSame($matchingSubscription->id, $items[0]['subscription']['id']);
+    }
 }

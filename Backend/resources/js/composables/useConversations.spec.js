@@ -113,6 +113,52 @@ describe('useConversations', () => {
         expect(isLoadingMessages.value).toBe(false);
     });
 
+    it('openConversation exposes hasMoreMessages from the pagination meta', async () => {
+        conversationService.messages.mockResolvedValue({
+            data: { data: { data: [{ id: 1 }], meta: { current_page: 1, last_page: 3 } } },
+        });
+
+        const { openConversation, hasMoreMessages } = useConversations();
+        await openConversation({ id: 7 });
+
+        expect(hasMoreMessages.value).toBe(true);
+    });
+
+    it('loadOlderMessages fetches the next page, prepends older messages, and updates hasMoreMessages', async () => {
+        conversationService.messages.mockResolvedValueOnce({
+            data: { data: { data: [{ id: 3 }, { id: 2 }], meta: { current_page: 1, last_page: 2 } } },
+        });
+
+        const { openConversation, loadOlderMessages, messages, hasMoreMessages, isLoadingOlderMessages } = useConversations();
+        await openConversation({ id: 7 });
+        expect(messages.value).toEqual([{ id: 2 }, { id: 3 }]);
+        expect(hasMoreMessages.value).toBe(true);
+
+        conversationService.messages.mockResolvedValueOnce({
+            data: { data: { data: [{ id: 1 }], meta: { current_page: 2, last_page: 2 } } },
+        });
+        await loadOlderMessages();
+
+        expect(conversationService.messages).toHaveBeenLastCalledWith(7, { per_page: 50, page: 2 });
+        expect(messages.value).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+        expect(hasMoreMessages.value).toBe(false);
+        expect(isLoadingOlderMessages.value).toBe(false);
+    });
+
+    it('loadOlderMessages is a no-op when there are no more pages', async () => {
+        conversationService.messages.mockResolvedValue({
+            data: { data: { data: [{ id: 1 }], meta: { current_page: 1, last_page: 1 } } },
+        });
+
+        const { openConversation, loadOlderMessages } = useConversations();
+        await openConversation({ id: 7 });
+        conversationService.messages.mockClear();
+
+        await loadOlderMessages();
+
+        expect(conversationService.messages).not.toHaveBeenCalled();
+    });
+
     it('openConversation sets a translated messagesError, clears stale messages, and does not reject on failure', async () => {
         conversationService.messages.mockRejectedValue({ message: 'Network Error' });
 
@@ -155,10 +201,24 @@ describe('useConversations', () => {
         await openConversation({ id: 7 });
         const result = await sendMessage('مرحبا');
 
-        expect(conversationService.sendMessage).toHaveBeenCalledWith(7, 'مرحبا');
+        expect(conversationService.sendMessage).toHaveBeenCalledWith(7, 'مرحبا', []);
         expect(result).toBe(true);
         expect(messages.value).toEqual([{ id: 1, text: 'مرحبا' }]);
         expect(isSending.value).toBe(false);
+    });
+
+    // FIX (تدقيق شامل — D4): يجب تمرير الملفات المرفقة فعليًا إلى الـservice.
+    it('sendMessage forwards attached files to the service', async () => {
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+        conversationService.sendMessage.mockResolvedValue({ data: { data: { id: 2, text: '' } } });
+        const file = new File(['x'], 'photo.jpg', { type: 'image/jpeg' });
+
+        const { openConversation, sendMessage } = useConversations();
+        await openConversation({ id: 7 });
+        const result = await sendMessage('', [file]);
+
+        expect(conversationService.sendMessage).toHaveBeenCalledWith(7, '', [file]);
+        expect(result).toBe(true);
     });
 
     it('sendMessage reshapes a failure into sendError and returns false', async () => {

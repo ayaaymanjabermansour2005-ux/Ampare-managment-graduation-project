@@ -65,7 +65,11 @@ class SubscriberDashboardService
             )->where('status', InvoiceStatus::Paid)->sum('final_amount_ils'),
 
             'open_complaints_count' => Complaint::where('submitted_by', $user->id)
-                ->whereIn('status', [ComplaintStatus::Pending->value, ComplaintStatus::InProgress->value])
+                ->whereIn('status', [
+                    ComplaintStatus::Pending->value,
+                    ComplaintStatus::InProgress->value,
+                    ComplaintStatus::WaitingSubscriber->value,
+                ])
                 ->count(),
 
             'unread_notifications_count' => $user->unreadNotifications()->count(),

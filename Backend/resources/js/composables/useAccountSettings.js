@@ -74,13 +74,17 @@ export function useAccountSettings() {
   const isLoadingSessions = ref(false);
   const sessionsError = ref(null);
   const revokingSessionId = ref(null);
+  // FIX (تدقيق شامل — E5): يميّز "لا جلسات أخرى" الحقيقية عن "الميزة غير
+  // مدعومة بهذه البيئة" (SESSION_DRIVER != database) — كانتا تبدوان متطابقتين.
+  const sessionsSupported = ref(true);
 
   async function fetchSessions() {
     isLoadingSessions.value = true;
     sessionsError.value = null;
     try {
       const { data } = await authService.sessions();
-      sessions.value = data.data;
+      sessions.value = data.data.sessions ?? data.data;
+      sessionsSupported.value = data.data.is_supported ?? true;
     } catch (err) {
       sessionsError.value = normalizeApiError(err, t("owner_settings.security.sessions_load_error")).message;
     } finally {
@@ -172,6 +176,7 @@ export function useAccountSettings() {
     sessions,
     isLoadingSessions,
     sessionsError,
+    sessionsSupported,
     revokingSessionId,
     fetchSessions,
     revokeSession,

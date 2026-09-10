@@ -5,6 +5,7 @@ import { useAdminFaults } from "@/composables/useAdminFaults";
 import faultService from "@/services/faultService";
 import { useFaultPredictions } from "@/composables/useFaultPredictions";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
 import { useToastStore } from "@/stores/toast";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
@@ -18,6 +19,7 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
+const { can } = usePermissions();
 const { confirm } = useConfirm();
 
 const {
@@ -26,7 +28,7 @@ const {
   isOverriding, overrideError,
   isVerifying, verifyError,
   isDecidingRepair, decideRepairError,
-  deletingId,
+  deletingId, deleteError,
   fetchFaults, onSearchInput, onFilterChange,
   overrideFaultStatus, verifyFault, decideFaultRepair, deleteFault,
 } = useAdminFaults();
@@ -285,7 +287,13 @@ async function handleDelete(f) {
     variant: "danger",
   });
   if (!confirmed) return;
-  await deleteFault(f.id);
+  const ok = await deleteFault(f.id);
+  // FIX (تدقيق شامل — B5): deleteError كان موجودًا بالـcomposable لكن غير
+  // مربوط بالواجهة إطلاقًا — فشل الحذف (مثلاً بسبب مهام فنيين مرتبطة) كان
+  // يمرّ بصمت تام بلا أي رسالة للأدمن.
+  if (!ok && deleteError.value) {
+    toast.show({ type: "danger", title: t("faults_page.delete_error"), message: deleteError.value });
+  }
 }
 
 const exportUrl = computed(() =>
@@ -453,6 +461,7 @@ onMounted(() => {
               <Eye class="text-[12px]" aria-hidden="true" />
             </button>
             <button
+              v-if="can('faults.delete')"
               type="button"
               @click="handleDelete(f)"
               :disabled="deletingId === f.id"
@@ -611,7 +620,7 @@ onMounted(() => {
             </div>
 
             <!-- ===== التحقق من صحة البلاغ (pending_verification فقط) ===== -->
-            <div v-if="activeFault.status === 'pending_verification'" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
+            <div v-if="activeFault.status === 'pending_verification' && can('faults.updateStatus')" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
               <p class="text-[12px] font-extrabold mb-3 flex items-center gap-1.5"><ShieldCheck class="text-[#8A6D1F]" aria-hidden="true" /> {{ $t("owner_faults.verify_title") }}</p>
               <div v-if="verifyError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">{{ verifyError }}</div>
               <p class="text-[11.5px] text-[#6B6B6B] dark:text-[#a8aaa5] mb-3">{{ $t("owner_faults.verify_question") }}</p>
@@ -628,7 +637,7 @@ onMounted(() => {
             </div>
 
             <!-- ===== قرار الإصلاح (verified فقط) ===== -->
-            <div v-else-if="activeFault.status === 'verified'" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
+            <div v-else-if="activeFault.status === 'verified' && can('faults.updateStatus')" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
               <p class="text-[12px] font-extrabold mb-3 flex items-center gap-1.5"><Wrench class="text-[#8A6D1F]" aria-hidden="true" /> {{ $t("owner_faults.decide_repair_title") }}</p>
               <div v-if="decideRepairError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">{{ decideRepairError }}</div>
               <div class="space-y-3">
@@ -664,7 +673,7 @@ onMounted(() => {
               </button>
             </div>
 
-            <div class="border-t border-[#eee8da] dark:border-white/10 pt-4">
+            <div v-if="can('faults.override_status')" class="border-t border-[#eee8da] dark:border-white/10 pt-4">
               <p class="text-[12px] font-extrabold mb-3 flex items-center gap-1.5"><ShieldCheck class="text-[#8A6D1F]" aria-hidden="true" /> {{ $t("faults_page.override_status_manually") }}</p>
               <div v-if="overrideError" class="text-[11.5px] text-[#D9534F] bg-[#D9534F]/10 rounded-lg px-3 py-2 mb-3">{{ overrideError }}</div>
               <div class="space-y-3">
@@ -681,7 +690,7 @@ onMounted(() => {
           </div>
           <div class="modal-footer-brand shrink-0">
             <button type="button" @click="isDetailOpen = false" class="btn-outline-brand">{{ $t("dashboard.cancel") }}</button>
-            <button type="button" @click="handleOverrideSubmit" :disabled="isOverriding || !overrideReason.trim()" class="btn-fill-brand">
+            <button v-if="can('faults.override_status')" type="button" @click="handleOverrideSubmit" :disabled="isOverriding || !overrideReason.trim()" class="btn-fill-brand">
               <LoaderCircle class="animate-spin" aria-hidden="true" v-if="isOverriding" /><ShieldCheck aria-hidden="true" v-else />
               {{ $t("faults_page.override_status_button") }}
             </button>

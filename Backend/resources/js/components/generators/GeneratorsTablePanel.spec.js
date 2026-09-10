@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 import GeneratorsTablePanel from './GeneratorsTablePanel.vue';
+import { useAuthStore } from '@/stores/auth';
 
 // v-reveal is a local <script setup> import — IntersectionObserver is unavailable in jsdom by default.
 vi.stubGlobal('IntersectionObserver', class {
@@ -130,9 +131,18 @@ function setupOrderedMocks() {
 
 const STUBS = { AppDropdownSelect: true, AdminGeneratorFormModal: true, GeneratorViewModal: true, AppIcon: true, Teleport: true };
 
+// FIX (تدقيق شامل — B6): أزرار تعديل/حذف/إضافة مولد صارت مشروطة بـ can()
+// (permission gating) — بلا صلاحيات مضبوطة هنا كانت الأزرار تختفي فتفشل
+// الاختبارات التي تبحث عنها.
+function grantGeneratorsPermissions() {
+    const authStore = useAuthStore();
+    authStore.permissions = ['generators.create', 'generators.update', 'generators.delete'];
+}
+
 async function mountPanel(props = {}) {
     const pinia = createPinia();
     setActivePinia(pinia);
+    grantGeneratorsPermissions();
     const wrapper = mount(GeneratorsTablePanel, {
         props,
         global: { plugins: [i18n, pinia], stubs: STUBS },

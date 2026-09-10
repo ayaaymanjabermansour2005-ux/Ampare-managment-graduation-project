@@ -8,7 +8,9 @@ class StoreArticleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->isAdmin();
+        // التفويض الفعلي صار عبر permission middleware بالراوت + ArticlePolicy
+        // بالكنترولر (create/update) — بعد إضافة صلاحيات articles.* الدقيقة.
+        return true;
     }
 
     public function rules(): array

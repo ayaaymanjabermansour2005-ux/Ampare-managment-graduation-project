@@ -25,19 +25,7 @@ class ComplaintService
     ): LengthAwarePaginator {
         $query = Complaint::query()->with(['submitter', 'resolver', 'assignedTo', 'complainable']);
 
-        if (! $user->isAdmin()) {
-            $query->where(function (Builder $q) use ($user) {
-                $q->where('submitted_by', $user->id);
-
-                if ($user->isOwner()) {
-                    $q->orWhereHasMorph('complainable', [Generator::class], fn ($g) => $g->where('owner_id', $user->id))
-                        ->orWhereHasMorph('complainable', [Fault::class], fn ($g) => $g->whereHas('generator', fn ($gg) => $gg->where('owner_id', $user->id)))
-                        ->orWhereHasMorph('complainable', [Subscription::class], fn ($g) => $g->whereHas('generator', fn ($gg) => $gg->where('owner_id', $user->id)))
-                        ->orWhereHasMorph('complainable', [Invoice::class], fn ($g) => $g->whereHas('subscription.generator', fn ($gg) => $gg->where('owner_id', $user->id)))
-                        ->orWhereHasMorph('complainable', [Payment::class], fn ($g) => $g->whereHas('invoice.subscription.generator', fn ($gg) => $gg->where('owner_id', $user->id)));
-                }
-            });
-        }
+        $this->applyOwnershipScope($query, $user);
 
         if ($search) {
             $query->where(function (Builder $q) use ($search) {
@@ -70,5 +58,46 @@ class ComplaintService
         $complaint->update(['assigned_to' => $assignedTo]);
 
         return $complaint->fresh(['submitter', 'resolver', 'assignedTo', 'complainable']);
+    }
+
+    /**
+     * FIX (تدقيق شامل — D6): توزيع الشكاوى حسب نوع الكيان المرتبط بها
+     * (complainable_type) — بيانات حقيقية من قاعدة البيانات، بدل القيم
+     * الوهمية الثابتة التي كانت بمخطط "توزيع الشكاوى حسب النوع" بالواجهة.
+     *
+     * @return array<string, int> اسم الكلاس المختصر (Generator, Fault, ...) → العدد
+     */
+    public function typeCounts(User $user, int $days = 30): array
+    {
+        $query = Complaint::query()
+            ->whereNotNull('complainable_type')
+            ->where('created_at', '>=', now()->subDays($days));
+
+        $this->applyOwnershipScope($query, $user);
+
+        return $query->selectRaw('complainable_type, count(*) as total')
+            ->groupBy('complainable_type')
+            ->pluck('total', 'complainable_type')
+            ->mapWithKeys(fn ($count, $type) => [class_basename($type) => $count])
+            ->all();
+    }
+
+    private function applyOwnershipScope(Builder $query, User $user): void
+    {
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $query->where(function (Builder $q) use ($user) {
+            $q->where('submitted_by', $user->id);
+
+            if ($user->isOwner()) {
+                $q->orWhereHasMorph('complainable', [Generator::class], fn ($g) => $g->where('owner_id', $user->id))
+                    ->orWhereHasMorph('complainable', [Fault::class], fn ($g) => $g->whereHas('generator', fn ($gg) => $gg->where('owner_id', $user->id)))
+                    ->orWhereHasMorph('complainable', [Subscription::class], fn ($g) => $g->whereHas('generator', fn ($gg) => $gg->where('owner_id', $user->id)))
+                    ->orWhereHasMorph('complainable', [Invoice::class], fn ($g) => $g->whereHas('subscription.generator', fn ($gg) => $gg->where('owner_id', $user->id)))
+                    ->orWhereHasMorph('complainable', [Payment::class], fn ($g) => $g->whereHas('invoice.subscription.generator', fn ($gg) => $gg->where('owner_id', $user->id)));
+            }
+        });
     }
 }

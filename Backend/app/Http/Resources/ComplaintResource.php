@@ -16,6 +16,7 @@ class ComplaintResource extends JsonResource
             'channel' => $this->channel,
             'priority' => $this->priority,
             'status' => $this->status,
+            'sla_due_at' => $this->sla_due_at?->toDateTimeString(),
             'submitted_by' => [
                 'id' => $this->submitter?->id,
                 'name' => $this->submitter?->name,

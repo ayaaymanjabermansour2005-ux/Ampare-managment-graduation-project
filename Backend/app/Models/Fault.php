@@ -6,6 +6,7 @@ use App\Enums\FaultPriority;
 use App\Enums\FaultRepairMethod;
 use App\Enums\FaultSource;
 use App\Enums\FaultStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -121,6 +122,15 @@ class Fault extends Model
     public function isClosed(): bool
     {
         return $this->status->isFinal();
+    }
+
+    /**
+     * Scope to faults still considered "open" (see FaultStatus::openValues()).
+     * Table-qualified because callers often join generators/locations, which also have a `status` column.
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->whereIn($this->getTable().'.status', FaultStatus::openValues());
     }
 
     public function getActivitylogOptions(): LogOptions

@@ -138,6 +138,35 @@ class TechnicianTest extends TestCase
             ->assertOk();
     }
 
+    /**
+     * FIX (تدقيق شامل — A1): rating/has_active_task يجب أن تُحسب فعليًا من
+     * التقييمات ومهام الفني النشطة، بدل أن تكونا حقلين غير موجودين بالـResource.
+     */
+    public function test_technician_list_exposes_average_rating_and_active_task_status(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+
+        $busyTechnicianUser = $this->makeTechnicianRoleUser();
+        $busyTechnician = Technician::factory()->create(['user_id' => $busyTechnicianUser->id, 'owner_id' => $owner->id]);
+        TechnicianTask::factory()->inProgress()->create(['technician_id' => $busyTechnician->id]);
+        \App\Models\TechnicianRating::factory()->create(['technician_id' => $busyTechnician->id, 'rating' => 4]);
+        \App\Models\TechnicianRating::factory()->create(['technician_id' => $busyTechnician->id, 'rating' => 2]);
+
+        $idleTechnicianUser = $this->makeTechnicianRoleUser();
+        $idleTechnician = Technician::factory()->create(['user_id' => $idleTechnicianUser->id, 'owner_id' => $owner->id]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/technicians?per_page=50');
+
+        $response->assertOk();
+        $items = collect($response->json('data.data'))->keyBy('id');
+
+        $this->assertEquals(3.0, $items[$busyTechnician->id]['rating']);
+        $this->assertTrue($items[$busyTechnician->id]['has_active_task']);
+        $this->assertNull($items[$idleTechnician->id]['rating'] ?? null);
+        $this->assertFalse($items[$idleTechnician->id]['has_active_task']);
+    }
+
     public function test_owner_cannot_view_another_owners_private_technician(): void
     {
         $owner = $this->makeOwner();

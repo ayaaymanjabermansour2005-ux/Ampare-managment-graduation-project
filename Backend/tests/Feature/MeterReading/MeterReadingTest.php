@@ -432,6 +432,44 @@ class MeterReadingTest extends TestCase
         return $reading->fresh();
     }
 
+    /**
+     * FIX (تدقيق شامل — B4): approver لم يكن يُحمَّل مسبقًا لا بالقائمة ولا
+     * باستجابة approve()/reject() نفسها، فحقل "تمت الموافقة من" لم يكن يظهر
+     * أبدًا رغم وجود عنصر واجهة مخصَّص له.
+     */
+    public function test_approving_reading_exposes_approver_name_in_response_and_list(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [$subscriberUser, $subscription] = $this->makeActiveSubscription($owner);
+        $reading = $this->makeReading($subscription, $subscriberUser->id);
+
+        $approveResponse = $this->actingAs($admin)
+            ->patchJson("/api/v1/meter-readings/{$reading->id}/approve");
+
+        $approveResponse->assertOk();
+        $this->assertSame($admin->name, $approveResponse->json('data.approved_by'));
+
+        $listResponse = $this->actingAs($admin)->getJson('/api/v1/meter-readings');
+        $listResponse->assertOk();
+        $listed = collect($listResponse->json('data.data'))->firstWhere('id', $reading->id);
+        $this->assertSame($admin->name, $listed['approved_by']);
+    }
+
+    public function test_rejecting_reading_exposes_rejecter_name_in_response(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = $this->makeOwner();
+        [$subscriberUser, $subscription] = $this->makeActiveSubscription($owner);
+        $reading = $this->makeReading($subscription, $subscriberUser->id);
+
+        $response = $this->actingAs($admin)
+            ->patchJson("/api/v1/meter-readings/{$reading->id}/reject", ['reason' => 'قراءة غير منطقية']);
+
+        $response->assertOk();
+        $this->assertSame($admin->name, $response->json('data.approved_by'));
+    }
+
     public function test_admin_can_update_pending_reading(): void
     {
         $admin = $this->makeAdmin();

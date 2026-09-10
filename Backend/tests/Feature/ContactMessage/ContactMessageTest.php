@@ -161,6 +161,28 @@ class ContactMessageTest extends TestCase
         ]);
     }
 
+    /**
+     * FIX (تدقيق شامل — D3): handledBy لم يكن يُحمَّل مسبقًا بالقائمة، فحقل
+     * "آخر معالج" لم يكن يظهر أبدًا رغم معالجة الرسالة فعليًا.
+     */
+    public function test_contact_messages_list_exposes_handled_by_after_update(): void
+    {
+        $admin = $this->makeAdmin();
+        $message = ContactMessage::create($this->validPayload());
+
+        $this->actingAs($admin)->patchJson(
+            "/api/v1/admin/contact-messages/{$message->id}/status",
+            ['status' => 'in_progress', 'admin_note' => 'قيد المتابعة.']
+        )->assertOk();
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/contact-messages');
+
+        $response->assertOk();
+        $listed = collect($response->json('data.data'))->firstWhere('id', $message->id);
+        $this->assertNotNull($listed['handled_by']);
+        $this->assertSame($admin->name, $listed['handled_by']['name']);
+    }
+
     public function test_update_status_rejects_invalid_status_value(): void
     {
         $admin = $this->makeAdmin();

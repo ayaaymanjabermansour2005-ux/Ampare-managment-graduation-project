@@ -34,6 +34,8 @@ class GeneratorScheduleController extends Controller
 
     public function store(StoreGeneratorScheduleRequest $request, Generator $generator, CreateGeneratorScheduleAction $action): JsonResponse
     {
+        $this->authorize('manageSchedules', $generator);
+
         $schedule = $action->execute(
             $generator,
             CreateGeneratorScheduleData::fromArray($request->validated()),
@@ -49,6 +51,8 @@ class GeneratorScheduleController extends Controller
 
     public function update(UpdateGeneratorScheduleRequest $request, GeneratorSchedule $generator_schedule): JsonResponse
     {
+        $this->authorize('update', $generator_schedule);
+
         $generator_schedule->update($request->validated());
 
         return $this->success(

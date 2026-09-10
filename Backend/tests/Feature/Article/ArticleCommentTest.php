@@ -10,6 +10,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ArticleCommentTest extends TestCase
@@ -145,6 +146,29 @@ class ArticleCommentTest extends TestCase
         $this->actingAs($owner)
             ->getJson('/api/v1/admin/article-comments')
             ->assertStatus(403);
+    }
+
+    /**
+     * تدقيق شامل — الجولة السابعة: قبل هالإصلاح، مراجعة التعليقات كانت
+     * محمية بـ isAdmin() فقط. صار فيه صلاحية article-comments.moderate
+     * دقيقة — هاد الاختبار يتحقق أن أدمن بدونها (رغم دوره admin) يُرفض.
+     */
+    public function test_admin_without_moderate_permission_cannot_approve_comment(): void
+    {
+        $admin = $this->makeAdmin();
+        $article = $this->makeArticle($admin);
+        $comment = $article->comments()->create([
+            'name' => 'زائر',
+            'comment' => 'تعليق.',
+            'status' => 'pending',
+        ]);
+        Role::findByName(RoleEnum::ADMIN->value, 'sanctum')->revokePermissionTo('article-comments.moderate');
+
+        $this->actingAs($admin)
+            ->postJson("/api/v1/admin/article-comments/{$comment->id}/approve")
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('article_comments', ['id' => $comment->id, 'status' => 'pending']);
     }
 
     public function test_admin_can_approve_comment(): void

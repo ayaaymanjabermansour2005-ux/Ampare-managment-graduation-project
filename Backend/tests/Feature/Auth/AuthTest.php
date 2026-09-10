@@ -533,4 +533,23 @@ class AuthTest extends TestCase
         $response->assertOk();
         $this->assertCount(1, $response->json('data'));
     }
+
+    public function test_locked_accounts_list_eager_loads_roles_and_does_not_n_plus_one(): void
+    {
+        // تدقيق شامل — الجولة السادسة: AccountLockoutService::lockedAccounts()
+        // كانت بدون with('roles', ...)، فـ UserResource كانت تطلق استعلام
+        // roles/permissions منفصل لكل مستخدم مقفول (N+1).
+        $admin = $this->makeAdmin();
+
+        User::factory()->count(3)->create(['locked_until' => now()->addMinutes(30)])
+            ->each(fn (User $u) => $u->assignRole(Role::SUBSCRIBER->value));
+
+        DB::enableQueryLog();
+        $this->actingAs($admin)->getJson('/api/v1/users/locked')->assertOk();
+        $queryCount = count(DB::getQueryLog());
+        DB::flushQueryLog();
+
+        // ثابت بغض النظر عن عدد الحسابات المقفولة — لا استعلام إضافي لكل مستخدم.
+        $this->assertLessThan(15, $queryCount);
+    }
 }

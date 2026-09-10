@@ -87,7 +87,17 @@ class GeneratorController extends Controller
             new GeneratorsExport(
                 $request->user(),
                 $request->input('search'),
-                $request->input('status')
+                $request->input('status'),
+                $request->input('city'),
+                $request->integer('owner_id') ?: null,
+                $request->filled('capacity_min') ? (float) $request->input('capacity_min') : null,
+                $request->filled('capacity_max') ? (float) $request->input('capacity_max') : null,
+                $request->filled('fuel_min') ? (float) $request->input('fuel_min') : null,
+                $request->filled('fuel_max') ? (float) $request->input('fuel_max') : null,
+                $request->filled('subscribers_min') ? (int) $request->input('subscribers_min') : null,
+                $request->filled('subscribers_max') ? (int) $request->input('subscribers_max') : null,
+                $request->filled('revenue_min') ? (float) $request->input('revenue_min') : null,
+                $request->filled('revenue_max') ? (float) $request->input('revenue_max') : null,
             ),
             'generators-'.now()->format('Y-m-d').'.xlsx'
         );

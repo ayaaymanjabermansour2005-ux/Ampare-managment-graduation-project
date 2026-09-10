@@ -11,6 +11,8 @@ use App\Models\Generator;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Models\Technician;
+use App\Models\TechnicianTask;
 use App\Models\User;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Database\Eloquent\Model;
@@ -84,9 +86,50 @@ class StoreComplaintRequest extends FormRequest
             $model instanceof Subscription => $this->subscriptionRelatedToUser($model, $user),
             $model instanceof Invoice => $this->subscriptionRelatedToUser($model->subscription, $user),
             $model instanceof Payment => $this->subscriptionRelatedToUser($model->invoice?->subscription, $user),
-            $model instanceof User => true,
+            $model instanceof User => $this->userRelatedToUser($model, $user),
             default => false,
         };
+    }
+
+    /**
+     * FIX (تدقيق شامل — الجولة الرابعة): شكوى عن "مستخدم" لازم تكون مبنية
+     * على علاقة خدمة فعلية بين الطرفين (نفس مبدأ باقي الأنواع أعلاه)، مو أي
+     * مستخدم موجود بالنظام بلا أي علاقة.
+     */
+    private function userRelatedToUser(User $target, User $user): bool
+    {
+        if ($target->id === $user->id) {
+            return false;
+        }
+
+        // هل target فني قدّم خدمة فعلية (TechnicianTask) على مولد مرتبط بـ $user (مالكًا أو مشتركًا)؟
+        $technicianIds = Technician::where('user_id', $target->id)->pluck('id');
+        if ($technicianIds->isNotEmpty()) {
+            $servedRelatedGenerator = TechnicianTask::whereIn('technician_id', $technicianIds)
+                ->whereHas('generator', fn ($g) => $g->where('owner_id', $user->id)
+                    ->orWhereHas('subscriptions.subscriberMeter.subscriber', fn ($s) => $s->where('user_id', $user->id)))
+                ->exists();
+
+            if ($servedRelatedGenerator) {
+                return true;
+            }
+        }
+
+        // هل أحد الطرفين مالك مولد والطرف التاني مشترك فيه؟
+        $ownsGeneratorSubscribedByOther = fn (User $owner, User $subscriber) => Generator::where('owner_id', $owner->id)
+            ->whereHas('subscriptions.subscriberMeter.subscriber', fn ($s) => $s->where('user_id', $subscriber->id))
+            ->exists();
+
+        if ($ownsGeneratorSubscribedByOther($user, $target) || $ownsGeneratorSubscribedByOther($target, $user)) {
+            return true;
+        }
+
+        // هل أحد الطرفين فني يعمل عند الطرف التاني (علاقة توظيف مباشرة)؟
+        $technicianEmployedBy = fn (User $technicianUser, User $ownerUser) => Technician::where('user_id', $technicianUser->id)
+            ->where('owner_id', $ownerUser->id)
+            ->exists();
+
+        return $technicianEmployedBy($user, $target) || $technicianEmployedBy($target, $user);
     }
 
     private function generatorRelatedToUser(?Generator $generator, User $user): bool

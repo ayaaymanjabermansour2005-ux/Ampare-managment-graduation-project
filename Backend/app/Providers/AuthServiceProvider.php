@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Article;
+use App\Models\ArticleComment;
 use App\Models\Attachment;
 use App\Models\CommissionTier;
 use App\Models\Complaint;
@@ -24,6 +26,8 @@ use App\Models\Technician;
 use App\Models\TechnicianPayment;
 use App\Models\TechnicianTask;
 use App\Models\User;
+use App\Policies\ArticleCommentPolicy;
+use App\Policies\ArticlePolicy;
 use App\Policies\AttachmentPolicy;
 use App\Policies\CommissionTierPolicy;
 use App\Policies\ComplaintPolicy;
@@ -77,6 +81,10 @@ class AuthServiceProvider extends ServiceProvider
         OwnerApplication::class => OwnerApplicationPolicy::class,
         // إضافة (حزمة #2): شرائح العمولة التلقائية — أدمن فقط.
         CommissionTier::class => CommissionTierPolicy::class,
+        // تدقيق شامل — الجولة السابعة: صلاحيات دقيقة للمقالات/التعليقات (كانت
+        // isAdmin() فقط، بلا إمكانية تقييد أدمن فرعي).
+        Article::class => ArticlePolicy::class,
+        ArticleComment::class => ArticleCommentPolicy::class,
     ];
 
     public function boot(): void

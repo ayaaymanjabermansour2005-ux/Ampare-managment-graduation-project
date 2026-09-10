@@ -4,11 +4,12 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAdminInvoices } from "@/composables/useAdminInvoices";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
 import { vReveal } from "@/directives/reveal";
 import InvoiceCorrectionModal from "@/components/admin/InvoiceCorrectionModal.vue";
 import invoiceService from "@/services/invoiceService";
 import { useToastStore } from "@/stores/toast";
-import { Ban, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Circle, Eye, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, QrCode, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
+import { Ban, CalendarCheck, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Circle, Eye, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, QrCode, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -16,6 +17,7 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 const { t, locale } = useI18n();
 const route = useRoute();
 const { confirm } = useConfirm();
+const { can } = usePermissions();
 const toast = useToastStore();
 
 const {
@@ -37,12 +39,9 @@ const {
   reissueInvoice,
 } = useAdminInvoices();
 
-/* ---------------- نافذة QR للتحقق من الفاتورة ----------------
- * FIX (تدقيق شامل للوحة الأدمن — بند 9): GET /invoices/{id}/qr جاهز بالكامل
- * بالباك اند (invoiceService.qrCode) لكنه كان Endpoint ميتًا بلا أي استخدام
- * بالفرونت. نفس نمط عرض QR المعتمَد فعليًا بواجهة المالك (owner/GeneratorsView.vue).
- */
 const invoiceQrModal = ref({ open: false, loading: false, src: null, invoiceId: null });
+
+/** يفتح نافذة رمز QR للتحقق من الفاتورة، ويجلب صورة الرمز من الباك اند. */
 async function handleShowInvoiceQr(invoice) {
   invoiceQrModal.value = { open: true, loading: true, src: null, invoiceId: invoice.id };
   try {
@@ -53,7 +52,6 @@ async function handleShowInvoiceQr(invoice) {
   }
 }
 
-/* ---------------- حالة الفاتورة ---------------- */
 const STATUS_META = {
   pending: { key: "invoices_page.status_pending", chip: "chip-warning", color: "#FFC107" },
   paid: { key: "invoices_page.status_paid", chip: "chip-success", color: "#28A745" },
@@ -61,13 +59,16 @@ const STATUS_META = {
   overdue: { key: "invoices_page.status_overdue", chip: "chip-danger", color: "#D9534F" },
   cancelled: { key: "subscriptions_page.status_cancelled", chip: null, color: "#9a9d97" },
 };
+/** يترجم قيمة حالة الفاتورة الخام إلى نص معروض. */
 function statusLabel(s) {
   const m = STATUS_META[s];
   return m ? t(m.key) : s;
 }
+/** يرجع اسم كلاس الشارة اللونية لحالة الفاتورة (null لو الحالة لها لون مخصَّص بدل شارة جاهزة). */
 function statusChip(s) {
   return STATUS_META[s]?.chip ?? null;
 }
+/** ينسّق لون مخصَّص (نص + خلفية شفافة) للحالات اللي بلا شارة جاهزة (مثل "ملغاة"). */
 function statusChipStyle(s) {
   const m = STATUS_META[s];
   if (!m || m.chip) return {};
@@ -83,13 +84,16 @@ const STATUS_PILLS = computed(() => [
   { value: "cancelled", label: statusLabel("cancelled") },
 ]);
 
-/* ---------------- فرز عبر رؤوس الأعمدة (سهم تصاعدي/تنازلي - نفس أسلوب باقي صفحات الأدمن) ---------------- */
 const sortKey = ref("");
 const sortDir = ref("desc");
+
+/** يبني كلاس CSS (شفافية + دوران) لأيقونة سهم الفرز الثابتة (ChevronDown)؛ يُستخدَم مع :class على <ChevronDown> وليس :name على <AppIcon>. */
 function sortIconClass(key) {
   if (sortKey.value !== key) return "opacity-40";
   return sortDir.value === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
 }
+
+/** يبدّل عمود الفرز الحالي/اتجاهه عند الضغط على رأس عمود قابل للفرز. */
 function toggleSort(key) {
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === "desc" ? "asc" : "desc";
@@ -98,6 +102,8 @@ function toggleSort(key) {
     sortDir.value = "desc";
   }
 }
+
+/** يرتّب فواتير الصفحة الحالية حسب عمود/اتجاه الفرز المختار (فرز محلي، الباك اند لا يدعم فرزًا عامًا). */
 const sortedInvoices = computed(() => {
   if (!sortKey.value) return invoices.value;
   const list = [...invoices.value];
@@ -117,7 +123,7 @@ const sortedInvoices = computed(() => {
   return list;
 });
 
-/* ---------------- KPI Cards ---------------- */
+/** يعدّ فواتير الصفحة الحالية بحالة معيّنة، لبطاقات KPI. */
 const countOnPage = (status) => invoices.value.filter((i) => i.status === status).length;
 const KPI_CARDS = computed(() => [
   { icon: "fa-file-invoice-dollar", label: t("invoices_page.total_invoices"), value: pagination.value.total, tone: "secondary" },
@@ -126,9 +132,10 @@ const KPI_CARDS = computed(() => [
   { icon: "fa-triangle-exclamation", label: statusLabel("overdue") + t("common.this_page_suffix"), value: countOnPage("overdue"), tone: "danger" },
 ]);
 
-/* ---------------- مؤشر حالة النظام بالهيدر (نفس أسلوب صفحة قراءات العدادات) ----------------
- * ملاحظة نطاق البيانات: مبني على invoices.value (سجلات الصفحة الحالية فقط)، نفس ملاحظة
- * بطاقات KPI أعلاه المعلَّم عليها "(هذه الصفحة)".
+/**
+ * يبني نص/لون مؤشر حالة النظام بالهيدر حسب وجود فواتير متأخرة أم لا.
+ * مبني على invoices.value (سجلات الصفحة الحالية فقط)، نفس ملاحظة بطاقات KPI
+ * أعلاه المعلَّم عليها "(هذه الصفحة)".
  */
 const systemStatusInfo = computed(() => {
   const overdueCount = countOnPage("overdue");
@@ -144,7 +151,7 @@ const systemStatusInfo = computed(() => {
   };
 });
 
-/* ---------------- Pagination بأزرار محدودة ---------------- */
+/** يبني قائمة أرقام صفحات محدودة حول الصفحة الحالية (مع "..." للفجوات)، بدل عرض كل أرقام الصفحات. */
 const paginationRange = computed(() => {
   const total = pagination.value.last_page;
   const current = pagination.value.current_page;
@@ -169,13 +176,14 @@ const paginationRange = computed(() => {
   return withDots;
 });
 
-/* ---------------- تصحيح الفاتورة ---------------- */
 const correctionModal = ref({ open: false, invoice: null });
+
+/** يفتح نافذة تصحيح مبلغ الفاتورة (InvoiceCorrectionModal) للفاتورة المحدَّدة. */
 function openCorrection(invoice) {
   correctionModal.value = { open: true, invoice };
 }
 
-/* ---------------- إلغاء / إعادة إصدار ---------------- */
+/** يطلب تأكيد الأدمن ثم يلغي الفاتورة. */
 async function handleCancel(invoice) {
   const confirmed = await confirm({
     title: t("invoices_page.cancel_invoice_title", { id: invoice.id }),
@@ -189,6 +197,7 @@ async function handleCancel(invoice) {
   }
 }
 
+/** يطلب تأكيد الأدمن ثم يعيد إصدار فاتورة ملغاة كفاتورة جديدة. */
 async function handleReissue(invoice) {
   const confirmed = await confirm({
     title: t("invoices_page.reissue_invoice_title", { id: invoice.id }),
@@ -201,45 +210,26 @@ async function handleReissue(invoice) {
   }
 }
 
-/* ---------------- نافذة عرض التفاصيل ---------------- */
 const viewingInvoice = ref(null);
+
+/** يفتح نافذة تفاصيل الفاتورة (من بيانات الصف المحمَّلة أصلًا، بلا نداء API إضافي). */
 function openView(invoice) {
   viewingInvoice.value = invoice;
 }
+
+/** يقتطع تاريخًا/وقتًا إلى صيغة "YYYY-MM-DD" للعرض، أو "-" إذا كان فارغًا. */
 function formatDate(dateStr) {
   return dateStr ? String(dateStr).slice(0, 10) : "-";
 }
 
-/* ---------------- تصدير CSV ----------------
- * على مستوى الصفحة المحمّلة حاليًا فقط، مو كل السجلات (نفس منهجية باقي الصفحات).
- * مترجم بالكامل حسب اللغة الحالية بدل الاعتماد على نص عربي ثابت.
- */
-function handleExportCsv() {
-  const escapeCsv = (val) => {
-    const s = String(val ?? "");
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const header = [
-    t("invoices_page.invoice_no_col"),
-    t("invoices_page.amount_col"),
-    t("dashboard.currency"),
-    t("invoices_page.due_date_col"),
-    t("dashboard.status_col"),
-  ];
-  const rows = invoices.value.map((i) => [i.id, i.final_amount, i.currency, i.due_date ?? "", statusLabel(i.status)]);
-  const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(escapeCsv).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `invoices-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+/** يبني رابط تصدير Excel لكل الفواتير المطابقة لفلتر الحالة الحالي (تصدير خادم كامل، وليس الصفحة المحمَّلة فقط). */
+const invoicesExportUrl = computed(() =>
+  invoiceService.exportUrl({
+    status: statusFilter.value !== "all" ? statusFilter.value : undefined,
+  })
+);
 
-/* ---------------- طباعة (الصفحة المحمّلة حاليًا) — نفس أسلوب صفحة المدفوعات (isAr-aware) ---------------- */
+/** يفتح نافذة طباعة بجدول HTML لفواتير الصفحة الحالية المُفرَزة، بلغة الواجهة الحالية. */
 function handlePrint() {
   const isAr = locale.value === "ar";
   const rowsHtml = sortedInvoices.value
@@ -270,6 +260,7 @@ function handlePrint() {
   setTimeout(() => printWin.print(), 400);
 }
 
+/** يهيّئ البحث/فلتر الحالة من رابط الاستعلام (?q=, ?status=) إن وُجد، ثم يجلب الفواتير. */
 onMounted(() => {
   if (route.query.q) search.value = String(route.query.q);
   // دعم الوصول المباشر من تنبيهات صفحة أصحاب المولدات (?status=overdue)
@@ -352,15 +343,15 @@ onMounted(() => {
             </button>
           </div>
           <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
-          <button
-            type="button"
-            @click="handleExportCsv"
+          <a
+            :href="invoicesExportUrl"
+            target="_blank"
             class="icon-btn !w-8 !h-8 !bg-[#f4efe5]/70 dark:!bg-white/5"
             :title="$t('users_page.export_csv')"
             :aria-label="$t('users_page.export_csv')"
           >
             <FileSpreadsheet class="text-[11px]" aria-hidden="true" />
-          </button>
+          </a>
           <button
             type="button"
             @click="handlePrint"
@@ -397,14 +388,18 @@ onMounted(() => {
         <table class="data-table w-full text-[12px] min-w-[820px]">
           <thead>
             <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
-              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('id')">
-                {{ $t("invoices_page.invoice_no_col") }}
-                <AppIcon :name="sortIconClass('id')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3 rounded-s-lg">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('id')">
+                  {{ $t("invoices_page.invoice_no_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('id')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("invoices_page.amount_col") }}</th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('due_date')">
-                {{ $t("invoices_page.due_date_col") }}
-                <AppIcon :name="sortIconClass('due_date')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('due_date')">
+                  {{ $t("invoices_page.due_date_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('due_date')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("dashboard.status_col") }}</th>
               <th class="py-2.5 px-3 rounded-e-lg">{{ $t("subscribers_page.actions_col") }}</th>
@@ -432,7 +427,7 @@ onMounted(() => {
                   <button type="button" @click="openView(invoice)" class="action-btn action-btn--view" :title="$t('common.view')" :aria-label="$t('common.view')">
                     <Eye aria-hidden="true" />
                   </button>
-                  <button type="button" @click="openCorrection(invoice)" class="action-btn action-btn--edit" :title="$t('invoices_page.correct_action')" :aria-label="$t('invoices_page.correct_action')">
+                  <button v-if="can('invoices.correct')" type="button" @click="openCorrection(invoice)" class="action-btn action-btn--edit" :title="$t('invoices_page.correct_action')" :aria-label="$t('invoices_page.correct_action')">
                     <Pencil aria-hidden="true" />
                   </button>
                   <button type="button" @click="handleShowInvoiceQr(invoice)" class="action-btn action-btn--view" :title="$t('invoices_page.show_qr')" :aria-label="$t('invoices_page.show_qr')">
@@ -440,7 +435,7 @@ onMounted(() => {
                   </button>
                   <span class="row-actions-divider"></span>
                   <button
-                    v-if="invoice.status === 'cancelled'"
+                    v-if="invoice.status === 'cancelled' && can('invoices.reissue')"
                     type="button"
                     :disabled="reissuingId === invoice.id"
                     @click="handleReissue(invoice)"
@@ -451,7 +446,7 @@ onMounted(() => {
                     <LoaderCircle class="animate-spin" aria-hidden="true" v-if="reissuingId === invoice.id" /><RotateCw aria-hidden="true" v-else />
                   </button>
                   <button
-                    v-else
+                    v-else-if="invoice.status !== 'cancelled' && can('invoices.cancel')"
                     type="button"
                     :disabled="cancellingId === invoice.id"
                     @click="handleCancel(invoice)"
@@ -566,7 +561,7 @@ onMounted(() => {
               <div class="grid grid-cols-2 gap-2.5">
                 <div class="glass-card p-3 text-center">
                   <CalendarDays class="text-[#52733D] dark:text-[#8cc35a] text-[13px] mb-1" aria-hidden="true" />
-                  <div class="text-sm font-extrabold">{{ formatDate(viewingInvoice.issued_at) }}</div>
+                  <div class="text-sm font-extrabold">{{ formatDate(viewingInvoice.created_at) }}</div>
                   <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("invoices_page.issued_label") }}</div>
                 </div>
                 <div class="glass-card p-3 text-center">
@@ -576,7 +571,7 @@ onMounted(() => {
                 </div>
               </div>
 
-              <button type="button" @click="openCorrection(viewingInvoice); viewingInvoice = null" class="glass-card p-4 w-full flex items-center gap-2.5 text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 transition-colors">
+              <button v-if="can('invoices.correct')" type="button" @click="openCorrection(viewingInvoice); viewingInvoice = null" class="glass-card p-4 w-full flex items-center gap-2.5 text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 transition-colors">
                 <span class="w-9 h-9 rounded-lg bg-[#8A6D1F]/10 text-[#8A6D1F] flex items-center justify-center shrink-0"><Pencil aria-hidden="true" /></span>
                 <span class="text-[12px] font-bold">{{ $t("invoices_page.correct_this_invoice") }}</span>
               </button>
@@ -588,6 +583,7 @@ onMounted(() => {
               {{ $t("common.close") }}
             </button>
             <button
+              v-if="can('invoices.correct')"
               type="button"
               @click="openCorrection(viewingInvoice); viewingInvoice = null"
               class="btn-fill-brand"

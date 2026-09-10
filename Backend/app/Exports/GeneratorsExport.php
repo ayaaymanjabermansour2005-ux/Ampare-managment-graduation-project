@@ -22,6 +22,16 @@ class GeneratorsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
         protected User $user,
         protected ?string $search = null,
         protected ?string $status = null,
+        protected ?string $city = null,
+        protected ?int $ownerId = null,
+        protected ?float $capacityMin = null,
+        protected ?float $capacityMax = null,
+        protected ?float $fuelMin = null,
+        protected ?float $fuelMax = null,
+        protected ?int $subscribersMin = null,
+        protected ?int $subscribersMax = null,
+        protected ?float $revenueMin = null,
+        protected ?float $revenueMax = null,
     ) {}
 
     public function query(): Builder
@@ -36,6 +46,10 @@ class GeneratorsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
             ->with(['owner', 'location.neighborhood', 'latestFuelReading']);
 
         if ($this->user->isAdmin()) {
+            // فلتر اختياري حسب المالك — للأدمن فقط، بنفس منطق GeneratorService::list().
+            if ($this->ownerId) {
+                $query->where('owner_id', $this->ownerId);
+            }
         } elseif ($this->user->isOwner()) {
             $query->where('owner_id', $this->user->id);
         } elseif ($this->user->isTechnician()) {
@@ -44,13 +58,46 @@ class GeneratorsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
             $query->whereRaw('1 = 0');
         }
 
-        return $query
+        $query
             ->when($this->search, fn ($q) => $q->where(function ($sub) {
                 $sub->where('name', 'like', "%{$this->search}%")
                     ->orWhereHas('location', fn ($locQ) => $locQ->where('city', 'like', "%{$this->search}%"));
             }))
             ->when($this->status, fn ($q) => $q->where('status', $this->status))
-            ->latest();
+            ->when($this->city, fn ($q) => $q->whereHas('location', fn ($locQ) => $locQ->where('city', $this->city)))
+            ->when($this->capacityMin !== null, fn ($q) => $q->where('capacity_kw', '>=', $this->capacityMin))
+            ->when($this->capacityMax !== null, fn ($q) => $q->where('capacity_kw', '<=', $this->capacityMax));
+
+        // نفس Subquery الخام المستخدم بـ GeneratorService::list() لحساب نسبة الوقود
+        // (لا عمود fuel_percentage فعلي بالجدول — محسوبة من آخر قراءة وقود).
+        if ($this->fuelMin !== null || $this->fuelMax !== null) {
+            $percentExpr = '(SELECT (fr.tank_level_liters / NULLIF(generators.tank_capacity_liters, 0)) * 100
+                FROM fuel_readings fr
+                WHERE fr.generator_id = generators.id AND fr.deleted_at IS NULL
+                ORDER BY fr.reading_date DESC LIMIT 1)';
+            if ($this->fuelMin !== null) {
+                $query->whereRaw("{$percentExpr} >= ?", [$this->fuelMin]);
+            }
+            if ($this->fuelMax !== null) {
+                $query->whereRaw("{$percentExpr} <= ?", [$this->fuelMax]);
+            }
+        }
+
+        if ($this->subscribersMin !== null) {
+            $query->having('subscriptions_count', '>=', $this->subscribersMin);
+        }
+        if ($this->subscribersMax !== null) {
+            $query->having('subscriptions_count', '<=', $this->subscribersMax);
+        }
+
+        if ($this->revenueMin !== null) {
+            $query->having('monthly_revenue_ils', '>=', $this->revenueMin);
+        }
+        if ($this->revenueMax !== null) {
+            $query->having('monthly_revenue_ils', '<=', $this->revenueMax);
+        }
+
+        return $query->latest();
     }
 
     public function headings(): array

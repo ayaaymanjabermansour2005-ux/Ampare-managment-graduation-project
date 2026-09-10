@@ -11,8 +11,10 @@ use App\Http\Resources\AttachmentResource;
 use App\Models\Article;
 use App\Services\ArticleService;
 use App\Services\AttachmentService;
+use App\Support\PerPageResolver;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ArticleController extends Controller
 {
@@ -20,18 +22,22 @@ class ArticleController extends Controller
 
     public function __construct(protected ArticleService $service) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('viewAny', Article::class);
 
         return $this->success(
             message: 'المقالات.',
-            data: ArticleResource::collection($this->service->listForAdmin())->response()->getData(true)
+            // FIX (تدقيق شامل — D8): per_page لم يكن قابلًا للتخصيص إطلاقًا،
+            // خلافًا لكل نقاط النهاية الأخرى المشابهة.
+            data: ArticleResource::collection($this->service->listForAdmin(PerPageResolver::resolve($request)))->response()->getData(true)
         );
     }
 
     public function store(StoreArticleRequest $request): JsonResponse
     {
+        $this->authorize('create', Article::class);
+
         $article = $this->service->create($request->validated(), $request->user());
 
         return $this->success(message: 'تم إنشاء المقال.', data: new ArticleResource($article), code: 201);
@@ -39,6 +45,8 @@ class ArticleController extends Controller
 
     public function update(StoreArticleRequest $request, Article $article): JsonResponse
     {
+        $this->authorize('update', $article);
+
         $article = $this->service->update($article, $request->validated());
 
         return $this->success(message: 'تم تحديث المقال.', data: new ArticleResource($article));
@@ -46,7 +54,7 @@ class ArticleController extends Controller
 
     public function destroy(Article $article): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('delete', $article);
 
         $this->service->delete($article);
 
@@ -58,7 +66,7 @@ class ArticleController extends Controller
         Article $article,
         AttachmentService $attachmentService
     ): JsonResponse {
-        abort_unless(auth()->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('update', $article);
 
         $attachment = $attachmentService->upload(
             model: $article,

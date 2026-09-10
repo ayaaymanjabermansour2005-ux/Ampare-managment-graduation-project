@@ -53,6 +53,7 @@ class AdminDashboardService
                 'complaints_open_count' => Complaint::whereIn('status', [
                     ComplaintStatus::Pending->value,
                     ComplaintStatus::InProgress->value,
+                    ComplaintStatus::WaitingSubscriber->value,
                 ])->count(),
 
                 'invoices_issued_count' => Invoice::count(),
@@ -60,11 +61,7 @@ class AdminDashboardService
                 'invoices_overdue_count' => Invoice::where('status', InvoiceStatus::Overdue)->count(),
                 'total_revenue_ils' => (float) Invoice::where('status', InvoiceStatus::Paid)->sum('final_amount_ils'),
 
-                'open_faults_count' => Fault::whereIn('status', [
-                    FaultStatus::PendingVerification->value,
-                    FaultStatus::Verified->value,
-                    FaultStatus::InRepair->value,
-                ])->count(),
+                'open_faults_count' => Fault::open()->count(),
 
                 'maintenance_count' => TechnicianTask::whereIn('type', [
                     TechnicianTaskType::WiringMaintenance->value,
@@ -417,19 +414,25 @@ class AdminDashboardService
         });
     }
 
+    /**
+     * FIX (تدقيق شامل — A5): المفاتيح كانت لا تطابق المفاتيح الفعلية
+     * المستخدَمة بدوال هذا الصف (stats_v2 لا stats، generators_map_v2 لا
+     * generators_map، وp6 الافتراضية لا 7 الثابتة) — أي استدعاء لهذه الدالة
+     * كان يفشل بصمت (Cache::forget على مفتاح غير موجود أصلًا).
+     */
     public function clearCache(): void
     {
         $keys = [
-            'admin.dashboard.stats',
+            'admin.dashboard.stats_v2',
             'admin.dashboard.payments_financial_summary',
             'admin.dashboard.payments_activity_7d',
             'admin.dashboard.invoice_status_breakdown',
             'admin.dashboard.alerts.5',
-            'admin.dashboard.revenue_vs_outstanding.7',
+            'admin.dashboard.revenue_vs_outstanding.p6',
             'admin.dashboard.subscriber_growth.6',
             'admin.dashboard.fuel_purchases_7d',
             'admin.dashboard.maintenance_faults_by_city.5',
-            'admin.dashboard.generators_map',
+            'admin.dashboard.generators_map_v2',
         ];
 
         foreach ($keys as $key) {

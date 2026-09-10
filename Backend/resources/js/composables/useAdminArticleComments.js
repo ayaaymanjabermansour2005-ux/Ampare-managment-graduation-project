@@ -36,12 +36,23 @@ export function useAdminArticleComments() {
   }
 
   const isActing = ref(false);
+  /* FIX (تدقيق شامل — الجولة السابعة): الأفعال الخمسة (approve/reject/destroy/
+   * reply/deleteReply) كانت بلا أي رسالة خطأ فعلية — بعضها بدون catch إطلاقًا
+   * (Unhandled Promise Rejection صامت)، وreply() كانت ترجّع false بصمت بدون
+   * تخزين أي سبب. صرنا نخزّن الخطأ بـ actionError ليعرضه الفرونت كـ Toast.
+   */
+  const actionError = ref(null);
 
   async function approve(id) {
     isActing.value = true;
+    actionError.value = null;
     try {
       await articleCommentService.approve(id);
       comments.value = comments.value.filter((c) => c.id !== id);
+      return true;
+    } catch (err) {
+      actionError.value = normalizeApiError(err, t("article_comments_page.action_error")).message;
+      return false;
     } finally {
       isActing.value = false;
     }
@@ -49,9 +60,14 @@ export function useAdminArticleComments() {
 
   async function reject(id) {
     isActing.value = true;
+    actionError.value = null;
     try {
       await articleCommentService.reject(id);
       comments.value = comments.value.filter((c) => c.id !== id);
+      return true;
+    } catch (err) {
+      actionError.value = normalizeApiError(err, t("article_comments_page.action_error")).message;
+      return false;
     } finally {
       isActing.value = false;
     }
@@ -59,9 +75,14 @@ export function useAdminArticleComments() {
 
   async function destroy(id) {
     isActing.value = true;
+    actionError.value = null;
     try {
       await articleCommentService.destroy(id);
       comments.value = comments.value.filter((c) => c.id !== id);
+      return true;
+    } catch (err) {
+      actionError.value = normalizeApiError(err, t("article_comments_page.action_error")).message;
+      return false;
     } finally {
       isActing.value = false;
     }
@@ -69,12 +90,14 @@ export function useAdminArticleComments() {
 
   async function reply(id, adminReply) {
     isActing.value = true;
+    actionError.value = null;
     try {
       const { data } = await articleCommentService.reply(id, adminReply);
       const index = comments.value.findIndex((c) => c.id === id);
       if (index !== -1) comments.value[index] = data.data;
       return true;
-    } catch {
+    } catch (err) {
+      actionError.value = normalizeApiError(err, t("article_comments_page.action_error")).message;
       return false;
     } finally {
       isActing.value = false;
@@ -83,10 +106,15 @@ export function useAdminArticleComments() {
 
   async function deleteReply(id) {
     isActing.value = true;
+    actionError.value = null;
     try {
       const { data } = await articleCommentService.deleteReply(id);
       const index = comments.value.findIndex((c) => c.id === id);
       if (index !== -1) comments.value[index] = data.data;
+      return true;
+    } catch (err) {
+      actionError.value = normalizeApiError(err, t("article_comments_page.action_error")).message;
+      return false;
     } finally {
       isActing.value = false;
     }
@@ -101,6 +129,7 @@ export function useAdminArticleComments() {
     fetchComments,
     onFilterChange,
     isActing,
+    actionError,
     approve,
     reject,
     destroy,

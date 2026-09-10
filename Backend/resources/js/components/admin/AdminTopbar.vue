@@ -403,7 +403,7 @@ function toggleQuickAdd() {
                 <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] shrink-0" :style="{ background: `linear-gradient(135deg, ${q.c1}, ${q.c2})` }">
                   <AppIcon :name="q.icon" />
                 </span>
-                <span>{{ q.label }}</span>
+                <span>{{ t(q.labelKey) }}</span>
               </RouterLink>
             </div>
           </div>

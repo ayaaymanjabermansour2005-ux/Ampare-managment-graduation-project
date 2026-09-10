@@ -5,7 +5,7 @@ namespace App\DTOs\Complaint;
 final readonly class ResolveComplaintData
 {
     /**
-     * @param  string  $status  'in_progress' | 'resolved'
+     * @param  string  $status  'in_progress' | 'waiting_subscriber' | 'resolved'
      */
     public function __construct(
         public string $status,

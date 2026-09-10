@@ -50,6 +50,17 @@ class RolePermissionController extends Controller
             ->withProperties(['permissions' => $validated['permissions']])
             ->log('admin_updated_role_permissions');
 
-        return $this->success(message: 'تم تحديث صلاحيات الدور.', data: $role->fresh('permissions'));
+        // FIX (تدقيق شامل — A8): كانت تُعاد نسخة Eloquent خام بدل نفس شكل
+        // {id, name, permissions} المستخدَم بـ index() أعلاه لنفس المورد.
+        $fresh = $role->fresh('permissions');
+
+        return $this->success(
+            message: 'تم تحديث صلاحيات الدور.',
+            data: [
+                'id' => $fresh->id,
+                'name' => $fresh->name,
+                'permissions' => $fresh->permissions->pluck('name'),
+            ]
+        );
     }
 }

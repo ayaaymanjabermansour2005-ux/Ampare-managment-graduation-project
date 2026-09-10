@@ -11,7 +11,9 @@ class ContactMessageService
 {
     public function list(int $perPage, ?string $search = null, ?string $status = null): LengthAwarePaginator
     {
-        $query = ContactMessage::query();
+        // FIX (تدقيق شامل — D3): handledBy لم يكن يُحمَّل مسبقًا، فحقل "آخر
+        // معالج" لم يكن يظهر أبدًا رغم وجود عنصر واجهة مخصَّص له.
+        $query = ContactMessage::query()->with('handledBy');
 
         if ($search) {
             $query->where(function ($q) use ($search) {

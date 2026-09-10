@@ -34,7 +34,7 @@ class MessageController extends Controller
 
         return $this->success(
             message: 'رسائل المحادثة.',
-            data: MessageResource::collection($messages)
+            data: MessageResource::collection($messages)->response()->getData(true)
         );
     }
 

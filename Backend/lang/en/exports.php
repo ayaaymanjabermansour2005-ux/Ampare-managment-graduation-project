@@ -179,6 +179,7 @@ return [
         'ComplaintStatus' => [
             'pending' => 'Pending',
             'in_progress' => 'In Progress',
+            'waiting_subscriber' => 'Awaiting Subscriber',
             'resolved' => 'Resolved',
         ],
         'ComplaintChannel' => [

@@ -88,6 +88,7 @@ export function useOwnersAnalytics({
       return dir === "asc" ? av - bv : bv - av;
     });
   });
+  /** يبني كلاس CSS (شفافية + دوران) لأيقونة سهم الفرز الثابتة (ChevronDown)؛ يُستخدَم مع :class على <ChevronDown> وليس :name على <AppIcon>. */
   function sortIconClass(key) {
     const [curKey, curDir] = sortBy.value.split("-");
     if (curKey !== key) return "opacity-40";

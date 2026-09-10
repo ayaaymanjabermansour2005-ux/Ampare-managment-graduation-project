@@ -101,14 +101,15 @@ describe('useArticles', () => {
             expect(isSaving.value).toBe(false);
         });
 
-        it('sets the translated error and returns false on failure, without refetching', async () => {
+        it('sets the translated saveError (not the list error) and returns false on failure, without refetching', async () => {
             articleService.create.mockRejectedValue({ message: 'Network Error' });
 
-            const { createArticle, error, isSaving } = useArticles();
+            const { createArticle, error, saveError, isSaving } = useArticles();
             const result = await createArticle({});
 
             expect(result).toBe(false);
-            expect(error.value).toBe('تعذر إنشاء المقال');
+            expect(saveError.value).toBe('تعذر إنشاء المقال');
+            expect(error.value).toBeNull();
             expect(isSaving.value).toBe(false);
             expect(articleService.listForAdmin).not.toHaveBeenCalled();
         });
@@ -135,14 +136,15 @@ describe('useArticles', () => {
             expect(articleService.listForAdmin).toHaveBeenLastCalledWith({ page: 3 });
         });
 
-        it('sets the translated error and returns false on failure', async () => {
+        it('sets the translated saveError (not the list error) and returns false on failure', async () => {
             articleService.update.mockRejectedValue({ message: 'Network Error' });
 
-            const { updateArticle, error } = useArticles();
+            const { updateArticle, error, saveError } = useArticles();
             const result = await updateArticle(1, {});
 
             expect(result).toBe(false);
-            expect(error.value).toBe('تعذر تعديل المقال');
+            expect(saveError.value).toBe('تعذر تعديل المقال');
+            expect(error.value).toBeNull();
         });
     });
 
@@ -161,13 +163,15 @@ describe('useArticles', () => {
             expect(isSaving.value).toBe(false);
         });
 
-        it('sets the translated error message on failure', async () => {
+        it('sets the translated deleteError (not the list error) and returns false on failure', async () => {
             articleService.destroy.mockRejectedValue({ message: 'Network Error' });
 
-            const { deleteArticle, error } = useArticles();
-            await deleteArticle(5);
+            const { deleteArticle, error, deleteError } = useArticles();
+            const result = await deleteArticle(5);
 
-            expect(error.value).toBe('تعذر حذف المقال');
+            expect(result).toBe(false);
+            expect(deleteError.value).toBe('تعذر حذف المقال');
+            expect(error.value).toBeNull();
         });
     });
 });

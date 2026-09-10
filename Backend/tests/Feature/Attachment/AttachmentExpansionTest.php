@@ -197,6 +197,80 @@ class AttachmentExpansionTest extends TestCase
             ->assertStatus(403);
     }
 
+    public function test_submitter_can_list_own_complaint_attachments(): void
+    {
+        $subscriberUser = User::factory()->create();
+        $subscriberUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        Subscriber::factory()->create(['user_id' => $subscriberUser->id]);
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'subject' => 'شكوى تجريبية',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($subscriberUser)
+            ->postJson("/api/v1/complaints/{$complaint->id}/attachments", [
+                'file' => UploadedFile::fake()->image('proof.jpg'),
+                'document_type' => 'complaint_image',
+            ])
+            ->assertStatus(201);
+
+        $this->actingAs($subscriberUser)
+            ->getJson("/api/v1/complaints/{$complaint->id}/attachments")
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_admin_can_list_any_complaint_attachments(): void
+    {
+        $subscriberUser = User::factory()->create();
+        $subscriberUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        Subscriber::factory()->create(['user_id' => $subscriberUser->id]);
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'subject' => 'شكوى تجريبية',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($subscriberUser)
+            ->postJson("/api/v1/complaints/{$complaint->id}/attachments", [
+                'file' => UploadedFile::fake()->image('proof.jpg'),
+                'document_type' => 'complaint_image',
+            ])
+            ->assertStatus(201);
+
+        $this->actingAs($this->makeAdmin())
+            ->getJson("/api/v1/complaints/{$complaint->id}/attachments")
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_unrelated_user_cannot_list_others_complaint_attachments(): void
+    {
+        $subscriberUser = User::factory()->create();
+        $subscriberUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        Subscriber::factory()->create(['user_id' => $subscriberUser->id]);
+
+        $complaint = Complaint::create([
+            'submitted_by' => $subscriberUser->id,
+            'subject' => 'شكوى تجريبية',
+            'description' => 'تفاصيل.',
+            'status' => 'pending',
+        ]);
+
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        Subscriber::factory()->create(['user_id' => $otherUser->id]);
+
+        $this->actingAs($otherUser)
+            ->getJson("/api/v1/complaints/{$complaint->id}/attachments")
+            ->assertStatus(403);
+    }
+
     public function test_subscriber_can_attach_image_when_starting_ai_chat(): void
     {
         $this->bindAiProvider();

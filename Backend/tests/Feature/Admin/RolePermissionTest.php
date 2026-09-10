@@ -70,6 +70,15 @@ class RolePermissionTest extends TestCase
 
         $response->assertOk();
         $this->assertTrue($role->fresh()->hasPermissionTo($permission->name));
+        // FIX (تدقيق شامل — A8): يجب أن تُعاد نفس بنية {id,name,permissions}
+        // المستخدَمة بـ index()، لا نسخة Eloquent خام.
+        $response->assertJson([
+            'data' => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permissions' => [$permission->name],
+            ],
+        ]);
     }
 
     public function test_admin_cannot_sync_permissions_for_admin_role(): void

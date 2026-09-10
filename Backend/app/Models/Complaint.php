@@ -41,6 +41,7 @@ class Complaint extends Model
         'channel',
         'priority',
         'status',
+        'sla_due_at',
         'assigned_to',
         'resolved_by',
         'resolved_at',
@@ -51,6 +52,7 @@ class Complaint extends Model
     {
         return [
             'resolved_at' => 'datetime',
+            'sla_due_at' => 'datetime',
             'status' => ComplaintStatus::class,
             'channel' => ComplaintChannel::class,
             'priority' => ComplaintPriority::class,

@@ -26,10 +26,12 @@ const TABS = computed(() => {
   if (authStore.hasRole("generator_owner") || authStore.hasRole("technician")) {
     tabs.push({ key: "financial", label: t("owner_settings.tabs.financial"), icon: "fa-building-columns" });
   }
-  tabs.push(
-    { key: "notifications", label: t("owner_settings.tabs.notifications"), icon: "fa-bell" },
-    { key: "danger", label: t("owner_settings.tabs.danger"), icon: "fa-triangle-exclamation" }
-  );
+  tabs.push({ key: "notifications", label: t("owner_settings.tabs.notifications"), icon: "fa-bell" });
+  // FIX (تدقيق شامل — E4): الباك يرفض حذف حساب الأدمن لحسابه هو نفسه دومًا
+  // (AuthController::deleteAccount) — إظهار هذا التبويب له مُضلِّل فقط.
+  if (! authStore.hasRole("admin")) {
+    tabs.push({ key: "danger", label: t("owner_settings.tabs.danger"), icon: "fa-triangle-exclamation" });
+  }
   return tabs;
 });
 const activeTab = ref("profile");
@@ -38,7 +40,7 @@ const {
   isSavingProfile, profileError, profileSuccess, updateProfile,
   isUploadingAvatar, avatarError, uploadAvatar,
   isChangingPassword, passwordError, passwordSuccess, changePassword,
-  sessions, isLoadingSessions, sessionsError, revokingSessionId, fetchSessions, revokeSession,
+  sessions, isLoadingSessions, sessionsError, sessionsSupported, revokingSessionId, fetchSessions, revokeSession,
   isLoggingOutOthers, logoutOthersError, logoutOtherDevices,
   loginLog, isLoadingLoginLog, loginLogError, fetchLoginLog,
   isDeletingAccount, deleteAccountError, deleteAccount,
@@ -567,6 +569,7 @@ onMounted(() => {
           <CircleAlert class="me-1.5" aria-hidden="true" />{{ sessionsError }}
           <button type="button" @click="fetchSessions" class="block mx-auto mt-2 text-[#52733D] dark:text-[#8cc35a] font-bold">{{ t("owner_settings.security.retry") }}</button>
         </div>
+        <div v-else-if="!sessionsSupported" class="text-center py-8 text-[12px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("owner_settings.security.sessions_unsupported") }}</div>
         <div v-else-if="sessions.length === 0" class="text-center py-8 text-[12px] text-[#9a9d97] dark:text-[#8f938a]">{{ t("owner_settings.security.no_sessions") }}</div>
         <div v-else class="space-y-2">
           <div

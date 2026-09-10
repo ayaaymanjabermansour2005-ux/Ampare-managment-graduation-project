@@ -19,7 +19,7 @@ import activityLogService from "@/services/activityLogService";
 import { useToastStore } from "@/stores/toast";
 import TransferSubscriptionModal from "@/components/admin/TransferSubscriptionModal.vue";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, HeartPulse, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, StickyNote, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, ArrowRightLeft, Bell, CalendarDays, CalendarPlus, CalendarX, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleMinus, Clock, Copy, Eye, EyeOff, FileDown, FilePenLine, FilePlus, FileSpreadsheet, FileText, Funnel, GripVertical, HeartPulse, IdCard, Key, LoaderCircle, Lock, LockOpen, Mail, Pencil, Phone, PlugZap, Plus, Printer, Search, Shuffle, StickyNote, Table2, ToggleLeft, ToggleRight, Trash2, TriangleAlert, User, UserPlus, UserRound, Users, X, Zap, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 import LightningCanvas from "@/components/ui/LightningCanvas.vue";
@@ -757,6 +757,7 @@ function onPackageFilterChange() {
 /* ---------------- فرز عبر رؤوس الأعمدة (أيقونة تصاعدي/تنازلي - نفس أسلوب صفحة المولدات) ---------------- */
 const sortKey = ref("");
 const sortDir = ref("desc");
+/** يبني كلاس CSS (شفافية + دوران) لأيقونة سهم الفرز الثابتة (ChevronDown)؛ يُستخدَم مع :class على <ChevronDown> وليس :name على <AppIcon>. */
 function sortIconClass(key) {
   if (sortKey.value !== key) return "opacity-40";
   return sortDir.value === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
@@ -1400,21 +1401,27 @@ onMounted(() => {
         <table class="data-table w-full text-[12px] min-w-[1150px]">
           <thead>
             <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
-              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('name')">
-                {{ $t("subscribers_page.subscriber_col") }}
-                <AppIcon :name="sortIconClass('name')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3 rounded-s-lg">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('name')">
+                  {{ $t("subscribers_page.subscriber_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('name')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("subscribers_page.phone_number_col") }}</th>
               <th class="py-2.5 px-3">{{ $t("subscribers_page.region_col") }}</th>
               <th class="py-2.5 px-3">{{ $t("subscribers_page.linked_generator_col") }}</th>
               <th class="py-2.5 px-3">{{ $t("subscribers_page.beneficiary_category_col") }}</th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('created_at')">
-                {{ $t("subscribers_page.joined_col") }}
-                <AppIcon :name="sortIconClass('created_at')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('created_at')">
+                  {{ $t("subscribers_page.joined_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('created_at')]" aria-hidden="true" />
+                </span>
               </th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('balance')">
-                {{ $t("subscribers_page.balance_col") }}
-                <AppIcon :name="sortIconClass('balance')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('balance')">
+                  {{ $t("subscribers_page.balance_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('balance')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("dashboard.status") }}</th>
               <th class="py-2.5 px-3 rounded-e-lg">{{ $t("subscribers_page.actions_col") }}</th>

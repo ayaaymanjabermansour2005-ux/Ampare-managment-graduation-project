@@ -129,9 +129,13 @@ const editingNameEn = ref("");
 
 async function fetchNeighborhoods() {
   isLoadingNeighborhoods.value = true;
+  neighborhoodError.value = null;
   try {
     const { data } = await neighborhoodService.list();
     neighborhoods.value = data.data;
+  } catch (err) {
+    // FIX (تدقيق شامل — E3): كان الفشل هنا صامتًا تمامًا بلا أي رسالة.
+    neighborhoodError.value = normalizeApiError(err, t("settings_page.load_neighborhoods_failed")).message;
   } finally {
     isLoadingNeighborhoods.value = false;
   }
@@ -214,9 +218,13 @@ const commissionTierError = ref(null);
 
 async function fetchCommissionTiers() {
   isLoadingCommissionTiers.value = true;
+  commissionTierError.value = null;
   try {
     const { data } = await commissionTierService.list();
     commissionTiers.value = data.data;
+  } catch (err) {
+    // FIX (تدقيق شامل — E3): كان الفشل هنا صامتًا تمامًا بلا أي رسالة.
+    commissionTierError.value = normalizeApiError(err, t("settings_page.load_commission_tiers_failed")).message;
   } finally {
     isLoadingCommissionTiers.value = false;
   }

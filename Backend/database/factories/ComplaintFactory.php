@@ -35,6 +35,11 @@ class ComplaintFactory extends Factory
         return $this->state(fn () => ['status' => ComplaintStatus::InProgress->value]);
     }
 
+    public function waitingSubscriber(): static
+    {
+        return $this->state(fn () => ['status' => ComplaintStatus::WaitingSubscriber->value]);
+    }
+
     public function resolved(): static
     {
         return $this->state(fn (array $attributes) => [

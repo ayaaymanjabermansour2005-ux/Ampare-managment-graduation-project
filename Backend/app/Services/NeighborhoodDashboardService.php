@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\FaultStatus;
 use App\Enums\GeneratorStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Fault;
@@ -32,9 +31,9 @@ class NeighborhoodDashboardService
             ->pluck('total', 'neighborhood_id');
 
         $openFaultsByNeighborhood = Fault::query()
+            ->open()
             ->join('generators', 'generators.id', '=', 'faults.generator_id')
             ->join('locations', 'locations.id', '=', 'generators.location_id')
-            ->whereNotIn('faults.status', [FaultStatus::Resolved->value, FaultStatus::Rejected->value])
             ->whereNotNull('locations.neighborhood_id')
             ->groupBy('locations.neighborhood_id')
             ->select('locations.neighborhood_id', DB::raw('count(*) as total'))

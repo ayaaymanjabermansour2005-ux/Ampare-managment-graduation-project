@@ -23,11 +23,21 @@ export function useAdminServiceRequests() {
 
   const hasRequests = computed(() => requests.value.length > 0);
 
+  // FIX (تدقيق شامل — B7): لا فلترة حالة ولا بحث إطلاقًا، خلافًا لكل
+  // الواجهات الشقيقة (المولدات/الأعطال/قراءات العدادات).
+  const statusFilter = ref("");
+  const search = ref("");
+
   async function fetchRequests(page = 1) {
     isLoading.value = true;
     error.value = null;
     try {
-      const { data } = await subscriptionServiceRequestService.list({ page, per_page: 15 });
+      const { data } = await subscriptionServiceRequestService.list({
+        page,
+        per_page: 15,
+        status: statusFilter.value || undefined,
+        search: search.value.trim() || undefined,
+      });
       const payload = data.data;
       const meta = payload.meta ?? payload;
       requests.value = payload.data ?? payload;
@@ -42,6 +52,16 @@ export function useAdminServiceRequests() {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  function onFilterChange() {
+    fetchRequests(1);
+  }
+
+  let searchDebounce = null;
+  function onSearchInput() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => fetchRequests(1), 350);
   }
 
   const reviewingId = ref(null);
@@ -89,6 +109,10 @@ export function useAdminServiceRequests() {
     error,
     hasRequests,
     fetchRequests,
+    statusFilter,
+    search,
+    onFilterChange,
+    onSearchInput,
 
     reviewingId,
     isReviewing,

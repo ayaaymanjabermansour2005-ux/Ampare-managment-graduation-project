@@ -47,7 +47,7 @@ class ArticleCommentController extends Controller
 
     public function adminIndex(Request $request): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('viewAny', ArticleComment::class);
 
         $status = $request->input('status', ArticleCommentStatus::Pending->value);
 
@@ -65,7 +65,7 @@ class ArticleCommentController extends Controller
 
     public function approve(Request $request, ArticleComment $comment): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('moderate', ArticleComment::class);
 
         $comment->update([
             'status' => ArticleCommentStatus::Approved->value,
@@ -81,7 +81,7 @@ class ArticleCommentController extends Controller
 
     public function reject(Request $request, ArticleComment $comment): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('moderate', ArticleComment::class);
 
         $comment->update([
             'status' => ArticleCommentStatus::Rejected->value,
@@ -97,7 +97,7 @@ class ArticleCommentController extends Controller
 
     public function destroy(Request $request, ArticleComment $comment): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('moderate', ArticleComment::class);
 
         $comment->delete();
 
@@ -106,7 +106,7 @@ class ArticleCommentController extends Controller
 
     public function reply(ReplyArticleCommentRequest $request, ArticleComment $comment): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('moderate', ArticleComment::class);
 
         $comment->update([
             'admin_reply' => $request->validated('admin_reply'),
@@ -125,7 +125,7 @@ class ArticleCommentController extends Controller
      */
     public function deleteReply(Request $request, ArticleComment $comment): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'لا تملك صلاحية القيام بهذا الإجراء.');
+        $this->authorize('moderate', ArticleComment::class);
 
         $comment->update([
             'admin_reply' => null,

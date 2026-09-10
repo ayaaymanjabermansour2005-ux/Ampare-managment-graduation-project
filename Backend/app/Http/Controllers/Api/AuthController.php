@@ -110,11 +110,16 @@ class AuthController extends Controller
             abort(401);
         }
 
+        // FIX (تدقيق شامل — E5): كانت تعيد data:[] فقط عند عدم الدعم، فيبدو
+        // للأدمن وكأنه "لا جلسات أخرى" بدل "الميزة غير مدعومة بهذه البيئة".
         if (! $sessionService->isSupported()) {
-            return $this->success(message: 'جلساتك النشطة.', data: []);
+            return $this->success(message: 'جلساتك النشطة.', data: ['sessions' => [], 'is_supported' => false]);
         }
 
-        return $this->success(message: 'جلساتك النشطة.', data: $sessionService->activeSessions($request, $user));
+        return $this->success(
+            message: 'جلساتك النشطة.',
+            data: ['sessions' => $sessionService->activeSessions($request, $user), 'is_supported' => true]
+        );
     }
 
     public function revokeSession(Request $request, string $sessionId, SessionService $sessionService): JsonResponse

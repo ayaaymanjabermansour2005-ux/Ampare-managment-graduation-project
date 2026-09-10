@@ -7,13 +7,15 @@ import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
 import subscriptionService from "@/services/subscriptionService";
 import generatorService from "@/services/generatorService";
 import meterReadingService from "@/services/meterReadingService";
+import { usePermissions } from "@/composables/usePermissions";
 import { useToastStore } from "@/stores/toast";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClockAlert, Eye, FileDown, FileSpreadsheet, Gauge, LoaderCircle, Pencil, PlugZap, Plus, Printer, Search, SquarePen, Trash2, TriangleAlert, User, UserCheck, X, Zap } from "@lucide/vue";
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, ClockAlert, Eye, FileDown, FileSpreadsheet, Gauge, LoaderCircle, Pencil, PlugZap, Plus, Printer, Search, SquarePen, Trash2, TriangleAlert, User, UserCheck, X, Zap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
+const { can } = usePermissions();
 const toast = useToastStore();
 
 const {
@@ -85,6 +87,7 @@ const subscriptionSelectOptions = computed(() =>
 /* ---------------- فرز عبر رؤوس الأعمدة ---------------- */
 const sortKey = ref("");
 const sortDir = ref("desc");
+/** يبني كلاس CSS (شفافية + دوران) لأيقونة سهم الفرز الثابتة (ChevronDown)؛ يُستخدَم مع :class على <ChevronDown> وليس :name على <AppIcon>. */
 function sortIconClass(key) {
   if (sortKey.value !== key) return "opacity-40";
   return sortDir.value === "desc" ? "opacity-100 text-[#8A6D1F] rotate-180" : "opacity-100 text-[#8A6D1F]";
@@ -656,20 +659,26 @@ onMounted(async () => {
         <table class="data-table w-full text-[12px] min-w-[920px]">
           <thead>
             <tr class="text-center text-[10.5px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5] bg-[#f4efe5]/80 dark:bg-white/5">
-              <th class="py-2.5 px-3 rounded-s-lg cursor-pointer select-none" @click="toggleSort('subscriber')">
-                {{ $t("subscribers_page.subscriber_col") }}
-                <AppIcon :name="sortIconClass('subscriber')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3 rounded-s-lg">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('subscriber')">
+                  {{ $t("subscribers_page.subscriber_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('subscriber')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("dashboard.generator_col") }}</th>
               <th class="py-2.5 px-3">{{ $t("meter_readings_page.previous_col") }}</th>
               <th class="py-2.5 px-3">{{ $t("meter_readings_page.current_col") }}</th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('consumed')">
-                {{ $t("meter_readings_page.consumed_col") }}
-                <AppIcon :name="sortIconClass('consumed')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('consumed')">
+                  {{ $t("meter_readings_page.consumed_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('consumed')]" aria-hidden="true" />
+                </span>
               </th>
-              <th class="py-2.5 px-3 cursor-pointer select-none" @click="toggleSort('date')">
-                {{ $t("meter_readings_page.date_col") }}
-                <AppIcon :name="sortIconClass('date')" class="text-[9px] ms-1 transition-all" />
+              <th class="py-2.5 px-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer select-none" @click="toggleSort('date')">
+                  {{ $t("meter_readings_page.date_col") }}
+                  <ChevronDown :class="['size-[9px] shrink-0 transition-all', sortIconClass('date')]" aria-hidden="true" />
+                </span>
               </th>
               <th class="py-2.5 px-3">{{ $t("dashboard.status_col") }}</th>
               <th class="py-2.5 px-3 rounded-e-lg">{{ $t("subscribers_page.actions_col") }}</th>
@@ -702,23 +711,25 @@ onMounted(async () => {
                   <button type="button" @click="openView(r)" class="action-btn action-btn--view" :title="$t('common.view')" :aria-label="$t('common.view')">
                     <Eye aria-hidden="true" />
                   </button>
-                  <span class="row-actions-divider"></span>
+                  <span v-if="can('meter-readings.update')" class="row-actions-divider"></span>
                   <button
+                    v-if="can('meter-readings.update')"
                     type="button" @click="openEditForm(r)" :disabled="r.status !== 'pending_approval'"
                     class="action-btn action-btn--edit" :title="r.status === 'pending_approval' ? $t('common.edit') : $t('meter_readings_page.edit_disabled_title')"
                     :aria-label="r.status === 'pending_approval' ? $t('common.edit') : $t('meter_readings_page.edit_disabled_title')"
                   >
                     <Pencil aria-hidden="true" />
                   </button>
-                  <span class="row-actions-divider"></span>
+                  <span v-if="can('meter-readings.delete')" class="row-actions-divider"></span>
                   <button
+                    v-if="can('meter-readings.delete')"
                     type="button" @click="openDeleteConfirm(r)" :disabled="r.status !== 'pending_approval' || deletingId === r.id"
                     class="action-btn action-btn--delete" :title="r.status === 'pending_approval' ? $t('common.delete') : $t('meter_readings_page.delete_disabled_title')"
                     :aria-label="r.status === 'pending_approval' ? $t('common.delete') : $t('meter_readings_page.delete_disabled_title')"
                   >
                     <LoaderCircle class="animate-spin" aria-hidden="true" v-if="deletingId === r.id" /><Trash2 aria-hidden="true" v-else />
                   </button>
-                  <template v-if="r.status === 'pending_approval'">
+                  <template v-if="r.status === 'pending_approval' && can('meter-readings.approve')">
                     <span class="row-actions-divider"></span>
                     <button
                       type="button" @click="handleApprove(r)" :disabled="approvingId === r.id"
@@ -878,13 +889,13 @@ onMounted(async () => {
                 {{ $t("common.close") }}
               </button>
               <button
-                v-if="viewingReading.status === 'pending_approval'"
+                v-if="viewingReading.status === 'pending_approval' && can('meter-readings.update')"
                 type="button" @click="openEditForm(viewingReading)" class="btn-outline-brand"
               >
                 <Pencil aria-hidden="true" /> {{ $t("common.edit") }}
               </button>
               <button
-                v-if="viewingReading.status === 'pending_approval'"
+                v-if="viewingReading.status === 'pending_approval' && can('meter-readings.approve')"
                 type="button" @click="openReject(viewingReading)" :disabled="rejectingId === viewingReading.id"
                 class="btn-outline-brand !text-[#D9534F] !border-[#D9534F]/40"
               >
@@ -892,7 +903,7 @@ onMounted(async () => {
                 {{ rejectingId === viewingReading.id ? $t("meter_readings_page.rejecting_ellipsis") : $t("meter_readings_page.reject_action") }}
               </button>
               <button
-                v-if="viewingReading.status === 'pending_approval'"
+                v-if="viewingReading.status === 'pending_approval' && can('meter-readings.approve')"
                 type="button" @click="handleApprove(viewingReading)" :disabled="approvingId === viewingReading.id"
                 class="btn-fill-brand"
               >

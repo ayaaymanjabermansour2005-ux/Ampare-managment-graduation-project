@@ -18,6 +18,7 @@ class UpdateComplaintStatusRequest extends FormRequest
         return [
             'status' => ['required', Rule::in([
                 ComplaintStatus::InProgress->value,
+                ComplaintStatus::WaitingSubscriber->value,
                 ComplaintStatus::Resolved->value,
             ])],
             'resolution_note' => ['nullable', 'string', 'max:2000', 'required_if:status,'.ComplaintStatus::Resolved->value],

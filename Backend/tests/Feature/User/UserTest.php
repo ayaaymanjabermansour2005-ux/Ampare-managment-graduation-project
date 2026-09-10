@@ -442,6 +442,75 @@ class UserTest extends TestCase
             ->assertStatus(403);
     }
 
+    /**
+     * FIX (تدقيق شامل — C1): outstanding_balance_ils كان يجمع القيمة الكاملة
+     * للفاتورة حتى المدفوعة جزئيًا، بدل طرح المدفوع فعليًا — رقم مختلف عن
+     * remaining_balance_ils الصحيح بصفحة الفواتير لنفس الفاتورة بالضبط.
+     */
+    public function test_outstanding_balance_subtracts_actual_payments_made(): void
+    {
+        $admin = $this->makeAdmin();
+        [, $subscription] = $this->makePartiallyPaidSubscriptionInvoice();
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/users?role=subscriber');
+
+        $response->assertOk();
+        $subscriberUserId = $subscription->subscriberMeter->subscriber->user_id;
+        $item = collect($response->json('data.data'))->firstWhere('id', $subscriberUserId);
+
+        // فاتورة final_amount_ils=200، دُفع منها 80 فعليًا → المتبقي الحقيقي 120.
+        $this->assertEquals(120.0, $item['outstanding_balance_ils']);
+    }
+
+    public function test_subscribers_stats_top_debtors_subtracts_actual_payments_made(): void
+    {
+        $admin = $this->makeAdmin();
+        [, $subscription] = $this->makePartiallyPaidSubscriptionInvoice();
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/users/subscribers-stats');
+
+        $response->assertOk();
+        $subscriberUserId = $subscription->subscriberMeter->subscriber->user_id;
+        $debtor = collect($response->json('data.top_debtors'))->firstWhere('id', $subscriberUserId);
+
+        $this->assertNotNull($debtor);
+        $this->assertEquals(120.0, $debtor['outstanding_balance_ils']);
+    }
+
+    /**
+     * @return array{0: User, 1: \App\Models\Subscription} [subscriberUser, subscription]
+     */
+    private function makePartiallyPaidSubscriptionInvoice(): array
+    {
+        $owner = $this->makeOwner();
+        $generator = Generator::factory()->create(['owner_id' => $owner->id]);
+
+        $subscriberUser = User::factory()->create();
+        $subscriberUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        $subscriber = \App\Models\Subscriber::factory()->create(['user_id' => $subscriberUser->id]);
+        $meter = \App\Models\SubscriberMeter::factory()->create(['subscriber_id' => $subscriber->id]);
+
+        $subscription = \App\Models\Subscription::factory()->create([
+            'subscriber_meter_id' => $meter->id,
+            'generator_id' => $generator->id,
+            'billing_cycle' => 'monthly',
+            'status' => 'active',
+        ]);
+
+        $invoice = \App\Models\Invoice::factory()->create([
+            'subscription_id' => $subscription->id,
+            'final_amount_ils' => 200,
+            'status' => 'partially_paid',
+        ]);
+
+        \App\Models\Payment::factory()->paid()->create([
+            'invoice_id' => $invoice->id,
+            'amount_ils' => 80,
+        ]);
+
+        return [$subscriberUser, $subscription];
+    }
+
     public function test_admin_can_export_subscribers(): void
     {
         Excel::fake();
