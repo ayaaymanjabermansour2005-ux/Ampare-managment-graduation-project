@@ -486,6 +486,56 @@ class PaymentTest extends TestCase
         $this->assertSame('paid', $payment->fresh()->status->value);
     }
 
+    // ==================== تدقيق شامل: ربط clearCache() بأحداث دورة حياة الدفعة ====================
+
+    /**
+     * الدفعة هون جزئية (40 من أصل 100) فلا تُحوّل الفاتورة لمدفوعة بالكامل،
+     * أي أن InvoicePaid لن يُطلَق — الاختبار يتأكد أن PaymentApproved وحدها
+     * كافية لمسح كاش الداشبورد (سيناريو كان مفقودًا فعليًا قبل الإصلاح: كانت
+     * payments_pending_count وpayments_financial_summary تبقى قديمة حتى انتهاء الـTTL).
+     */
+    public function test_approving_a_partial_payment_clears_the_admin_dashboard_cache(): void
+    {
+        ['owner' => $owner, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $payment = Payment::factory()->create([
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'amount' => 40,
+            'amount_ils' => 40,
+            'status' => 'pending',
+        ]);
+
+        Cache::put('admin.dashboard.stats_v2', ['stale' => true], 300);
+
+        $admin = $this->makeAdmin();
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/payments/{$payment->id}/approve")
+            ->assertOk();
+
+        $this->assertSame('partially_paid', $invoice->fresh()->status->value);
+        $this->assertNull(Cache::get('admin.dashboard.stats_v2'));
+    }
+
+    public function test_rejecting_a_payment_clears_the_admin_dashboard_cache(): void
+    {
+        ['owner' => $owner, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);
+        $method = PaymentMethod::factory()->bank()->create(['user_id' => $owner->id, 'currency' => 'ILS']);
+        $payment = Payment::factory()->create([
+            'invoice_id' => $invoice->id,
+            'payment_method_id' => $method->id,
+            'status' => 'pending',
+        ]);
+
+        Cache::put('admin.dashboard.stats_v2', ['stale' => true], 300);
+
+        $this->actingAs($owner)
+            ->patchJson("/api/v1/payments/{$payment->id}/reject", ['reason' => 'لا يطابق.'])
+            ->assertOk();
+
+        $this->assertNull(Cache::get('admin.dashboard.stats_v2'));
+    }
+
     public function test_owner_can_reject_payment_with_reason(): void
     {
         ['owner' => $owner, 'invoice' => $invoice] = $this->makeScenario('ILS', 100);

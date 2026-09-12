@@ -6,7 +6,7 @@ import loginLogService from "@/services/loginLogService";
 export function useLoginLogs() {
   const { t } = useI18n();
   const logs = ref([]);
-  const pagination = ref({ current_page: 1, last_page: 1 });
+  const pagination = ref({ current_page: 1, last_page: 1, total: 0 });
   const isLoading = ref(true);
   const error = ref(null);
 
@@ -21,6 +21,7 @@ export function useLoginLogs() {
       pagination.value = {
         current_page: meta.current_page ?? 1,
         last_page: meta.last_page ?? 1,
+        total: meta.total ?? logs.value.length,
       };
     } catch (err) {
       error.value =

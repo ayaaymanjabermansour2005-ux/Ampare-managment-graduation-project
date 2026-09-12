@@ -151,6 +151,18 @@ describe('AdminGeneratorsMap', () => {
         expect(markerSpy).not.toHaveBeenCalled();
     });
 
+    it('shows the error state (not the empty state) when the request fails, and clears it on the next successful fetch', async () => {
+        adminDashboardService.generatorsMap.mockRejectedValueOnce({ message: 'Network Error' });
+        const { wrapper } = mountMap();
+
+        await flushPromises();
+
+        expect(wrapper.find('.animate-spin').exists()).toBe(false);
+        expect(wrapper.text()).toContain('تعذّر تحميل نقاط الخريطة.');
+        expect(wrapper.text()).not.toContain('لا توجد مولدات بإحداثيات مسجلة بعد');
+        expect(markerSpy).not.toHaveBeenCalled();
+    });
+
     it('renders a marker per point, fits the map bounds, and renders the status legend', async () => {
         adminDashboardService.generatorsMap.mockResolvedValue({
             data: {

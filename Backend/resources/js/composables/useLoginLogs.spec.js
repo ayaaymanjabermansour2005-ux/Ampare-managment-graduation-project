@@ -33,14 +33,14 @@ describe('useLoginLogs', () => {
         const { logs, pagination, isLoading, error } = useLoginLogs();
 
         expect(logs.value).toEqual([]);
-        expect(pagination.value).toEqual({ current_page: 1, last_page: 1 });
+        expect(pagination.value).toEqual({ current_page: 1, last_page: 1, total: 0 });
         expect(isLoading.value).toBe(true);
         expect(error.value).toBeNull();
     });
 
     it('fetchLogs merges the page with the given filters into the request and stores the unwrapped list + pagination', async () => {
         loginLogService.list.mockResolvedValue({
-            data: { data: { data: [{ id: 1, ip: '1.2.3.4' }], meta: { current_page: 3, last_page: 9 } } },
+            data: { data: { data: [{ id: 1, ip: '1.2.3.4' }], meta: { current_page: 3, last_page: 9, total: 81 } } },
         });
 
         const { logs, pagination, isLoading, fetchLogs } = useLoginLogs();
@@ -48,7 +48,7 @@ describe('useLoginLogs', () => {
 
         expect(loginLogService.list).toHaveBeenCalledWith({ page: 3, status: 'failed' });
         expect(logs.value).toEqual([{ id: 1, ip: '1.2.3.4' }]);
-        expect(pagination.value).toEqual({ current_page: 3, last_page: 9 });
+        expect(pagination.value).toEqual({ current_page: 3, last_page: 9, total: 81 });
         expect(isLoading.value).toBe(false);
     });
 

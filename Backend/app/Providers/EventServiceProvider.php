@@ -13,6 +13,8 @@ use App\Events\InvoiceDueSoon;
 use App\Events\InvoiceOverdue;
 use App\Events\InvoicePaid;
 use App\Events\MessageSent;
+use App\Events\PaymentApproved;
+use App\Events\PaymentRejected;
 use App\Events\PaymentSubmitted;
 use App\Events\SubscriptionApproved;
 use App\Events\TechnicianTaskApproved;
@@ -20,6 +22,7 @@ use App\Events\TechnicianTaskAssigned;
 use App\Events\TechnicianTaskRejected;
 use App\Events\TechnicianTaskSubmitted;
 use App\Listeners\CheckApplicationDependenciesHealth;
+use App\Listeners\ClearAdminDashboardCache;
 use App\Listeners\SendComplaintResolvedNotification;
 use App\Listeners\SendFaultReportedAdminNotification;
 use App\Listeners\SendFaultReportedNotification;
@@ -49,23 +52,36 @@ class EventServiceProvider extends ServiceProvider
 
         InvoicePaid::class => [
             SendInvoicePaidNotification::class,
+            ClearAdminDashboardCache::class,
         ],
 
         SubscriptionApproved::class => [
             SendSubscriptionApprovedNotification::class,
+            ClearAdminDashboardCache::class,
         ],
 
         FaultReported::class => [
             SendFaultReportedNotification::class,
             SendFaultReportedAdminNotification::class,
+            ClearAdminDashboardCache::class,
         ],
 
         ComplaintResolved::class => [
             SendComplaintResolvedNotification::class,
+            ClearAdminDashboardCache::class,
         ],
 
         ComplaintSubmitted::class => [
             SendNewComplaintNotification::class,
+            ClearAdminDashboardCache::class,
+        ],
+
+        PaymentApproved::class => [
+            ClearAdminDashboardCache::class,
+        ],
+
+        PaymentRejected::class => [
+            ClearAdminDashboardCache::class,
         ],
 
         InvoiceOverdue::class => [
@@ -78,6 +94,7 @@ class EventServiceProvider extends ServiceProvider
 
         PaymentSubmitted::class => [
             SendPaymentSubmittedNotification::class,
+            ClearAdminDashboardCache::class,
         ],
 
         ContactMessageReceived::class => [

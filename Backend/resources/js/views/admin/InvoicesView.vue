@@ -9,7 +9,7 @@ import { vReveal } from "@/directives/reveal";
 import InvoiceCorrectionModal from "@/components/admin/InvoiceCorrectionModal.vue";
 import invoiceService from "@/services/invoiceService";
 import { useToastStore } from "@/stores/toast";
-import { Ban, CalendarCheck, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Circle, Eye, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, QrCode, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
+import { Ban, CalendarCheck, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Circle, Eye, FileDown, FileSpreadsheet, HandCoins, LoaderCircle, Pencil, Printer, QrCode, Receipt, RotateCw, Search, User, X, ZoomOut } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -433,6 +433,13 @@ onMounted(() => {
                   <button type="button" @click="handleShowInvoiceQr(invoice)" class="action-btn action-btn--view" :title="$t('invoices_page.show_qr')" :aria-label="$t('invoices_page.show_qr')">
                     <QrCode aria-hidden="true" />
                   </button>
+                  <a
+                    v-if="can('invoices.view')"
+                    :href="invoiceService.downloadPdfUrl(invoice.id)" target="_blank" rel="noopener"
+                    class="action-btn action-btn--view" :title="$t('invoices_page.download_pdf')" :aria-label="$t('invoices_page.download_pdf')"
+                  >
+                    <FileDown aria-hidden="true" />
+                  </a>
                   <span class="row-actions-divider"></span>
                   <button
                     v-if="invoice.status === 'cancelled' && can('invoices.reissue')"
@@ -570,6 +577,11 @@ onMounted(() => {
                   <div class="text-[10px] text-[#9a9d97] dark:text-[#8f938a]">{{ $t("invoices_page.due_date_col") }}</div>
                 </div>
               </div>
+
+              <a v-if="can('invoices.view')" :href="invoiceService.downloadPdfUrl(viewingInvoice.id)" target="_blank" rel="noopener" class="glass-card p-4 w-full flex items-center gap-2.5 text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 transition-colors">
+                <span class="w-9 h-9 rounded-lg bg-[#17A2B8]/10 text-[#17A2B8] flex items-center justify-center shrink-0"><FileDown aria-hidden="true" /></span>
+                <span class="text-[12px] font-bold">{{ $t("invoices_page.download_pdf") }}</span>
+              </a>
 
               <button v-if="can('invoices.correct')" type="button" @click="openCorrection(viewingInvoice); viewingInvoice = null" class="glass-card p-4 w-full flex items-center gap-2.5 text-start hover:bg-[#f4efe5]/50 dark:hover:bg-white/5 transition-colors">
                 <span class="w-9 h-9 rounded-lg bg-[#8A6D1F]/10 text-[#8A6D1F] flex items-center justify-center shrink-0"><Pencil aria-hidden="true" /></span>

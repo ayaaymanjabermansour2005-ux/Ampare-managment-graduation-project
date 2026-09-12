@@ -1912,6 +1912,7 @@ export default {
   invoices_page: {
     show_qr: "Show Verification QR",
     qr_scan_hint: "Scan the code to verify the invoice's authenticity.",
+    download_pdf: "Download PDF",
     status_pending: "Pending",
     status_paid: "Paid",
     status_partially_paid: "Partially Paid",

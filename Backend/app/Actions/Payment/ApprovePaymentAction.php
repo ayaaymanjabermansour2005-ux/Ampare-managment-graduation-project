@@ -4,6 +4,7 @@ namespace App\Actions\Payment;
 
 use App\Enums\PaymentReviewStatus;
 use App\Enums\PaymentStatus;
+use App\Events\PaymentApproved;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\InvoiceService;
@@ -41,6 +42,8 @@ final class ApprovePaymentAction
             $this->reviewLogger->log($payment, $approver, PaymentReviewStatus::Approved);
 
             $this->invoiceService->recalculateStatus($payment->invoice);
+
+            PaymentApproved::dispatch($payment);
 
             return $payment->fresh(['invoice', 'processedBy', 'paymentMethod']);
         });

@@ -4,6 +4,7 @@ namespace App\Actions\Payment;
 
 use App\Enums\PaymentReviewStatus;
 use App\Enums\PaymentStatus;
+use App\Events\PaymentRejected;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Payment\PaymentReviewLogger;
@@ -37,6 +38,8 @@ final class RejectPaymentAction
             ])->save();
 
             $this->reviewLogger->log($payment, $reviewer, PaymentReviewStatus::Rejected, $reason);
+
+            PaymentRejected::dispatch($payment);
 
             return $payment->fresh(['invoice', 'processedBy']);
         });

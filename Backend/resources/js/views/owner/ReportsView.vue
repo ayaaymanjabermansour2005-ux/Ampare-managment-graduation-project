@@ -3,10 +3,9 @@ import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCommissionReports } from "@/composables/useCommissionReports";
 import { usePermissions } from "@/composables/usePermissions";
-import platformCommissionService from "@/services/platformCommissionService";
 import ownerMonthlyReportService from "@/services/ownerMonthlyReportService";
 import { vReveal } from "@/directives/reveal";
-import { FileDown, FileText, Landmark, X } from "@lucide/vue";
+import { FileText, Landmark, X } from "@lucide/vue";
 
 const {
   commissions,
@@ -18,7 +17,6 @@ const {
   fetchCommissions,
   markingId,
   markError,
-  markAsPaid,
 } = useCommissionReports();
 const { hasRole } = usePermissions();
 const { t } = useI18n();
@@ -63,10 +61,6 @@ onMounted(() => {
             <FileText aria-hidden="true" />
             {{ t("owner_reports.my_monthly_report_pdf") }}
           </a>
-          <a v-if="hasRole('admin')" :href="platformCommissionService.downloadReportPdfUrl()" target="_blank" class="btn-fill-brand">
-            <FileDown aria-hidden="true" />
-            {{ t("owner_reports.download_full_report_pdf") }}
-          </a>
         </div>
       </div>
     </section>
@@ -93,12 +87,10 @@ onMounted(() => {
       <table class="w-full text-[12.5px]">
         <thead>
           <tr class="border-b border-[#f0ece0] dark:border-white/5 text-[11px] font-bold text-[#6B6B6B] dark:text-[#a8aaa5]">
-            <th v-if="hasRole('admin')" class="text-start font-bold px-4 py-3">{{ t("owner_reports.owner_col") }}</th>
             <th class="text-start font-bold px-4 py-3">{{ t("owner_reports.generator_col") }}</th>
             <th class="text-start font-bold px-4 py-3">{{ t("owner_reports.commission_rate_col") }}</th>
             <th class="text-start font-bold px-4 py-3">{{ t("owner_reports.amount_col") }}</th>
             <th class="text-start font-bold px-4 py-3">{{ t("owner_reports.status_col") }}</th>
-            <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[#f0ece0] dark:divide-white/5">
@@ -108,22 +100,11 @@ onMounted(() => {
             class="hover:bg-[#f4efe5]/40 dark:hover:bg-white/[.03] transition"
             :class="{ 'opacity-50 pointer-events-none': markingId === commission.id }"
           >
-            <td v-if="hasRole('admin')" class="px-4 py-3 font-bold">{{ commission.owner?.name ?? "—" }}</td>
             <td class="px-4 py-3 text-[#6B6B6B] dark:text-[#a8aaa5]">{{ commission.generator_name ?? "—" }}</td>
             <td class="px-4 py-3 font-mono text-[#6B6B6B] dark:text-[#a8aaa5]">{{ commission.commission_rate }}%</td>
             <td class="px-4 py-3 font-mono font-bold">{{ commission.commission_amount.toFixed(2) }} ₪</td>
             <td class="px-4 py-3">
               <span class="status-chip" :class="STATUS_CHIP[commission.status]">{{ statusLabel(commission.status) }}</span>
-            </td>
-            <td class="px-4 py-3 text-end">
-              <button
-                v-if="hasRole('admin') && commission.status === 'earned'"
-                type="button"
-                @click="markAsPaid(commission.id)"
-                class="text-[11.5px] font-bold text-[#3E582E] dark:text-[#8cc35a] hover:underline"
-              >
-                {{ t("owner_reports.mark_paid") }}
-              </button>
             </td>
           </tr>
         </tbody>

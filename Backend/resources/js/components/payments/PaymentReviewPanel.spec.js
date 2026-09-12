@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 import PaymentReviewPanel from './PaymentReviewPanel.vue';
 import AttachmentPreviewModal from '@/components/ui/AttachmentPreviewModal.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const i18n = createI18n({
     legacy: false,
@@ -50,7 +52,10 @@ const PAYMENT = {
     ],
 };
 
-function mountPanel(props = {}) {
+function mountPanel(props = {}, permissions = ['payments.approve', 'payments.reject']) {
+    const authStore = useAuthStore();
+    authStore.permissions = permissions;
+
     return mount(PaymentReviewPanel, {
         props: { open: false, payment: null, isLoadingDetail: false, isActing: false, actionError: null, ...props },
         global: { plugins: [i18n], stubs: { Teleport: true } },
@@ -60,6 +65,7 @@ function mountPanel(props = {}) {
 describe('PaymentReviewPanel', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        setActivePinia(createPinia());
     });
 
     it('renders nothing while closed', () => {
@@ -209,5 +215,27 @@ describe('PaymentReviewPanel', () => {
         await wrapper.find('button[aria-label="إغلاق"]').trigger('click');
 
         expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('hides approve/correction but keeps reject when the user only has payments.reject', () => {
+        const wrapper = mountPanel({ open: true, payment: PAYMENT }, ['payments.reject']);
+
+        expect(wrapper.text()).not.toContain('قبول');
+        expect(wrapper.text()).not.toContain('طلب تصحيح');
+        expect(wrapper.text()).toContain('رفض');
+    });
+
+    it('hides reject but keeps approve/correction when the user only has payments.approve', () => {
+        const wrapper = mountPanel({ open: true, payment: PAYMENT }, ['payments.approve']);
+
+        expect(wrapper.text()).toContain('قبول');
+        expect(wrapper.text()).toContain('طلب تصحيح');
+        expect(wrapper.text()).not.toContain('رفض');
+    });
+
+    it('hides the entire footer when the user has neither payments.approve nor payments.reject', () => {
+        const wrapper = mountPanel({ open: true, payment: PAYMENT }, []);
+
+        expect(wrapper.find('footer').exists()).toBe(false);
     });
 });

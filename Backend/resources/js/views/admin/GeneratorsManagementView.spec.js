@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 import GeneratorsManagementView from './GeneratorsManagementView.vue';
+import { useAuthStore } from '@/stores/auth';
 
 // vReveal (used as `v-reveal`) is a local <script setup> import — see
 // SettingsView.spec.js for why this must be a real IntersectionObserver
@@ -67,7 +68,7 @@ const i18n = createI18n({
     },
 });
 
-async function mountComponent() {
+async function mountComponent(roles = ['admin']) {
     const generatorService = (await import('@/services/generatorService')).default;
     const userService = (await import('@/services/userService')).default;
     generatorService.list.mockResolvedValue({
@@ -86,6 +87,8 @@ async function mountComponent() {
 
     const pinia = createPinia();
     setActivePinia(pinia);
+    const authStore = useAuthStore();
+    authStore.roles = roles;
 
     const wrapper = mount(GeneratorsManagementView, {
         global: {
@@ -108,6 +111,13 @@ async function mountComponent() {
 describe('GeneratorsManagementView', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    it('hides the approve/reject actions for a pending generator when the user is not an admin', async () => {
+        const wrapper = await mountComponent([]);
+
+        expect(wrapper.find('[aria-label="موافقة على المولد"]').exists()).toBe(false);
+        expect(wrapper.find('[aria-label="رفض المولد"]').exists()).toBe(false);
     });
 
     describe('handleVerify', () => {

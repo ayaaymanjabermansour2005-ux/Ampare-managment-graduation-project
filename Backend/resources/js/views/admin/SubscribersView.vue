@@ -1257,7 +1257,7 @@ onMounted(() => {
             <a :href="exportExcelUrl" target="_blank" rel="noopener" class="btn-fill relative text-[12.5px] font-bold px-4 py-2.5 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2">
               <FileSpreadsheet aria-hidden="true" /> {{ t("owner_applications_page.export_excel_title") }}
             </a>
-            <button type="button" @click="openAddModal" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
+            <button v-if="can('subscriptions.create')" type="button" @click="openAddModal" class="btn-fill relative bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-md flex items-center gap-2">
               <Plus aria-hidden="true" /> {{ t("subscriptions_page.add_subscription_button") }}
             </button>
           </template>
@@ -2205,23 +2205,25 @@ onMounted(() => {
                     <Eye aria-hidden="true" />
                   </button>
 
-                  <button
-                    v-for="action in actionsFor(sub)"
-                    :key="action.to"
-                    type="button"
-                    @click="handleStatusChange(sub, action)"
-                    :disabled="updatingStatusId === sub.id"
-                    class="action-btn"
-                    :style="{ color: action.color, '--hover-bg': action.color + '1A' }"
-                    :title="t(action.labelKey)"
-                    :aria-label="t(action.labelKey)"
-                  >
-                    <AppIcon :name="updatingStatusId === sub.id ? 'fa-spinner fa-spin' : action.icon" />
-                  </button>
+                  <template v-if="can('subscriptions.updateStatus')">
+                    <button
+                      v-for="action in actionsFor(sub)"
+                      :key="action.to"
+                      type="button"
+                      @click="handleStatusChange(sub, action)"
+                      :disabled="updatingStatusId === sub.id"
+                      class="action-btn"
+                      :style="{ color: action.color, '--hover-bg': action.color + '1A' }"
+                      :title="t(action.labelKey)"
+                      :aria-label="t(action.labelKey)"
+                    >
+                      <AppIcon :name="updatingStatusId === sub.id ? 'fa-spinner fa-spin' : action.icon" />
+                    </button>
+                  </template>
 
-                  <span class="row-actions-divider"></span>
+                  <span v-if="can('subscriptions.updateStatus') || can('subscriptions.transfer')" class="row-actions-divider"></span>
 
-                  <button type="button" @click="openTransfer(sub)" class="action-btn action-btn--transfer" :title="$t('subscriptions_page.transfer_action_title')" :aria-label="$t('subscriptions_page.transfer_action_title')">
+                  <button v-if="can('subscriptions.transfer')" type="button" @click="openTransfer(sub)" class="action-btn action-btn--transfer" :title="$t('subscriptions_page.transfer_action_title')" :aria-label="$t('subscriptions_page.transfer_action_title')">
                     <ArrowRightLeft aria-hidden="true" />
                   </button>
 
@@ -2432,7 +2434,7 @@ onMounted(() => {
               <div class="glass-card p-4">
                 <div class="flex items-center justify-between gap-2 mb-2">
                   <h5 class="text-[12px] font-bold flex items-center gap-2"><StickyNote class="text-[#8A6D1F] text-[11px]" aria-hidden="true" /> {{ $t("subscriptions_page.notes_title") }}</h5>
-                  <button v-if="!isEditingNotes" type="button" @click="startEditNotes" class="action-btn action-btn--view !w-6 !h-6" :title="$t('common.edit')"><Pencil class="text-[10px]" aria-hidden="true" /></button>
+                  <button v-if="!isEditingNotes && can('subscriptions.updateNotes')" type="button" @click="startEditNotes" class="action-btn action-btn--view !w-6 !h-6" :title="$t('common.edit')"><Pencil class="text-[10px]" aria-hidden="true" /></button>
                 </div>
                 <p v-if="!isEditingNotes" class="text-[12px] text-[#6B6B6B] dark:text-[#a8aaa5] whitespace-pre-line">
                   {{ viewingSubscription.notes || $t("subscriptions_page.notes_empty") }}

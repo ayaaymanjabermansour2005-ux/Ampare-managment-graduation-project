@@ -7,6 +7,7 @@ import { useAdminPaymentMethods } from "@/composables/useAdminPaymentMethods";
 import { useAdminOwnerCommissions } from "@/composables/useAdminOwnerCommissions";
 import { useAdminTechnicianPayments } from "@/composables/useAdminTechnicianPayments";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
 import { vReveal } from "@/directives/reveal";
 import PaymentReviewPanel from "@/components/payments/PaymentReviewPanel.vue";
 import userService from "@/services/userService";
@@ -21,6 +22,7 @@ import StatCard from "@/components/dashboard/StatCard.vue";
 
 const { t, locale } = useI18n();
 const { confirm } = useConfirm();
+const { can } = usePermissions();
 const toast = useToastStore();
 
 /* ==========================================================================
@@ -782,8 +784,9 @@ onMounted(() => {
             >
               <Printer class="text-[11px]" aria-hidden="true" />
             </button>
-            <div class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
+            <div v-if="can('payments.create')" class="w-px h-6 bg-[#e0dccf] dark:bg-white/10"></div>
             <button
+              v-if="can('payments.create')"
               type="button"
               @click="openManualPaymentModal"
               class="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11.5px] font-bold text-white bg-gradient-to-l from-[#3E582E] via-[#52733D] to-[#8A6D1F] shadow-md hover:brightness-110 transition"
@@ -979,7 +982,7 @@ onMounted(() => {
                 <td class="py-2.5 px-3 font-bold" dir="ltr">{{ commission.commission_amount }}</td>
                 <td class="py-2.5 px-3"><span class="status-chip" :class="OWNER_COMMISSION_STATUS_META[commission.status] ?? 'chip-info'">{{ ownerCommissionStatusLabel(commission.status) }}</span></td>
                 <td class="py-2.5 px-3">
-                  <div v-if="commission.status === 'earned'" class="row-actions">
+                  <div v-if="commission.status === 'earned' && can('platform-commissions.updateStatus')" class="row-actions">
                     <button
                       type="button"
                       @click="handleMarkCommissionPaid(commission)"
@@ -1178,6 +1181,7 @@ onMounted(() => {
               </button>
               <div class="flex-1"></div>
               <button
+                v-if="can('payment-methods.delete')"
                 type="button" @click="handleDeleteMethod(m)" :disabled="deletingMethodId === m.id"
                 class="w-9 h-9 rounded-full flex items-center justify-center text-[#D9534F] hover:bg-[#D9534F]/10 disabled:opacity-40 shrink-0"
                 :title="$t('common.delete')"
@@ -1375,6 +1379,7 @@ onMounted(() => {
               {{ $t("common.close") }}
             </button>
             <button
+              v-if="can('payment-methods.delete')"
               type="button"
               @click="handleDeleteMethod(viewingMethod); viewingMethod = null"
               :disabled="deletingMethodId === viewingMethod.id"

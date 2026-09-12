@@ -28,7 +28,7 @@ const { t, locale } = useI18n();
 const route = useRoute();
 const toast = useToastStore();
 const { confirm: confirmDialog } = useConfirm();
-const { can } = usePermissions();
+const { can, hasRole } = usePermissions();
 
 const {
   generators, pagination, isLoading, error,
@@ -519,7 +519,7 @@ onMounted(async () => {
               <td class="py-2.5 px-3"><span class="status-chip" :class="STATUS_META[g.status]?.chip ?? 'chip-info'">{{ statusLabel(g.status) }}</span></td>
               <td class="py-2.5 px-3">
                 <div class="row-actions justify-center">
-                  <template v-if="g.status === 'pending_verification'">
+                  <template v-if="g.status === 'pending_verification' && hasRole('admin')">
                     <button type="button" @click="handleVerify(g)" :disabled="isVerifying" class="action-btn action-btn--view !text-[#28A745]" :title="$t('generators_management_page.approve_action')" :aria-label="$t('generators_management_page.approve_action')"><Check aria-hidden="true" /></button>
                     <button type="button" @click="openRejectModal(g)" class="action-btn action-btn--delete" :title="$t('owner_applications_page.reject_action')" :aria-label="$t('owner_applications_page.reject_action')"><X aria-hidden="true" /></button>
                     <span class="row-actions-divider"></span>
@@ -561,7 +561,7 @@ onMounted(async () => {
           <div class="flex items-center justify-between">
             <span class="font-extrabold text-[12.5px]">{{ fmtMoney(g.monthly_revenue_ils) }}</span>
             <div class="row-actions">
-              <template v-if="g.status === 'pending_verification'">
+              <template v-if="g.status === 'pending_verification' && hasRole('admin')">
                 <button type="button" @click="handleVerify(g)" :disabled="isVerifying" class="action-btn action-btn--view !text-[#28A745]" :title="$t('generators_management_page.approve_action')" :aria-label="$t('generators_management_page.approve_action')"><Check aria-hidden="true" /></button>
                 <button type="button" @click="openRejectModal(g)" class="action-btn action-btn--delete" :title="$t('owner_applications_page.reject_action')" :aria-label="$t('owner_applications_page.reject_action')"><X aria-hidden="true" /></button>
                 <span class="row-actions-divider"></span>

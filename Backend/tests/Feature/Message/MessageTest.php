@@ -3,6 +3,7 @@
 namespace Tests\Feature\Message;
 
 use App\Enums\Role as RoleEnum;
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Generator;
 use App\Models\Subscriber;
@@ -13,6 +14,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class MessageTest extends TestCase
@@ -181,5 +183,105 @@ class MessageTest extends TestCase
         [,, $conversation] = $this->makeConversation();
 
         $this->getJson("/api/v1/conversations/{$conversation->id}/messages")->assertStatus(401);
+    }
+
+    // ==================== بند 12: Real-time messaging (Broadcasting) ====================
+
+    public function test_sending_a_message_dispatches_a_broadcastable_event_on_the_conversation_channel(): void
+    {
+        Event::fake([MessageSent::class]);
+        [$owner,, $conversation] = $this->makeConversation();
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/conversations/{$conversation->id}/messages", [
+                'message_text' => 'رسالة حية',
+            ])
+            ->assertStatus(201);
+
+        Event::assertDispatched(MessageSent::class, function (MessageSent $event) use ($conversation) {
+            $channels = $event->broadcastOn();
+            $channel = is_array($channels) ? $channels[0] : $channels;
+
+            return $event->message->conversation_id === $conversation->id
+                && $channel->name === 'private-conversation.'.$conversation->id
+                && $event->broadcastAs() === 'message.sent';
+        });
+    }
+
+    /**
+     * phpunit.xml يفرض BROADCAST_CONNECTION=null بيئة الاختبار (لتفادي
+     * الحاجة لخادوم Reverb حقيقي أثناء الاختبارات)، وNullBroadcaster::auth()
+     * لا يفعل شيئًا إطلاقًا — لا يستدعي Broadcast::channel() المسجّلة على
+     * الإطلاق، فيرجّع 200 دومًا بغضّ النظر عن منطق التفويض الفعلي. لاختبار
+     * منطق التفويض الحقيقي (routes/channels.php) لازم Broadcaster حقيقي
+     * (pusher/reverb) — توقيع الاستجابة محلي بمفتاح/سر وهميين هون، لا يحتاج
+     * اتصال شبكة فعلي بخادوم reverb.
+     */
+    private function usePusherBroadcaster(): void
+    {
+        config([
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'test-key',
+                'secret' => 'test-secret',
+                'app_id' => 'test-app-id',
+                'options' => ['cluster' => 'mt1', 'useTLS' => true],
+            ],
+        ]);
+
+        // routes/channels.php سُجِّلت أصلًا على الـ Broadcaster الافتراضي وقت
+        // إقلاع التطبيق (null بيئة الاختبار)؛ تغيير الإعداد هون لا يُعيد تسجيل
+        // القنوات على الـ driver الجديد (كل Broadcaster instance يحمل قائمة
+        // قنواته الخاصة) — لازم ننسى الـ drivers المخزَّنة ونعيد تحميل الملف
+        // ليُسجَّل من جديد على الـ pusher driver الفعلي المُستخدَم بالاختبار.
+        app(\Illuminate\Broadcasting\BroadcastManager::class)->forgetDrivers();
+        require base_path('routes/channels.php');
+    }
+
+    public function test_a_conversation_participant_can_authenticate_the_broadcast_channel(): void
+    {
+        $this->usePusherBroadcaster();
+        [$owner,, $conversation] = $this->makeConversation();
+
+        $this->actingAs($owner)
+            ->postJson('/broadcasting/auth', [
+                'channel_name' => 'private-conversation.'.$conversation->id,
+                'socket_id' => '1234.1234',
+            ])
+            ->assertOk();
+    }
+
+    public function test_a_non_participant_cannot_authenticate_the_broadcast_channel(): void
+    {
+        $this->usePusherBroadcaster();
+        [,, $conversation] = $this->makeConversation();
+
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole(RoleEnum::SUBSCRIBER->value);
+        Subscriber::factory()->create(['user_id' => $otherUser->id]);
+
+        $this->actingAs($otherUser)
+            ->postJson('/broadcasting/auth', [
+                'channel_name' => 'private-conversation.'.$conversation->id,
+                'socket_id' => '1234.1234',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_authenticate_any_conversations_broadcast_channel(): void
+    {
+        $this->usePusherBroadcaster();
+        [,, $conversation] = $this->makeConversation();
+
+        $admin = User::factory()->create();
+        $admin->assignRole(RoleEnum::ADMIN->value);
+
+        $this->actingAs($admin)
+            ->postJson('/broadcasting/auth', [
+                'channel_name' => 'private-conversation.'.$conversation->id,
+                'socket_id' => '1234.1234',
+            ])
+            ->assertOk();
     }
 }

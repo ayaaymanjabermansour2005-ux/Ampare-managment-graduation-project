@@ -1908,6 +1908,7 @@ export default {
   invoices_page: {
     show_qr: "عرض رمز QR للتحقق",
     qr_scan_hint: "امسح الرمز للتحقق من صحة الفاتورة.",
+    download_pdf: "تحميل PDF",
     status_pending: "قيد الانتظار",
     status_paid: "مدفوعة",
     status_partially_paid: "مدفوعة جزئيًا",

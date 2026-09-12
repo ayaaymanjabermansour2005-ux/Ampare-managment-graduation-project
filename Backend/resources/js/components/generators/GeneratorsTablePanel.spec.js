@@ -133,10 +133,12 @@ const STUBS = { AppDropdownSelect: true, AdminGeneratorFormModal: true, Generato
 
 // FIX (تدقيق شامل — B6): أزرار تعديل/حذف/إضافة مولد صارت مشروطة بـ can()
 // (permission gating) — بلا صلاحيات مضبوطة هنا كانت الأزرار تختفي فتفشل
-// الاختبارات التي تبحث عنها.
+// الاختبارات التي تبحث عنها. أزرار اعتماد/رفض المولد مشروطة بـ hasRole('admin')
+// (GeneratorPolicy::verify لا تتحقق من صلاحية دقيقة، بل من isAdmin() فقط).
 function grantGeneratorsPermissions() {
     const authStore = useAuthStore();
     authStore.permissions = ['generators.create', 'generators.update', 'generators.delete'];
+    authStore.roles = ['admin'];
 }
 
 async function mountPanel(props = {}) {
@@ -278,6 +280,20 @@ describe('GeneratorsTablePanel', () => {
         const viewModal = wrapper.findComponent({ name: 'GeneratorViewModal' });
         expect(viewModal.props('open')).toBe(true);
         expect(viewModal.props('generator').id).toBe(2);
+    });
+
+    it('hides the approve/reject buttons for a pending generator when the user is not an admin', async () => {
+        setupDefaultMocks();
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const authStore = useAuthStore();
+        authStore.permissions = ['generators.create', 'generators.update', 'generators.delete'];
+        authStore.roles = [];
+        const wrapper = mount(GeneratorsTablePanel, { global: { plugins: [i18n, pinia], stubs: STUBS } });
+        await flushPromises();
+
+        expect(wrapper.find('[aria-label="اعتماد"]').exists()).toBe(false);
+        expect(wrapper.find('[aria-label="رفض"]').exists()).toBe(false);
     });
 
     it('does nothing when the approve confirmation is dismissed', async () => {

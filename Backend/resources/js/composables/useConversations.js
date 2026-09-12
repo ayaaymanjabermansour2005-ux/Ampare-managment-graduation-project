@@ -1,5 +1,5 @@
 import { normalizeApiError } from "@/utils/normalizeApiError";
-import { ref } from "vue";
+import { getCurrentInstance, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import conversationService from "@/services/conversationService";
 import { useAuthStore } from "@/stores/auth";
@@ -35,8 +35,42 @@ export function useConversations() {
   const isLoadingOlderMessages = ref(false);
   const loadOlderMessagesError = ref(null);
 
+  /* ---------------- بند 12: Real-time messaging ----------------
+   * اشتراك بقناة المحادثة المفتوحة عبر Reverb (نفس نمط
+   * useRealtimeNotifications.js)، لإظهار رسائل الطرف الآخر لحظيًا بدل
+   * الحاجة لإعادة فتح المحادثة يدويًا. رسالة المستخدم نفسه لا تُضاف مرتين
+   * (تُضاف فورًا من استجابة sendMessage، والبث المُرتَد من الخادم يُتجاهَل).
+   */
+  let activeChannelConversationId = null;
+
+  function leaveConversationChannel() {
+    if (activeChannelConversationId && window.Echo) {
+      window.Echo.leave(`conversation.${activeChannelConversationId}`);
+    }
+    activeChannelConversationId = null;
+  }
+
+  function subscribeToConversationChannel(conversationId) {
+    if (!window.Echo || activeChannelConversationId === conversationId) return;
+    leaveConversationChannel();
+    activeChannelConversationId = conversationId;
+    window.Echo.private(`conversation.${conversationId}`).listen(".message.sent", (payload) => {
+      const incoming = payload.message ?? payload;
+      if (!incoming || incoming.sender?.id === authStore.user?.id) return;
+      if (messages.value.some((m) => m.id === incoming.id)) return;
+      messages.value.push(incoming);
+    });
+  }
+
+  // onUnmounted بلا instance فعّال بيطبع تحذير Vue بلا داعٍ — هاد الـ composable
+  // تُستدعى مباشرة (بلا مكوّن) بمعظم اختبارات useConversations.spec.js.
+  if (getCurrentInstance()) {
+    onUnmounted(() => leaveConversationChannel());
+  }
+
   async function openConversation(conversation) {
     activeConversation.value = conversation;
+    subscribeToConversationChannel(conversation.id);
     isLoadingMessages.value = true;
     messagesError.value = null;
     messagesPage.value = 1;
@@ -194,6 +228,7 @@ export function useConversations() {
       await conversationService.destroy(conversationId);
       conversations.value = conversations.value.filter((c) => c.id !== conversationId);
       if (activeConversation.value?.id === conversationId) {
+        leaveConversationChannel();
         activeConversation.value = null;
         messages.value = [];
       }

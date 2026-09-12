@@ -709,7 +709,7 @@ onMounted(() => {
                 <Eye class="text-[12px]" aria-hidden="true" />
               </button>
               <button
-                v-if="technician.is_locked && can('technicians.update')"
+                v-if="technician.is_locked && can('users.unlock')"
                 type="button"
                 @click="unlockTechnician(technician.id)"
                 class="w-8 h-8 rounded-full flex items-center justify-center text-[#9a9d97] dark:text-[#8f938a] hover:text-success hover:bg-success/10 transition"

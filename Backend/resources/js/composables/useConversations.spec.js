@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createI18n } from 'vue-i18n';
 import { createPinia, setActivePinia } from 'pinia';
 
@@ -11,6 +11,7 @@ vi.mock('@/services/conversationService', () => ({
         startSupport: vi.fn(),
         startWithOwner: vi.fn(),
         convertToIssue: vi.fn(),
+        destroy: vi.fn(),
     },
 }));
 
@@ -41,9 +42,26 @@ const conversationService = (await import('@/services/conversationService')).def
 const { useAuthStore } = await import('@/stores/auth');
 
 describe('useConversations', () => {
+    let echoPrivate;
+    let echoLeave;
+    let channels;
+
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
+
+        channels = [];
+        echoPrivate = vi.fn((channelName) => {
+            const channel = { name: channelName, listen: vi.fn() };
+            channels.push(channel);
+            return channel;
+        });
+        echoLeave = vi.fn();
+        window.Echo = { private: echoPrivate, leave: echoLeave };
+    });
+
+    afterEach(() => {
+        delete window.Echo;
     });
 
     it('starts with isLoading true, empty conversations, no active conversation, and currentUserId null when logged out', () => {
@@ -348,5 +366,91 @@ describe('useConversations', () => {
         expect(conversationService.convertToIssue).toHaveBeenCalledWith(7, { category: 'fault', generator_id: 3 });
         expect(result).toBe(false);
         expect(convertError.value).toBe('تعذر تحويل المحادثة');
+    });
+
+    // ==================== بند 12: Real-time messaging (Echo subscription) ====================
+
+    it('openConversation subscribes to the conversation-scoped private channel', async () => {
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+
+        const { openConversation } = useConversations();
+        await openConversation({ id: 7 });
+
+        expect(echoPrivate).toHaveBeenCalledWith('conversation.7');
+        expect(channels[0].listen).toHaveBeenCalledWith('.message.sent', expect.any(Function));
+    });
+
+    it('does nothing when window.Echo is unavailable', async () => {
+        delete window.Echo;
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+
+        const { openConversation } = useConversations();
+        await expect(openConversation({ id: 7 })).resolves.toBeUndefined();
+
+        expect(echoPrivate).not.toHaveBeenCalled();
+    });
+
+    it('an incoming message from the other participant is appended to the messages list', async () => {
+        useAuthStore().user = { id: 1 };
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+
+        const { openConversation, messages } = useConversations();
+        await openConversation({ id: 7 });
+
+        const handler = channels[0].listen.mock.calls[0][1];
+        handler({ message: { id: 50, sender: { id: 2 }, message_text: 'مرحبا' } });
+
+        expect(messages.value).toEqual([{ id: 50, sender: { id: 2 }, message_text: 'مرحبا' }]);
+    });
+
+    it('ignores an incoming broadcast echo of the current user\'s own message (already appended locally by sendMessage)', async () => {
+        useAuthStore().user = { id: 1 };
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+
+        const { openConversation, messages } = useConversations();
+        await openConversation({ id: 7 });
+
+        const handler = channels[0].listen.mock.calls[0][1];
+        handler({ message: { id: 50, sender: { id: 1 }, message_text: 'رسالتي' } });
+
+        expect(messages.value).toEqual([]);
+    });
+
+    it('ignores a duplicate incoming message that already exists in the list (by id)', async () => {
+        useAuthStore().user = { id: 1 };
+        conversationService.messages.mockResolvedValue({ data: { data: [{ id: 50, sender: { id: 2 } }] } });
+
+        const { openConversation, messages } = useConversations();
+        await openConversation({ id: 7 });
+        expect(messages.value).toHaveLength(1);
+
+        const handler = channels[0].listen.mock.calls[0][1];
+        handler({ message: { id: 50, sender: { id: 2 } } });
+
+        expect(messages.value).toHaveLength(1);
+    });
+
+    it('opening a different conversation leaves the previous channel and subscribes to the new one', async () => {
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+
+        const { openConversation } = useConversations();
+        await openConversation({ id: 7 });
+        await openConversation({ id: 8 });
+
+        expect(echoLeave).toHaveBeenCalledWith('conversation.7');
+        expect(echoPrivate).toHaveBeenCalledTimes(2);
+        expect(echoPrivate).toHaveBeenLastCalledWith('conversation.8');
+    });
+
+    it('deleteConversation leaves the channel when deleting the currently active conversation', async () => {
+        conversationService.messages.mockResolvedValue({ data: { data: [] } });
+        conversationService.destroy.mockResolvedValue({});
+
+        const { openConversation, deleteConversation, activeConversation } = useConversations();
+        await openConversation({ id: 7 });
+        await deleteConversation(7);
+
+        expect(echoLeave).toHaveBeenCalledWith('conversation.7');
+        expect(activeConversation.value).toBeNull();
     });
 });

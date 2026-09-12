@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { FileText, User, Wallet, X, ZoomIn } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import AttachmentPreviewModal from "@/components/ui/AttachmentPreviewModal.vue";
+import { usePermissions } from "@/composables/usePermissions";
 
 
 const props = defineProps({
@@ -17,6 +18,7 @@ const props = defineProps({
 const emit = defineEmits(["close", "approve", "reject", "request-correction"]);
 
 const { t } = useI18n();
+const { can } = usePermissions();
 
 const METHOD_ICONS = { wallet: "fa-wallet", bank: "fa-building-columns", cash: "fa-money-bill-wave" };
 const STATUS_CHIP = { pending: "chip-warning", paid: "chip-success", rejected: "chip-danger", needs_correction: "chip-info" };
@@ -281,10 +283,11 @@ function submitCorrection() {
 
         <!-- Footer actions -->
         <footer
-          v-if="payment?.status === 'pending' && !activeAction"
+          v-if="payment?.status === 'pending' && !activeAction && (can('payments.approve') || can('payments.reject'))"
           class="grid grid-cols-3 gap-2.5 px-5 lg:px-6 py-4 border-t border-[#e7e2d6] dark:border-white/10 shrink-0 bg-[#faf7ef]/80 dark:bg-white/5"
         >
           <button
+            v-if="can('payments.approve')"
             type="button"
             @click="activeAction = 'correction'"
             :disabled="isActing"
@@ -293,6 +296,7 @@ function submitCorrection() {
             {{ t("owner_payments.request_correction") }}
           </button>
           <button
+            v-if="can('payments.reject')"
             type="button"
             @click="activeAction = 'reject'"
             :disabled="isActing"
@@ -301,6 +305,7 @@ function submitCorrection() {
             {{ t("owner_payments.reject") }}
           </button>
           <button
+            v-if="can('payments.approve')"
             type="button"
             @click="emit('approve')"
             :disabled="isActing"

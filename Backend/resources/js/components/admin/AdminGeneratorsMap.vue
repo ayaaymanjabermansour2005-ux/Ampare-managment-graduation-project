@@ -6,7 +6,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import adminDashboardService from "@/services/adminDashboardService";
 import { useAdminUiStore } from "@/stores/adminUi";
-import { ArrowLeft, ArrowRight, LoaderCircle, MapPinned } from "@lucide/vue";
+import { normalizeApiError } from "@/utils/normalizeApiError";
+import { ArrowLeft, ArrowRight, LoaderCircle, MapPinned, TriangleAlert } from "@lucide/vue";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -15,6 +16,7 @@ const ui = useAdminUiStore();
 const mapContainer = ref(null);
 const isLoading = ref(true);
 const points = ref([]);
+const error = ref(null);
 let map = null;
 let markers = [];
 let tileLayer = null;
@@ -54,10 +56,14 @@ function coloredIcon(color) {
 
 async function fetchPoints() {
   isLoading.value = true;
+  error.value = null;
   try {
     const { data } = await adminDashboardService.generatorsMap();
     points.value = data.data;
     renderMarkers();
+  } catch (err) {
+    points.value = [];
+    error.value = normalizeApiError(err, t("generators_map.load_error")).message;
   } finally {
     isLoading.value = false;
   }
@@ -140,6 +146,13 @@ watch(
 
     <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/40 rounded-[1rem]">
       <LoaderCircle class="text-[#8A6D1F] animate-spin" aria-hidden="true" />
+    </div>
+
+    <div v-else-if="error" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/70 dark:bg-[#15171a]/70 rounded-[1rem] backdrop-blur-sm">
+      <TriangleAlert class="text-2xl text-[#D9534F]" aria-hidden="true" />
+      <span class="text-[11px] text-[#D9534F] px-4 text-center">
+        {{ error }}
+      </span>
     </div>
 
     <div v-else-if="points.length === 0" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/70 dark:bg-[#15171a]/70 rounded-[1rem] backdrop-blur-sm">

@@ -3,25 +3,36 @@ import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAdminOffers } from "@/composables/useAdminOffers";
 import { useConfirm } from "@/composables/useConfirm";
+import { usePermissions } from "@/composables/usePermissions";
 import { vReveal } from "@/directives/reveal";
 import { useToastStore } from "@/stores/toast";
-import { ArrowRight, Ban, ChevronLeft, ChevronRight, Eye, LoaderCircle, Search, Tags, Trash2, UserRound, X } from "@lucide/vue";
+import offerService from "@/services/offerService";
+import { ArrowRight, Ban, ChevronLeft, ChevronRight, Eye, FileSpreadsheet, LoaderCircle, Search, Tags, Trash2, UserRound, X } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
 
 const { t, locale } = useI18n();
 const { confirm } = useConfirm();
+const { can } = usePermissions();
 const toast = useToastStore();
 
 const {
   offers, pagination, isLoading, error,
   search,
+  includeExpired,
   cancellingId, cancelError,
   deletingId,
   fetchOffers, onSearchInput,
   cancelOffer, deleteOffer,
 } = useAdminOffers();
+
+const exportExcelUrl = computed(() =>
+  offerService.exportUrl({
+    search: search.value || undefined,
+    include_expired: includeExpired.value ? 1 : undefined,
+  }),
+);
 
 /* ---------------- إصلاح: علامة النسبة المئوية كانت "%" ثابتة بالإنجليزي
    حتى بالواجهة العربية — نفس منهجية صفحة الأعطال (percentSign) ---------------- */
@@ -172,6 +183,13 @@ onMounted(() => fetchOffers(1));
             :class="statusFilter === pill.value ? 'bg-gradient-to-l from-[#3E582E] to-[#52733D] text-white' : 'text-[#6B6B6B] dark:text-[#a8aaa5] hover:bg-white/60 dark:hover:bg-white/5'"
           >{{ pill.label }}</button>
         </div>
+        <a
+          v-if="can('offers.view')"
+          :href="exportExcelUrl" target="_blank" rel="noopener"
+          class="btn-fill relative text-[12.5px] font-bold px-4 py-2 rounded-full border border-[#D4AF37]/50 text-[#3E582E] dark:text-[#F4E0A5] hover:text-white dark:hover:text-white hover:border-transparent transition-colors duration-300 flex items-center gap-2"
+        >
+          <FileSpreadsheet aria-hidden="true" /> {{ $t("offers_page.export_excel") }}
+        </a>
       </div>
     </section>
 
@@ -216,7 +234,7 @@ onMounted(() => fetchOffers(1));
             </button>
             <span class="flex-1"></span>
             <button
-              v-if="o.status === 'active'"
+              v-if="o.status === 'active' && can('offers.cancel')"
               type="button" @click="handleCancel(o)" :disabled="cancellingId === o.id"
               class="w-9 h-9 rounded-full flex items-center justify-center text-[#D9534F] hover:bg-[#D9534F]/10 disabled:opacity-40 shrink-0"
               :title="$t('dashboard.cancel')"
@@ -224,6 +242,7 @@ onMounted(() => fetchOffers(1));
               <LoaderCircle class="animate-spin" aria-hidden="true" v-if="cancellingId === o.id" style="font-size:11px" /><Ban aria-hidden="true" v-else style="font-size:11px" />
             </button>
             <button
+              v-if="can('offers.delete')"
               type="button" @click="handleDelete(o)" :disabled="deletingId === o.id"
               class="w-9 h-9 rounded-full flex items-center justify-center text-[#D9534F] hover:bg-[#D9534F]/10 disabled:opacity-40 shrink-0"
               :title="$t('common.delete')"
@@ -306,7 +325,7 @@ onMounted(() => fetchOffers(1));
               {{ $t("common.close") }}
             </button>
             <button
-              v-if="viewingOffer.status === 'active'"
+              v-if="viewingOffer.status === 'active' && can('offers.cancel')"
               type="button"
               @click="handleCancel(viewingOffer); viewingOffer = null"
               :disabled="cancellingId === viewingOffer.id"

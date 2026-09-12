@@ -8,7 +8,7 @@ import platformCommissionService from "@/services/platformCommissionService";
 import ownerMonthlyReportService from "@/services/ownerMonthlyReportService";
 import { vReveal } from "@/directives/reveal";
 import AppDropdownSelect from "@/components/ui/AppDropdownSelect.vue";
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, FileDown, HandCoins, PlugZap } from "@lucide/vue";
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, FileDown, FileText, HandCoins, PlugZap } from "@lucide/vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import StatCard from "@/components/dashboard/StatCard.vue";
 
@@ -27,7 +27,7 @@ const {
   markError,
   markAsPaid,
 } = useCommissionReports();
-const { hasRole } = usePermissions();
+const { can, hasRole } = usePermissions();
 
 /* ==========================================================================
  * FIX (تدقيق شامل للوحة الأدمن — بند 7): OwnerMonthlyReportController::
@@ -124,6 +124,15 @@ onMounted(() => {
           </p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+          <a
+            v-if="can('platform-commissions.view')"
+            :href="platformCommissionService.downloadReportPdfUrl()"
+            target="_blank"
+            class="btn-fill-brand relative inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[12.5px] font-bold shrink-0"
+          >
+            <FileText class="text-[11px]" aria-hidden="true" />
+            {{ $t("reports_page.download_full_report") }}
+          </a>
           <a
             :href="platformCommissionService.exportUrl()"
             target="_blank"
@@ -225,7 +234,7 @@ onMounted(() => {
           <div class="text-end shrink-0">
             <p class="text-[13px] font-extrabold font-mono">{{ commission.commission_amount.toFixed(2) }} ₪</p>
             <button
-              v-if="hasRole('admin') && commission.status === 'earned'"
+              v-if="can('platform-commissions.updateStatus') && commission.status === 'earned'"
               type="button"
               @click="markAsPaid(commission.id)"
               class="text-[11px] font-bold text-[#3E582E] dark:text-[#a8d19a] hover:underline mt-0.5"
